@@ -270,6 +270,38 @@ app.get('/api/sync', async (req, res) => {
   res.json({ success: true, synced: count });
 });
 
+// CLEANUP: Remove duplicates (keep newest per URL)
+app.get('/api/cleanup', async (req, res) => {
+  if (!linksCol) return res.status(503).json({ error: 'DB not ready' });
+  try {
+    const all = await linksCol.find({}).toArray();
+    const seen = new Map();
+    const toDelete = [];
+    for (const link of all) {
+      if (seen.has(link.url)) {
+        // Keep the auto-imported one (or the older one)
+        const existing = seen.get(link.url);
+        if (link.autoImported && !existing.autoImported) {
+          toDelete.push(existing._id);
+          seen.set(link.url, link);
+        } else if (!link.autoImported && existing.autoImported) {
+          toDelete.push(link._id);
+        } else {
+          toDelete.push(link._id);
+        }
+      } else {
+        seen.set(link.url, link);
+      }
+    }
+    if (toDelete.length > 0) {
+      await linksCol.deleteMany({ _id: { $in: toDelete } });
+    }
+    res.json({ success: true, deleted: toDelete.length, remaining: all.length - toDelete.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/auth/register', async (req, res) => {
   const { name, country, location } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
@@ -301,20 +333,57 @@ app.post('/api/links', async (req, res) => {
 
   const platform = detectPlatform(url);
   const domain = extractDomain(url);
-  const linkId = 'user_' + crypto.randomBytes(6).toString('hex');
-  let title = `${domain} - ${platform}`;
-  let thumbnail = `https://ui-avatars.com/api/?name=${encodeURIComponent(domain)}&size=600&background=667eea&color=fff&bold=true`;
+  let linkId, title = domain, description = '', thumbnail;
 
+  // YouTube - use videoId as unique ID (prevents duplicates)
   if (platform === 'youtube') {
     const ytId = extractYouTubeId(url);
     if (ytId) {
+      linkId = `youtube_${ytId}`;
       thumbnail = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
       try {
         const oembed = await axios.get(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`, { timeout: 5000 });
         title = oembed.data.title || title;
         if (oembed.data.thumbnail_url) thumbnail = oembed.data.thumbnail_url;
-      } catch (e) {}
+        description = (oembed.data.author_name || '') + ' • YouTube';
+      } catch (e) {
+        title = `YouTube Video (${ytId})`;
+      }
+    } else {
+      linkId = 'user_' + crypto.randomBytes(6).toString('hex');
     }
+  } else if (platform === 'odysee') {
+    // Odysee URL
+    linkId = 'user_' + crypto.randomBytes(6).toString('hex');
+  } else {
+    // News / Twitter / Instagram / etc - user-added
+    linkId = 'user_' + crypto.randomBytes(6).toString('hex');
+  }
+
+  // Try to fetch better title for news sites
+  if (platform === 'news' || platform === 'web') {
+    try {
+      const response = await axios.get(url, { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0' } });
+      const html = response.data;
+      const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
+      const twitterTitle = html.match(/<meta[^>]+name=["']twitter:title["'][^>]+content=["']([^"']+)["']/i);
+      const docTitle = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      if (ogTitle) title = ogTitle[1];
+      else if (twitterTitle) title = twitterTitle[1];
+      else if (docTitle) title = docTitle[1].trim();
+
+      const ogDesc = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
+      if (ogDesc) description = ogDesc[1];
+
+      const ogImage = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+      if (ogImage) thumbnail = ogImage[1];
+    } catch (e) {
+      // Fallback to domain name
+    }
+  }
+
+  if (!thumbnail) {
+    thumbnail = `https://ui-avatars.com/api/?name=${encodeURIComponent(domain)}&size=600&background=667eea&color=fff&bold=true`;
   }
 
   let addedByName = 'User';
@@ -323,9 +392,15 @@ app.post('/api/links', async (req, res) => {
     if (user) addedByName = user.name;
   }
 
+  // Check if link already exists (prevent duplicates)
+  const existing = await linksCol.findOne({ id: linkId });
+  if (existing) {
+    return res.json({ success: true, link: { ...existing, _id: undefined }, message: 'Already exists' });
+  }
+
   const link = {
     _id: linkId, id: linkId, url, title,
-    description: `Discussion about ${domain}`,
+    description: description || `Discussion about ${domain}`,
     thumbnail, platform, domain, addedBy: addedByName,
     addedById: userId || 'anonymous', addedAt: Date.now(), commentCount: 0,
     autoImported: false,
