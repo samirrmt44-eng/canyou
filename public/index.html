@@ -590,6 +590,18 @@ async function addLink() {
 }
 
 // === FEED ===
+let currentFilter = 'all';
+let currentFile = null;
+
+function setFilter(type) {
+  currentFilter = type;
+  document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.filter-bar button[data-filter="${type}"]`);
+  if (btn) btn.classList.add('active');
+  console.log('Filter:', type);
+  loadFeed();
+}
+
 async function loadFeed() {
   try {
     let url = API + '/api/links?sortBy=new&limit=50';
