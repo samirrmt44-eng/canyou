@@ -400,6 +400,17 @@
       </div>
     </div>
 
+    <!-- Filter Tabs -->
+    <div class="filter-bar">
+      <button class="active" data-filter="all" onclick="setFilter('all')">🌐 सभी (All)</button>
+      <button data-filter="channels" onclick="setFilter('channels')">📡 चैनल (DainikState)</button>
+      <button data-filter="user" onclick="setFilter('user')">👤 यूज़र पोस्ट (User)</button>
+      <button data-filter="news" onclick="setFilter('news')">📰 News</button>
+      <button data-filter="youtube" onclick="setFilter('youtube')">📹 YouTube</button>
+      <button data-filter="odysee" onclick="setFilter('odysee')">📺 Odysee</button>
+      <button data-filter="twitter" onclick="setFilter('twitter')">🐦 Twitter</button>
+    </div>
+
     <div class="feed" id="feed">
       <div class="skeleton"></div><div class="skeleton"></div>
     </div>
@@ -582,14 +593,21 @@ async function addLink() {
 async function loadFeed() {
   try {
     let url = API + '/api/links?sortBy=new&limit=50';
-    if (currentFilter === 'channels') url += '&source=channel';
-    else if (currentFilter === 'user') url += '&source=user';
+    if (currentFilter === 'channels') {
+      url = API + '/api/links?source=channel&sortBy=new&limit=50';
+    } else if (currentFilter === 'user') {
+      url = API + '/api/links?source=user&sortBy=new&limit=50';
+    } else if (currentFilter !== 'all') {
+      url += '&platform=' + currentFilter;
+    }
+    console.log('Loading feed:', url);
     const res = await fetch(url);
     const data = await res.json();
     feedLinks = data.links || [];
+    console.log('Loaded', feedLinks.length, 'links');
     renderFeed();
     updateStats();
-  } catch (e) { console.error(e); }
+  } catch (e) { console.error('Feed error:', e); }
 }
 
 function renderFeed() {
