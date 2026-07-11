@@ -1,0 +1,26 @@
+{
+  "name": "canyou #1rank",
+  "short_name": "canyou",
+  "description": "I am the only one who is unique and different. The #1 Comment Platform - Drop links, share unique perspectives.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0e1a",
+  "theme_color": "#b71c1c",
+  "categories": ["social", "lifestyle", "entertainment"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
