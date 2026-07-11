@@ -1,41 +1,6 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-  <!-- PWA Configuration -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#b71c1c">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="canyou">
-  <link rel="apple-touch-icon" href="/images/logo.png">
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/service-worker.js")
-          .then(reg => console.log("canyou PWA ready!"))
-          .catch(err => console.log("SW failed:", err));
-      });
-    }
-    let deferredPrompt;
-    window.addEventListener("beforeinstallprompt", e => {
-      e.preventDefault();
-      deferredPrompt = e;
-      setTimeout(() => {
-        const installBtn = document.createElement("button");
-        installBtn.innerHTML = "📲 Install canyou App";
-        installBtn.style.cssText = "position:fixed;bottom:90px;right:20px;background:linear-gradient(135deg,#ff6b6b,#ee5a6f);color:#fff;border:none;padding:12px 20px;border-radius:25px;font-weight:700;cursor:pointer;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-size:13px;";
-        installBtn.onclick = () => {
-          installBtn.remove();
-          deferredPrompt.prompt();
-          deferredPrompt.userChoice.then(c => {
-            if (c.outcome === "accepted") console.log("Installed!");
-            deferredPrompt = null;
-          });
-        };
-        document.body.appendChild(installBtn);
-      }, 3000);
-    });
-  </script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>canyou #1rank — I am the only one who is unique and different 🏆</title>
@@ -616,7 +581,10 @@ async function addLink() {
 // === FEED ===
 async function loadFeed() {
   try {
-    const res = await fetch(API + '/api/links?sortBy=new&limit=20');
+    let url = API + '/api/links?sortBy=new&limit=50';
+    if (currentFilter === 'channels') url += '&source=channel';
+    else if (currentFilter === 'user') url += '&source=user';
+    const res = await fetch(url);
     const data = await res.json();
     feedLinks = data.links || [];
     renderFeed();
