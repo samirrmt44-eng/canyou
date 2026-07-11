@@ -1,7 +1,7 @@
 {
   "name": "canyou",
   "version": "1.0.0",
-  "description": "canyou #1rank - MongoDB persistent comment platform",
+  "description": "canyou #1rank - DainikState channel + user links",
   "main": "server.js",
   "scripts": { "start": "node server.js" },
   "engines": { "node": "20.x" },
@@ -10,6 +10,7 @@
     "cors": "^2.8.5",
     "axios": "^1.6.0",
     "dotenv": "^16.3.1",
-    "mongodb": "^6.3.0"
+    "mongodb": "^6.3.0",
+    "xml2js": "^0.6.2"
   }
 }

@@ -1,5 +1,6 @@
 // ============================================================
-// canyou #1rank - MongoDB Persistent Version
+// canyou - DainikState Channel + User Links + Multi-Source
+// Auto-loads YouTube videos from DainikState channel
 // ============================================================
 
 const express = require('express');
@@ -7,7 +8,8 @@ const cors = require('cors');
 const axios = require('axios');
 const path = require('path');
 const crypto = require('crypto');
-const { MongoClient, ObjectId } = require('mongodb');
+const xml2js = require('xml2js');
+const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
 const app = express();
@@ -19,14 +21,10 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ============================================================
-// MONGODB CONNECTION
+// MONGODB
 // ============================================================
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/canyou';
-let db = null;
-let linksCol = null;
-let commentsCol = null;
-let usersCol = null;
-let votesCol = null;
+const MONGO_URI = process.env.MONGODB_URI;
+let db, linksCol, commentsCol, usersCol, votesCol, channelsCol;
 
 async function connectDB() {
   try {
@@ -38,49 +36,180 @@ async function connectDB() {
     commentsCol = db.collection('comments');
     usersCol = db.collection('users');
     votesCol = db.collection('votes');
+    channelsCol = db.collection('channels');
 
-    // Create indexes
     await linksCol.createIndex({ addedAt: -1 });
+    await linksCol.createIndex({ source: 1, addedAt: -1 });
     await commentsCol.createIndex({ linkId: 1, createdAt: -1 });
     await usersCol.createIndex({ id: 1 }, { unique: true });
-    await votesCol.createIndex({ commentId: 1, userId: 1 }, { unique: true });
-
-    // Seed data if empty
-    await seedIfEmpty();
+    await channelsCol.createIndex({ platform: 1, channelId: 1 }, { unique: true });
 
     console.log('✅ MongoDB connected!');
   } catch (err) {
-    console.error('❌ MongoDB connection failed:', err.message);
-    console.log('⚠️  Falling back to in-memory mode (data will be lost on restart)');
+    console.error('❌ MongoDB failed:', err.message);
   }
 }
 
-async function seedIfEmpty() {
-  const linkCount = await linksCol.countDocuments();
-  if (linkCount > 0) return;
+// ============================================================
+// CHANNELS - YouTube, Odysee, etc.
+// ============================================================
+const DEFAULT_CHANNELS = [
+  {
+    platform: 'youtube',
+    channelId: 'UCIvx776Jt6gejhpiJ563VCQ',
+    handle: '@DainikState',
+    name: 'DainikState',
+    autoSync: true,
+    syncInterval: 60,  // minutes
+  },
+  {
+    platform: 'odysee',
+    channelId: '@DainikState:1',
+    name: 'DainikState (Odysee)',
+    autoSync: true,
+    syncInterval: 60,
+  },
+];
 
-  console.log('🌱 Seeding initial data...');
-  const SEED_LINKS = [
-    { _id: 'seed_1', url: 'https://www.bbc.com/news/world', title: 'BBC World News - Latest Global Stories', description: 'Breaking news, world news, US news, sport, business...', thumbnail: 'https://ui-avatars.com/api/?name=BBC&size=600&background=000000&color=fff&bold=true', platform: 'news', domain: 'bbc.com', author: 'BBC News', addedBy: 'canyou Official', addedById: 'system', addedAt: Date.now() - 86400000, commentCount: 0 },
-    { _id: 'seed_2', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', title: '🎬 YouTube Video Discussion', description: 'Paste any YouTube video link to discuss it!', thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg', platform: 'youtube', domain: 'youtube.com', author: 'Various', addedBy: 'canyou Official', addedById: 'system', addedAt: Date.now() - 7200000, commentCount: 0 },
-    { _id: 'seed_3', url: 'https://dainikstate.com', title: 'DainikState - Jharkhand Hindi News', description: 'झारखंड की ताज़ा खबरें, राजनीति, क्राइम', thumbnail: 'https://ui-avatars.com/api/?name=DainikState&size=600&background=b71c1c&color=fff&bold=true', platform: 'news', domain: 'dainikstate.com', author: 'DainikState', addedBy: 'canyou Official', addedById: 'system', addedAt: Date.now() - 3600000, commentCount: 0 },
-    { _id: 'seed_4', url: 'https://www.theverge.com/tech', title: 'The Verge - Tech, Science, Culture', description: 'Tech news, reviews, and more.', thumbnail: 'https://ui-avatars.com/api/?name=The+Verge&size=600&background=ff6b6b&color=fff&bold=true', platform: 'news', domain: 'theverge.com', author: 'The Verge', addedBy: 'canyou Official', addedById: 'system', addedAt: Date.now() - 1800000, commentCount: 0 },
-    { _id: 'seed_5', url: 'https://twitter.com/elonmusk', title: 'Twitter/X - Latest Tweets', description: 'Paste any Twitter/X link to discuss', thumbnail: 'https://ui-avatars.com/api/?name=Twitter&size=600&background=1da1f2&color=fff&bold=true', platform: 'twitter', domain: 'twitter.com', author: 'Twitter/X', addedBy: 'canyou Official', addedById: 'system', addedAt: Date.now() - 600000, commentCount: 0 },
-  ];
+// ============================================================
+// YOUTUBE RSS FEED PARSER (No API key needed!)
+// ============================================================
+async function fetchYouTubeRSS(channelId) {
+  try {
+    const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+    const response = await axios.get(rssUrl, { timeout: 10000 });
+    const parser = new xml2js.Parser({ explicitArray: false });
+    const result = await parser.parseStringPromise(response.data);
 
-  const SEED_COMMENTS = [
-    { _id: 'seed_c1', linkId: 'seed_1', userId: 'seed_user_1', userName: 'NewsNinja', userLocation: 'Delhi, India', userReputation: 4.5, text: 'BBC has the most reliable news coverage worldwide. Their investigative journalism is top-notch! 💪', upvotes: 28, downvotes: 2, replyCount: 0, createdAt: Date.now() - 50000000, qualityScore: 8, acceptedChallenge: true },
-    { _id: 'seed_c2', linkId: 'seed_1', userId: 'seed_user_2', userName: 'TruthSeeker', userLocation: 'Mumbai, India', userReputation: 3.8, text: 'I trust BBC more than any other source. They maintain neutrality even in polarizing topics.', upvotes: 22, downvotes: 3, replyCount: 0, createdAt: Date.now() - 40000000, qualityScore: 7, acceptedChallenge: true },
-    { _id: 'seed_c3', linkId: 'seed_3', userId: 'seed_user_4', userName: 'JharkhandLover', userLocation: 'Jamshedpur, India', userReputation: 5.0, text: 'DainikState hamare area ki sabse authentic news site hai. Regular padhta hoon! 📰', upvotes: 35, downvotes: 0, replyCount: 0, createdAt: Date.now() - 20000000, qualityScore: 9, acceptedChallenge: true },
-  ];
+    if (!result.feed || !result.feed.entry) return [];
 
-  await linksCol.insertMany(SEED_LINKS);
-  await commentsCol.insertMany(SEED_COMMENTS);
-  for (const link of SEED_LINKS) {
-    const count = SEED_COMMENTS.filter(c => c.linkId === link._id).length;
-    if (count > 0) await linksCol.updateOne({ _id: link._id }, { $set: { commentCount: count } });
+    const entries = Array.isArray(result.feed.entry) ? result.feed.entry : [result.feed.entry];
+    return entries.map(entry => ({
+      platform: 'youtube',
+      url: `https://www.youtube.com/watch?v=${entry['yt:videoId']}`,
+      videoId: entry['yt:videoId'],
+      title: entry.title,
+      description: entry['media:group']?.['media:description']?._ || entry.title,
+      thumbnail: entry['media:group']?.['media:thumbnail']?.$?.url || `https://img.youtube.com/vi/${entry['yt:videoId']}/maxresdefault.jpg`,
+      author: entry['author']?.name || 'DainikState',
+      publishedAt: new Date(entry.published).getTime(),
+    }));
+  } catch (err) {
+    console.error('YouTube RSS fetch failed:', err.message);
+    return [];
   }
-  console.log(`✅ Seeded ${SEED_LINKS.length} links, ${SEED_COMMENTS.length} comments`);
+}
+
+// ============================================================
+// ODYSEE SYNC
+// ============================================================
+async function fetchOdyseeVideos(claimId) {
+  try {
+    const payload = {
+      method: 'claim_search',
+      params: {
+        claim_type: 'stream',
+        channel_id: claimId,
+        page: 1,
+        page_size: 15,
+        order_by: ['release_time'],
+        no_totals: true,
+      },
+    };
+    const response = await axios.post('https://api.odysee.com/api/v1/proxy', payload, { timeout: 10000 });
+    const items = (response.data?.result?.items || []).map(item => ({
+      platform: 'odysee',
+      url: `https://odysee.com/${item.name}#${item.claim_id}`,
+      videoId: item.claim_id,
+      title: item.value?.title || 'Untitled',
+      description: item.value?.description || '',
+      thumbnail: item.value?.thumbnail?.url ? `https://thumbnails.odycdn.com/600x400/${item.value.thumbnail.url.split('/').pop()}` : '',
+      author: claimId,
+      publishedAt: item.meta?.release_time ? item.meta.release_time * 1000 : Date.now(),
+      views: item.meta?.views || 0,
+    }));
+    return items;
+  } catch (err) {
+    console.error('Odysee fetch failed:', err.message);
+    return [];
+  }
+}
+
+// ============================================================
+// CHANNEL SYNC
+// ============================================================
+async function syncChannel(channel) {
+  console.log(`🔄 Syncing ${channel.platform}: ${channel.name}...`);
+  let videos = [];
+
+  if (channel.platform === 'youtube') {
+    videos = await fetchYouTubeRSS(channel.channelId);
+  } else if (channel.platform === 'odysee') {
+    videos = await fetchOdyseeVideos(channel.channelId);
+  }
+
+  if (videos.length === 0) {
+    console.log(`  ⚠️  No videos from ${channel.name}`);
+    return 0;
+  }
+
+  // Save to MongoDB
+  for (const video of videos) {
+    const linkId = `${video.platform}_${video.videoId}`;
+    const link = {
+      _id: linkId,
+      id: linkId,
+      url: video.url,
+      title: video.title,
+      description: video.description?.slice(0, 500),
+      thumbnail: video.thumbnail,
+      platform: video.platform,
+      domain: video.platform === 'youtube' ? 'youtube.com' : video.platform === 'odysee' ? 'odysee.com' : '',
+      author: video.author,
+      addedBy: channel.name,
+      addedById: `auto_${channel.platform}_${channel.channelId}`,
+      addedAt: video.publishedAt,
+      commentCount: 0,
+      views: video.views || 0,
+      autoImported: true,
+      channelRef: channel.platform + ':' + channel.channelId,
+    };
+
+    try {
+      await linksCol.updateOne(
+        { _id: linkId },
+        { $set: link },
+        { upsert: true }
+      );
+    } catch (err) {
+      // Skip duplicates
+    }
+  }
+
+  // Update channel last sync
+  await channelsCol.updateOne(
+    { platform: channel.platform, channelId: channel.channelId },
+    { $set: { ...channel, lastSync: Date.now() } },
+    { upsert: true }
+  );
+
+  console.log(`  ✅ Synced ${videos.length} videos from ${channel.name}`);
+  return videos.length;
+}
+
+async function syncAllChannels() {
+  try {
+    const channels = await channelsCol.find({}).toArray();
+    const allChannels = channels.length > 0 ? channels : DEFAULT_CHANNELS;
+    let total = 0;
+    for (const ch of allChannels) {
+      total += await syncChannel(ch);
+    }
+    return total;
+  } catch (err) {
+    console.error('Sync error:', err.message);
+    return 0;
+  }
 }
 
 // ============================================================
@@ -89,10 +218,13 @@ async function seedIfEmpty() {
 function detectPlatform(url) {
   const u = url.toLowerCase();
   if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
+  if (u.includes('odysee.com')) return 'odysee';
   if (u.includes('twitter.com') || u.includes('x.com')) return 'twitter';
   if (u.includes('instagram.com')) return 'instagram';
   if (u.includes('facebook.com')) return 'facebook';
   if (u.includes('reddit.com')) return 'reddit';
+  if (u.includes('tiktok.com')) return 'tiktok';
+  if (u.includes('news') || u.includes('bbc') || u.includes('cnn')) return 'news';
   return 'web';
 }
 
@@ -128,32 +260,33 @@ function rankComments(comments) {
 // ROUTES
 // ============================================================
 app.get('/api/health', (req, res) => res.json({
-  status: 'ok', message: 'canyou #1rank - MongoDB Persistent',
-  database: db ? 'connected' : 'in-memory fallback',
-  stats: { links: linksCol ? 'N/A (use /api/links)' : 0 }
+  status: 'ok',
+  message: 'canyou #1rank - DainikState Channel Edition',
+  database: db ? 'connected' : 'in-memory',
 }));
+
+app.get('/api/sync', async (req, res) => {
+  const count = await syncAllChannels();
+  res.json({ success: true, synced: count });
+});
 
 app.post('/api/auth/register', async (req, res) => {
   const { name, country, location } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
-  if (!usersCol) return res.status(503).json({ error: 'Database not ready' });
+  if (!usersCol) return res.status(503).json({ error: 'DB not ready' });
 
   const userId = 'u_' + crypto.randomBytes(8).toString('hex');
   const sessionId = crypto.randomBytes(16).toString('hex');
   const user = {
-    id: userId, sessionId, name, location: location || 'Unknown', country: country || 'India',
+    _id: userId, id: userId, sessionId, name,
+    location: location || 'Unknown', country: country || 'India',
     reputation: 1, commentsPosted: 0, linksAdded: 0, joinedAt: Date.now()
   };
-  try {
-    await usersCol.insertOne({ ...user, _id: userId });
-    res.json({ success: true, user, sessionId });
-  } catch (err) {
-    res.status(500).json({ error: 'Registration failed' });
-  }
+  await usersCol.insertOne(user);
+  res.json({ success: true, user, sessionId });
 });
 
 app.post('/api/auth/login', async (req, res) => {
-  if (!usersCol) return res.status(503).json({ error: 'Database not ready' });
   const user = await usersCol.findOne({ sessionId: req.body.sessionId });
   if (!user) return res.status(401).json({ error: 'Invalid session' });
   const { _id, ...userData } = user;
@@ -164,11 +297,11 @@ app.post('/api/links', async (req, res) => {
   const { url, userId } = req.body;
   if (!url) return res.status(400).json({ error: 'URL required' });
   try { new URL(url); } catch { return res.status(400).json({ error: 'Invalid URL' }); }
-  if (!linksCol) return res.status(503).json({ error: 'Database not ready' });
+  if (!linksCol) return res.status(503).json({ error: 'DB not ready' });
 
   const platform = detectPlatform(url);
   const domain = extractDomain(url);
-  const linkId = 'lnk_' + crypto.randomBytes(6).toString('hex');
+  const linkId = 'user_' + crypto.randomBytes(6).toString('hex');
   let title = `${domain} - ${platform}`;
   let thumbnail = `https://ui-avatars.com/api/?name=${encodeURIComponent(domain)}&size=600&background=667eea&color=fff&bold=true`;
 
@@ -190,23 +323,52 @@ app.post('/api/links', async (req, res) => {
     if (user) addedByName = user.name;
   }
 
-  const link = { _id: linkId, id: linkId, url, title, description: `Discussion about ${domain}`, thumbnail, platform, domain, addedBy: addedByName, addedById: userId || 'anonymous', addedAt: Date.now(), commentCount: 0 };
+  const link = {
+    _id: linkId, id: linkId, url, title,
+    description: `Discussion about ${domain}`,
+    thumbnail, platform, domain, addedBy: addedByName,
+    addedById: userId || 'anonymous', addedAt: Date.now(), commentCount: 0,
+    autoImported: false,
+  };
   await linksCol.insertOne(link);
-  if (userId) await usersCol.updateOne({ id: userId }, { $inc: { linksAdded: 1 } });
   res.json({ success: true, link });
 });
 
 app.get('/api/links', async (req, res) => {
-  if (!linksCol) return res.status(503).json({ error: 'Database not ready' });
-  const links = await linksCol.find({}).sort({ addedAt: -1 }).limit(50).toArray();
+  if (!linksCol) return res.status(503).json({ error: 'DB not ready' });
+  const { source, platform, sort } = req.query;
+  const query = {};
+  if (platform) query.platform = platform;
+  if (source === 'channel') query.autoImported = true;
+  if (source === 'user') query.autoImported = false;
+  const sortBy = sort === 'hot' ? { commentCount: -1, addedAt: -1 } : { addedAt: -1 };
+  const links = await linksCol.find(query).sort(sortBy).limit(50).toArray();
   const result = links.map(l => { const { _id, ...rest } = l; return rest; });
   res.json({ success: true, count: result.length, links: result });
+});
+
+app.get('/api/channels', async (req, res) => {
+  if (!channelsCol) return res.json({ channels: DEFAULT_CHANNELS });
+  const channels = await channelsCol.find({}).toArray();
+  res.json({ success: true, channels: channels.length > 0 ? channels : DEFAULT_CHANNELS });
+});
+
+app.post('/api/channels', async (req, res) => {
+  const { platform, channelId, handle, name } = req.body;
+  if (!platform || !channelId) return res.status(400).json({ error: 'Missing fields' });
+  if (!channelsCol) return res.status(503).json({ error: 'DB not ready' });
+  await channelsCol.updateOne(
+    { platform, channelId },
+    { $set: { platform, channelId, handle, name, autoSync: true, syncInterval: 60, addedAt: Date.now() } },
+    { upsert: true }
+  );
+  res.json({ success: true });
 });
 
 app.post('/api/comments', async (req, res) => {
   const { linkId, userId, text, parentId } = req.body;
   if (!linkId || !userId || !text) return res.status(400).json({ error: 'Missing fields' });
-  if (!commentsCol) return res.status(503).json({ error: 'Database not ready' });
+  if (!commentsCol) return res.status(503).json({ error: 'DB not ready' });
 
   const link = await linksCol.findOne({ id: linkId });
   if (!link) return res.status(404).json({ error: 'Link not found' });
@@ -215,9 +377,10 @@ app.post('/api/comments', async (req, res) => {
   const commentId = 'c_' + crypto.randomBytes(8).toString('hex');
   const comment = {
     _id: commentId, id: commentId, linkId, parentId: parentId || null, userId,
-    userName: user?.name || 'Guest', userLocation: user?.location || 'Unknown', userReputation: user?.reputation || 1,
-    text, upvotes: 0, downvotes: 0, replyCount: 0, qualityScore: calculateQualityScore(text),
-    createdAt: Date.now(), acceptedChallenge: true
+    userName: user?.name || 'Guest', userLocation: user?.location || 'Unknown',
+    userReputation: user?.reputation || 1, text, upvotes: 0, downvotes: 0,
+    replyCount: 0, qualityScore: calculateQualityScore(text),
+    createdAt: Date.now(), acceptedChallenge: true,
   };
   await commentsCol.insertOne(comment);
   await linksCol.updateOne({ id: linkId }, { $inc: { commentCount: 1 } });
@@ -229,7 +392,7 @@ app.post('/api/comments', async (req, res) => {
 app.get('/api/comments', async (req, res) => {
   const { linkId, sortBy } = req.query;
   if (!linkId) return res.status(400).json({ error: 'linkId required' });
-  if (!commentsCol) return res.status(503).json({ error: 'Database not ready' });
+  if (!commentsCol) return res.status(503).json({ error: 'DB not ready' });
 
   let comments = await commentsCol.find({ linkId }).toArray();
   if (sortBy === 'top') comments.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
@@ -273,9 +436,19 @@ app.get(/(.*)/, (req, res) => res.sendFile(path.join(__dirname, 'public', 'index
 // ============================================================
 // START
 // ============================================================
-connectDB().then(() => {
+connectDB().then(async () => {
+  // Initial sync
+  console.log('🚀 Initial channel sync...');
+  await syncAllChannels();
+
+  // Periodic sync every 30 minutes
+  setInterval(async () => {
+    console.log('🔄 Periodic channel sync...');
+    await syncAllChannels();
+  }, 30 * 60 * 1000);
+
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🏆 canyou #1rank running on port ${PORT}`);
-    console.log(`💾 Database: ${db ? 'MongoDB (Persistent ✅)' : 'In-Memory (Temporary ⚠️)'}`);
+    console.log(`📺 DainikState channel auto-syncing...`);
   });
 });
