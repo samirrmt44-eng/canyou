@@ -1,8 +1,15 @@
 {
+  "name": "canyou",
+  "version": "1.0.0",
+  "description": "canyou #1rank - MongoDB persistent comment platform",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": "20.x" },
   "dependencies": {
-    "axios": "^1.18.1",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^4.22.2"
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "mongodb": "^6.3.0"
   }
 }
