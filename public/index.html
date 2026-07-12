@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>DainikState — झारखंड की आवाज़, अब आपकी ज़ुबान पर 🏆</title>
+<title>DainikState — राज्य की आवाज़ 🏆</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, system-ui, sans-serif; }
   body { background: #0a0e1a; color: #e4e6eb; min-height: 100vh; }
@@ -17,7 +17,7 @@
   }
   .hero-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
   .logo-area { display: flex; align-items: center; gap: 12px; }
-  .logo-img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2px solid #fff; }
+  .logo-img { width: 52px; height: 52px; border-radius: 14px; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
   .logo-text h1 {
     font-size: 26px; font-weight: 900; letter-spacing: -0.5px;
     background: linear-gradient(90deg, #fff, #ffd700);
@@ -110,46 +110,11 @@
   .challenge-banner.accepted { background: linear-gradient(90deg, #4caf50, #66bb6a); }
 
   /* === LINK PREVIEW === */
-  /* Full Facebook-style embed */
-  .full-embed {
-    background: #000;
+  .link-preview {
+    display: flex; gap: 12px; padding: 16px 20px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
   }
-  .embed-header {
-    padding: 12px 20px 8px;
-    display: flex; gap: 12px; align-items: center;
-    background: rgba(255,255,255,0.02);
-  }
-  .embed-domain {
-    background: rgba(255,255,255,0.1);
-    padding: 4px 10px; border-radius: 6px; font-size: 11px;
-    font-weight: 600; color: #a4b8ff;
-  }
-  .embed-meta { font-size: 11px; opacity: 0.7; color: #c0c0c0; }
-  .embed-media {
-    position: relative; width: 100%; aspect-ratio: 16/9;
-    background: #000; cursor: pointer; overflow: hidden;
-  }
-  .embed-media img {
-    width: 100%; height: 100%; object-fit: cover;
-    transition: opacity 0.3s;
-  }
-  .embed-media:hover img { opacity: 0.85; }
-  .play-overlay {
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.7); color: #fff;
-    padding: 12px 20px; border-radius: 25px;
-    font-weight: 700; font-size: 14px;
-    backdrop-filter: blur(10px);
-    opacity: 0; transition: opacity 0.3s;
-  }
-  .embed-media:hover .play-overlay { opacity: 1; }
-  .embed-title {
-    padding: 12px 20px 16px;
-    font-size: 16px; font-weight: 600; line-height: 1.4;
-    color: #e4e6eb; background: rgba(0,0,0,0.95);
-  }
-  .link-preview { display: none; }
   .link-thumb {
     width: 100px; height: 70px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
     background: #000;
@@ -370,8 +335,8 @@
       <img src="/images/logo.png" alt="DainikState" class="logo-img" />
       <div class="logo-text">
         <h1>DainikState</h1>
-        <div class="tagline">🏆 झारखंड की आवाज़, अब आपकी ज़ुबान पर</div>
-        <div class="challenge-text">💪 DainikState — झारखंड की आवाज़, अब आपकी ज़ुबान पर</div>
+        <div class="tagline">🏆 राज्य की आवाज़, राज्य की ताकत</div>
+        <div class="challenge-text">💪 DainikState — राज्य की आवाज़, राज्य की ताकत</div>
       </div>
     </div>
     <div class="user-area">
@@ -415,7 +380,7 @@
 <div class="container">
   <aside class="sidebar sidebar-left">
     <div class="card">
-      <h3>🏆 #1rank — Your Area</h3>
+      <h3>🏆 #DainikState — Your Area</h3>
       <div id="lbLocal"><div style="opacity:0.5;font-size:12px;">Loading...</div></div>
     </div>
     <div class="card">
@@ -466,14 +431,14 @@
     <div class="card">
       <h3>🔥 Trending Tags</h3>
       <div style="font-size:12px;line-height:1.8;">
-        <div>#DainikState</div><div>#1rank</div><div>#BeUnique</div><div>#IAmUnique</div><div>#MyVoice</div>
+        <div>#DainikState</div><div>#DainikState</div><div>#DainikState</div><div>#RajyaKiAwaaz</div><div>#DainikState</div>
       </div>
     </div>
   </aside>
 </div>
 
-<footer>© 2026 <span class="brand">DainikState</span> — झारखंड की आवाज़, अब आपकी ज़ुबान पर 🏆<br>
-  <span style="opacity:0.6;font-size:11px;">💪 "DainikState" — I am the only one who is unique and different</span>
+<footer>© 2026 <span class="brand">DainikState</span> — राज्य की आवाज़, राज्य की ताकत 🏆<br>
+  <span style="opacity:0.6;font-size:11px;">💪 "DainikState" — राज्य की आवाज़, राज्य की ताकत</span>
 </footer>
 
 <div class="toast" id="toast"></div>
@@ -482,8 +447,8 @@
   <div class="auth-box">
     <img src="/images/logo.png" alt="DainikState" class="auth-logo" />
     <h2>DainikState</h2>
-    <p class="tagline">🏆 झारखंड की आवाज़, अब आपकी ज़ुबान पर</p>
-    <p class="challenge">💪 DainikState — झारखंड की आवाज़, अब आपकी ज़ुबान पर</p>
+    <p class="tagline">🏆 राज्य की आवाज़, राज्य की ताकत</p>
+    <p class="challenge">💪 DainikState — राज्य की आवाज़, राज्य की ताकत</p>
     <label>Your Name</label>
     <input type="text" id="authName" placeholder="What should we call you?" maxlength="30" />
     <label>🌍 Country</label>
@@ -510,7 +475,7 @@
 
 <script>
 /* ====================================================
-   DainikState - झारखंड की आवाज़
+   DainikState - राज्य की आवाज़, राज्य की ताकत
    ==================================================== */
 const API = '';
 let currentUser = null;
@@ -535,7 +500,7 @@ function formatNum(n) { if (n >= 1e6) return (n/1e6).toFixed(1)+'M'; if (n >= 1e
 
 // === AUTH ===
 async function checkAuth() {
-  sessionId = localStorage.getItem('dainikstate_session');
+  sessionId = localStorage.getItem('canyou_session');
   if (sessionId) {
     try {
       const res = await fetch(API + '/api/auth/login', {
@@ -576,7 +541,7 @@ async function registerUser() {
     if (data.success) {
       currentUser = data.user;
       sessionId = data.sessionId;
-      localStorage.setItem('dainikstate_session', sessionId);
+      localStorage.setItem('canyou_session', sessionId);
       currentUserLocation = location;
       applyUserChip();
       document.getElementById('authModal').classList.add('hidden');
@@ -673,19 +638,17 @@ function renderLink(link) {
     <div class="post" data-id="${link.id}">
       <div class="challenge-banner" id="${challengeId}">
         <span>🏆</span>
-        <span><strong>canyou #1rank</strong> — I am the only one who is unique and different</span>
+        <span><strong>DainikState</strong> — राज्य की आवाज़, राज्य की ताकत</span>
       </div>
-      <!-- Full embed like Facebook -->
-      <div class="full-embed">
-        <div class="embed-header">
-          <div class="embed-domain">🌐 ${esc(link.domain)}</div>
-          <div class="embed-meta">Added by <b>${esc(link.addedBy)}</b> • ${timeAgo(link.addedAt)}</div>
+      <div class="link-preview" onclick="window.open('${esc(link.url)}', '_blank')" style="cursor:pointer;">
+        <img src="${esc(link.thumbnail)}" class="link-thumb" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(link.domain || 'Link')}&size=200&background=667eea&color=fff&bold=true'" />
+        <div class="link-info">
+          <div class="link-title">${esc(link.title)}</div>
+          <div class="link-domain">🌐 ${esc(link.domain)}</div>
+          <div class="link-desc">${esc(link.description)}</div>
+          <span class="platform-tag ${link.platform}">${link.platform}</span>
+          <div class="added-by">Added by <b>${esc(link.addedBy)}</b> • ${timeAgo(link.addedAt)}</div>
         </div>
-        ${link.thumbnail ? `<div class="embed-media" onclick="window.open('${esc(link.url)}', '_blank')">
-          <img src="${esc(link.thumbnail)}" onerror="this.style.display='none'" />
-          <div class="play-overlay">▶ Watch / Read</div>
-        </div>` : ''}
-        <div class="embed-title">${esc(link.title)}</div>
       </div>
       <div class="post-actions">
         <button class="action-btn" onclick="window.open('${esc(link.url)}', '_blank')">🔗 Open</button>
@@ -713,7 +676,7 @@ function renderLink(link) {
           <div class="empty-comments">
             <div class="emoji">💬</div>
             <div class="text">Be the first to comment!</div>
-            <div class="sub">🏆 #1rank awaits the most unique answer</div>
+            <div class="sub">🏆 #DainikState awaits the most unique answer</div>
           </div>
         </div>
       </div>
@@ -734,7 +697,7 @@ async function loadComments(linkId, sortBy = 'hot') {
     const count = document.getElementById(`ccount-${linkId}`);
     if (count) count.textContent = data.count;
     if (data.comments.length === 0) {
-      list.innerHTML = '<div class="empty-comments"><div class="emoji">💬</div><div class="text">Be the first to comment!</div><div class="sub">🏆 #1rank awaits the most unique answer</div></div>';
+      list.innerHTML = '<div class="empty-comments"><div class="emoji">💬</div><div class="text">Be the first to comment!</div><div class="sub">🏆 #DainikState awaits the most unique answer</div></div>';
       return;
     }
     list.innerHTML = data.comments.map((c, i) => renderComment(c, i + 1, linkId)).join('');
@@ -743,7 +706,7 @@ async function loadComments(linkId, sortBy = 'hot') {
 
 function renderComment(c, rank) {
   const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
-  const rankBadge = rank === 1 ? '<span class="rank-badge gold">🏆 #1rank</span>' : rank === 2 ? '<span class="rank-badge silver">🥈 #2</span>' : rank === 3 ? '<span class="rank-badge bronze">🥉 #3</span>' : '';
+  const rankBadge = rank === 1 ? '<span class="rank-badge gold">🏆 #DainikState</span>' : rank === 2 ? '<span class="rank-badge silver">🥈 #2</span>' : rank === 3 ? '<span class="rank-badge bronze">🥉 #3</span>' : '';
   return `
     <div class="comment ${rankClass}">
       <div class="comment-vote-col">
@@ -799,7 +762,7 @@ async function submitComment(linkId, parentId = null) {
       const link = feedLinks.find(l => l.id === linkId);
       if (link) link.commentCount = (link.commentCount || 0) + 1;
       updateStats();
-      toast(parentId ? '↩ Reply posted!' : '💪 Comment posted! Your unique voice can now rise to #1rank 🏆');
+      toast(parentId ? '↩ Reply posted!' : '💪 Comment posted! Your unique voice can now rise to #DainikState 🏆');
     }
   } catch (e) { toast('Failed to post comment'); }
 }
