@@ -1329,6 +1329,24 @@ connectDB().then(async () => {
   setInterval(async () => {
     if (storiesCol) await storiesCol.deleteMany({ expiresAt: { $lt: Date.now() } });
   }, 60 * 60 * 1000);
+  // Auto-end stale live streams (older than 2 hours) to prevent stuck streams
+  setInterval(async () => {
+    if (liveStreamsCol) {
+      const staleStreams = await liveStreamsCol.find({
+        status: 'live',
+        startedAt: { $lt: Date.now() - 2 * 60 * 60 * 1000 }
+      }).toArray();
+      for (const s of staleStreams) {
+        await liveStreamsCol.updateOne(
+          { streamId: s.streamId },
+          { $set: { status: 'ended', endedAt: Date.now(), duration: Math.floor((Date.now() - s.startedAt) / 1000), autoEnded: true } }
+        );
+        // Remove the live post
+        if (groupPostsCol) await groupPostsCol.deleteOne({ id: 'gplive_' + s.streamId });
+        console.log('🛑 Auto-ended stale stream:', s.streamId);
+      }
+    }
+  }, 5 * 60 * 1000);  // Check every 5 minutes
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🏆 DainikState running on port ${PORT}`);
     console.log(`📺 Groups, Stories, Posts, Channels all live!`);
