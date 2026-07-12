@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#0a0e1a" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <title>DainikState — राज्य की आवाज़ 🏆</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -905,8 +908,14 @@ async function checkAuth() {
         loadHomeFeed();
         loadNotifications();
         return;
+      } else {
+        // Invalid session, clear it
+        localStorage.removeItem('canyou_session');
+        sessionId = null;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Auth check failed:', e);
+    }
   }
   document.getElementById('authModal').classList.remove('hidden');
 }
