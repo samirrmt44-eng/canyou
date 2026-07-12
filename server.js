@@ -1470,13 +1470,15 @@ app.get('/api/odysee/live', async (req, res) => {
                          item.name?.includes('cripto-panda');  // fallback
           // We only want LIVE streams
           if (!isLive) continue;
+          // Build the CORRECT embed URL: https://odysee.com/$/embed/<name>:<claimid>
+          const correctEmbedUrl = `https://odysee.com/$/embed/${item.name}:${item.claim_id}`;
           liveStreams.push({
             claimId: item.claim_id,
             name: item.name,
             title: val.title || item.name || 'Live Stream',
             thumbnail: val.thumbnail?.url ? `https://thumbnails.odycdn.com/600x400/${val.thumbnail.url.split('/').pop()}` : '',
             url: `https://odysee.com/${item.name}#${item.claim_id}`,
-            embedUrl: `https://odysee.com/embed/${item.claim_id}`,
+            embedUrl: correctEmbedUrl,  // Use the correct embed URL
             channelHandle: ch.handle,
             channelName: ch.name,
             views: meta.views || 0,
