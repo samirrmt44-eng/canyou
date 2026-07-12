@@ -2535,24 +2535,30 @@ async function pollLiveSignals() {
   const isStreamer = liveStream.streamerId === currentUser.id;
   // BOTH streamer and viewer should poll signals addressed to them
   const sigRes = await fetch(API + '/api/live/' + liveStream.streamId + '/signals/' + currentUser.id).then(r => r.json());
+  // Re-check after async (liveStream could have been cleared during await)
+  if (!liveStream || !currentUser) return;
   if (sigRes.signals) {
     for (const sig of sigRes.signals) {
+      // Re-check before each signal
+      if (!liveStream) break;
       await handleLiveSignal(sig);
     }
   }
+  // Re-check again
+  if (!liveStream || !currentUser) return;
   if (isStreamer) {
     const res = await fetch(API + '/api/live/active?userId=' + currentUser.id).then(r => r.json());
+    if (!liveStream || !currentUser) return;
     const s = (res.streams || []).find(x => x.streamId === liveStream.streamId);
     if (s) {
       const viewerSpan = document.getElementById('liveViewerCount');
       if (viewerSpan) viewerSpan.textContent = s.viewerCount || 0;
       liveStream = s;
     }
-    // Also send our media to any new viewers
-    // (Handled by viewer join event - the viewer will request offer)
   }
   // Re-poll stream status (check if ended)
   const allRes = await fetch(API + '/api/live/active?userId=' + currentUser.id).then(r => r.json());
+  if (!liveStream || !currentUser) return;
   const stillLive = (allRes.streams || []).find(s => s.streamId === liveStream.streamId);
   if (!stillLive && !isStreamer) {
     toast('📺 Stream ended');
