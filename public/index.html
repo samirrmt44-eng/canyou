@@ -2238,6 +2238,33 @@ let liveSignalPoll = null;
 let liveChatPoll = null;
 
 // Live debug overlay (for troubleshooting)
+function retryLiveConnection() {
+  if (!liveStream) return;
+  updateLiveDebug('Manual retry requested...');
+  // Reset peer connections
+  Object.values(livePeerConnections).forEach(pc => pc.close());
+  livePeerConnections = {};
+  // Force streamer to send new offer
+  if (liveStream.streamerId === currentUser.id) {
+    // Streamer: re-send offers to all viewers
+    streamerCheckViewers();
+  } else {
+    // Viewer: force a signal poll
+    pollLiveSignals();
+  }
+  toast('🔄 Retrying connection...');
+}
+
+function updateLiveConnStatus(msg) {
+  const el = document.getElementById('liveConnStatus');
+  if (el) el.textContent = msg;
+}
+
+function showLiveRetry(show) {
+  const btn = document.getElementById('liveRetryBtn');
+  if (btn) btn.style.display = show ? 'block' : 'none';
+}
+
 function toggleLiveDebug() {
   const el = document.getElementById('liveDebug');
   if (el) {
@@ -2413,6 +2440,8 @@ function showLiveStreamView(stream, isStreamer) {
         <div class="placeholder" id="live-placeholder">
           <div class="emoji">📡</div>
           <div style="margin-top:12px;">Connecting to ${esc(stream.streamerName)}...</div>
+          <div id="liveConnStatus" style="margin-top:8px;font-size:11px;opacity:0.7;"></div>
+          <button class="btn" id="liveRetryBtn" style="display:none;width:auto;margin:12px auto;padding:8px 16px;font-size:12px;" onclick="retryLiveConnection()">🔄 Retry Connection</button>
         </div>
         <div class="live-overlay" id="live-overlay" style="display:none;">🔴 LIVE</div>
       </div>
@@ -2455,9 +2484,9 @@ function startLiveSignaling() {
     }
   };
   fastPoll();
-  // Also check for new viewers every 3 sec (for streamer)
+  // Also check for new viewers every 1 sec (for streamer) - faster!
   if (liveStream && liveStream.streamerId === currentUser.id) {
-    setInterval(streamerCheckViewers, 3000);
+    setInterval(streamerCheckViewers, 1000);
   }
 }
 
@@ -2473,8 +2502,7 @@ async function pollLiveSignals() {
         await handleLiveSignal(sig);
       }
     }
-  } else {
-    // For streamer: poll viewer count periodically
+  } else {    // For streamer: poll viewer count periodically
     const res = await fetch(API + '/api/live/active?userId=' + currentUser.id).then(r => r.json());
     const s = (res.streams || []).find(x => x.streamId === liveStream.streamId);
     if (s) {
@@ -2553,11 +2581,18 @@ function createLivePeerConnection(remoteUserId) {
   };
   pc.onconnectionstatechange = () => {
     updateLiveDebug(`State: ${pc.connectionState}`);
+    updateLiveConnStatus('Connection: ' + pc.connectionState);
     if (pc.connectionState === 'connected') {
       toast('🔴 Connected to live stream!');
+      updateLiveConnStatus('✅ Connected! Video should be playing.');
+      showLiveRetry(false);
     } else if (pc.connectionState === 'failed') {
       updateLiveDebug('❌ Connection failed - need TURN server');
+      updateLiveConnStatus('❌ Failed - same network pe try karein ya TURN setup karein');
       toast('⚠️ Connection failed - check network');
+      showLiveRetry(true);
+    } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed') {
+      showLiveRetry(true);
     }
   };
   pc.ontrack = (e) => {
@@ -3170,21 +3205,33 @@ let callTimerInterval = null;
 let signalPollInterval = null;
 
 // ICE servers - loaded dynamically from backend (TURN + STUN)
-// Falls back to Google STUN + free TURN servers if API fails
+// Falls back to multiple STUN servers if API fails
 let ICE_SERVERS = [
-  // Free STUN servers
+  // Multiple STUN servers (Google + Cloudflare + Twilio)
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
   { urls: 'stun:stun3.l.google.com:19302' },
   { urls: 'stun:stun4.l.google.com:19302' },
   { urls: 'stun:stun.cloudflare.com:3478' },
-  // Free public TURN servers (fallback - production should use Metered/Twilio)
-  // OpenRelay Project (free)
-  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'stun:global.stun.twilio.com:3478' },
 ];
 let usingTurn = false;
+
+// Allow custom TURN server (set via localStorage for testing)
+function loadCustomTurnServer() {
+  const custom = localStorage.getItem('ds_custom_turn');
+  if (custom) {
+    try {
+      const turn = JSON.parse(custom);
+      if (turn.urls && turn.username) {
+        ICE_SERVERS = [...ICE_SERVERS, { urls: turn.urls, username: turn.username, credential: turn.credential }];
+        usingTurn = true;
+        updateLiveDebug('Custom TURN added: ' + turn.urls);
+      }
+    } catch (e) {}
+  }
+}
 
 // Load TURN credentials from server on startup
 async function loadIceServers() {
