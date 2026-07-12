@@ -419,6 +419,8 @@ app.post('/api/groups', async (req, res) => {
     members: [userId], memberCount: 1, pendingMembers: [], blockedMembers: [],
     whoCanPost: 'everyone',  // 'admin_only' | 'everyone'
     whoCanInvite: 'everyone', // 'admin_only' | 'everyone'
+    whoCanCall: 'everyone',  // 'everyone' | 'admins_only' | 'specific'
+    allowedCallers: [],  // userIds allowed to call when whoCanCall='specific'
     slowMode: 0,  // seconds between posts
     pinnedPostId: null,
     inviteCode, tags: [], rules: [], allowGifs: true, allowPolls: true,
@@ -535,7 +537,7 @@ app.post('/api/groups/:groupId/settings', async (req, res) => {
   const group = await groupsCol.findOne({ id: req.params.groupId });
   if (!group) return res.status(404).json({ error: 'Group not found' });
   if (!group.admins?.includes(adminId)) return res.status(403).json({ error: 'Only admin can change settings' });
-  const allowed = ['name', 'description', 'icon', 'color', 'cover', 'whoCanPost', 'whoCanInvite', 'slowMode', 'allowGifs', 'allowPolls', 'allowReactions', 'rules', 'tags', 'category', 'type', 'memberCap'];
+  const allowed = ['name', 'description', 'icon', 'color', 'cover', 'whoCanPost', 'whoCanInvite', 'whoCanCall', 'allowedCallers', 'slowMode', 'allowGifs', 'allowPolls', 'allowReactions', 'rules', 'tags', 'category', 'type', 'memberCap'];
   const update = {};
   for (const key of allowed) if (settings[key] !== undefined) update[key] = settings[key];
   await groupsCol.updateOne({ id: group.id }, { $set: update });
@@ -862,6 +864,44 @@ app.get('/i/:code', async (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+app.post('/api/groups/:groupId/allow-caller', async (req, res) => {
+  const { userId, adminId, action } = req.body;  // action: 'add' | 'remove'
+  const group = await groupsCol.findOne({ id: req.params.groupId });
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (!group.admins?.includes(adminId)) return res.status(403).json({ error: 'Only admin can manage call permissions' });
+  let allowed = group.allowedCallers || [];
+  if (action === 'add' && !allowed.includes(userId)) {
+    allowed.push(userId);
+  } else if (action === 'remove') {
+    allowed = allowed.filter(u => u !== userId);
+  }
+  await groupsCol.updateOne({ id: group.id }, { $set: { allowedCallers: allowed, whoCanCall: 'specific' } });
+  res.json({ success: true, allowedCallers: allowed });
+});
+
+app.get('/api/groups/:groupId/members', async (req, res) => {
+  if (!groupsCol) return res.status(503).json({ error: 'DB not ready' });
+  const group = await groupsCol.findOne({ id: req.params.groupId });
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  const memberIds = group.members || [];
+  const users = await usersCol.find({ id: { $in: memberIds } }).toArray();
+  res.json({
+    success: true,
+    members: users.map(u => {
+      const { _id, sessionId, ...rest } = u;
+      return {
+        ...rest,
+        isAdmin: group.admins?.includes(u.id),
+        isOwner: group.admin === u.id,
+        isBlocked: group.blockedMembers?.includes(u.id),
+        canCall: group.whoCanCall === 'everyone' ||
+                 (group.whoCanCall === 'admins_only' && group.admins?.includes(u.id)) ||
+                 (group.whoCanCall === 'specific' && (group.allowedCallers || []).includes(u.id)),
+      };
+    }),
+  });
+});
+
 // ============================================================
 // CALLS (Voice/Video - WebRTC signaling)
 // ============================================================
@@ -874,6 +914,27 @@ app.post('/api/calls', async (req, res) => {
 
   const user = await usersCol.findOne({ id: fromUserId });
   if (!user) return res.status(404).json({ error: 'User not found' });
+
+  // GROUP CALL PERMISSIONS: Check if group has call restrictions
+  if (groupId) {
+    const group = await groupsCol.findOne({ id: groupId });
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+    if (!group.members.includes(fromUserId)) {
+      return res.status(403).json({ error: 'You must be a member to call' });
+    }
+    // whoCanCall: 'everyone' | 'admins_only' | 'specific' (allowedCallers list)
+    const whoCanCall = group.whoCanCall || 'everyone';
+    if (whoCanCall === 'admins_only' && !group.admins?.includes(fromUserId)) {
+      return res.status(403).json({ error: 'Only admins/owner can start calls in this group' });
+    }
+    if (whoCanCall === 'specific' && !(group.allowedCallers || []).includes(fromUserId) && !group.admins?.includes(fromUserId)) {
+      return res.status(403).json({ error: 'You are not allowed to call in this group' });
+    }
+    // Blocked users can't call
+    if (group.blockedMembers?.includes(fromUserId)) {
+      return res.status(403).json({ error: 'You are blocked from this group' });
+    }
+  }
 
   const callId = 'call_' + crypto.randomBytes(8).toString('hex');
   const call = {
