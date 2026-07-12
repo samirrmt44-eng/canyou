@@ -450,6 +450,14 @@
   .page.active { display: block; }
 
   /* === LIVE STREAMING === */
+  .live-debug {
+    position: fixed; bottom: 80px; right: 12px;
+    background: rgba(0,0,0,0.85); color: #0f0;
+    padding: 8px 12px; border-radius: 8px;
+    font-family: monospace; font-size: 10px;
+    max-width: 280px; line-height: 1.4;
+    z-index: 600; border: 1px solid #0f0;
+  }
   .live-banner {
     background: linear-gradient(90deg, #ff0000, #cc0000);
     color: #fff; padding: 8px 16px;
@@ -2229,6 +2237,29 @@ let livePeerConnections = {};
 let liveSignalPoll = null;
 let liveChatPoll = null;
 
+// Live debug overlay (for troubleshooting)
+function toggleLiveDebug() {
+  const el = document.getElementById('liveDebug');
+  if (el) {
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  } else {
+    updateLiveDebug('Debug enabled');
+  }
+}
+
+function updateLiveDebug(msg) {
+  let el = document.getElementById('liveDebug');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'liveDebug';
+    el.className = 'live-debug';
+    document.body.appendChild(el);
+  }
+  const lines = (el.textContent || '').split('\n').slice(-8);
+  lines.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
+  el.textContent = lines.join('\n');
+}
+
 async function startGoLive(groupId) {
   if (!currentUser) return;
   // Get title and description
@@ -2375,7 +2406,7 @@ function showLiveStreamView(stream, isStreamer) {
             <div style="font-size:10px;opacity:0.7;">${typeLabel}</div>
           </div>
         </div>
-        ${isStreamer ? '<button class="btn danger" style="width:auto;padding:8px 16px;font-size:12px;" onclick="endLiveStream()">🛑 End Stream</button>' : '<button class="btn secondary" style="width:auto;padding:8px 16px;font-size:12px;" onclick="leaveLiveStream()">✕ Leave</button>'}
+        ${isStreamer ? '<button class="btn danger" style="width:auto;padding:8px 16px;font-size:12px;" onclick="endLiveStream()">🛑 End Stream</button>' : '<button class="btn secondary" style="width:auto;padding:8px 16px;font-size:12px;" onclick="leaveLiveStream()">✕ Leave</button>'} <button class="btn secondary" style="width:auto;padding:4px 8px;font-size:10px;" onclick="toggleLiveDebug()">🔧</button>
       </div>
       <div class="live-stream-video" id="live-video-area">
         <video id="live-remote-video" autoplay playsinline controls style="display:none;"></video>
@@ -2410,7 +2441,20 @@ function showLiveStreamView(stream, isStreamer) {
 
 function startLiveSignaling() {
   if (liveSignalPoll) clearInterval(liveSignalPoll);
-  liveSignalPoll = setInterval(pollLiveSignals, 1000);
+  // Initial rapid polling for first 10 seconds (every 400ms)
+  // Then slower polling (every 1500ms) to save bandwidth
+  let fastPollCount = 0;
+  const fastPoll = () => {
+    pollLiveSignals();
+    fastPollCount++;
+    if (fastPollCount < 25) {  // ~10 seconds
+      setTimeout(fastPoll, 400);
+    } else {
+      // Switch to slower polling
+      liveSignalPoll = setInterval(pollLiveSignals, 1500);
+    }
+  };
+  fastPoll();
   // Also check for new viewers every 3 sec (for streamer)
   if (liveStream && liveStream.streamerId === currentUser.id) {
     setInterval(streamerCheckViewers, 3000);
@@ -2453,6 +2497,7 @@ async function pollLiveSignals() {
 async function handleLiveSignal(sig) {
   // For viewer: receive offer from streamer and send back answer
   if (sig.type === 'offer') {
+    updateLiveDebug('📥 Got offer from streamer');
     let pc = livePeerConnections[sig.fromUserId];
     if (!pc) pc = createLivePeerConnection(sig.fromUserId);
     try {
@@ -2460,11 +2505,21 @@ async function handleLiveSignal(sig) {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       sendLiveSignal(sig.fromUserId, 'answer', answer);
-    } catch (e) { console.error('Live offer error:', e); }
+      updateLiveDebug('✅ Answer sent to streamer');
+    } catch (e) {
+      console.error('Live offer error:', e);
+      updateLiveDebug('❌ Offer error: ' + e.message);
+    }
   } else if (sig.type === 'answer') {
     const pc = livePeerConnections[sig.fromUserId];
     if (pc) {
-      try { await pc.setRemoteDescription(new RTCSessionDescription(sig.payload)); } catch (e) { console.error('Live answer error:', e); }
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));
+        updateLiveDebug('✅ Answer received');
+      } catch (e) {
+        console.error('Live answer error:', e);
+        updateLiveDebug('❌ Answer error: ' + e.message);
+      }
     }
   } else if (sig.type === 'ice-candidate') {
     const pc = livePeerConnections[sig.fromUserId];
@@ -2483,19 +2538,30 @@ function sendLiveSignal(toUserId, type, payload) {
 }
 
 function createLivePeerConnection(remoteUserId) {
+  updateLiveDebug('Creating peer connection...');
   const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
   livePeerConnections[remoteUserId] = pc;
   // Streamer: add local stream
   if (liveLocalStream) {
     liveLocalStream.getTracks().forEach(track => pc.addTrack(track, liveLocalStream));
   }
-  // Add transceivers for viewer
+  // Add transceivers for viewer (ensure we receive audio+video)
   try { pc.addTransceiver('audio', { direction: 'sendrecv' }); } catch (e) {}
   try { pc.addTransceiver('video', { direction: 'sendrecv' }); } catch (e) {}
   pc.onicecandidate = (e) => {
     if (e.candidate) sendLiveSignal(remoteUserId, 'ice-candidate', e.candidate);
   };
+  pc.onconnectionstatechange = () => {
+    updateLiveDebug(`State: ${pc.connectionState}`);
+    if (pc.connectionState === 'connected') {
+      toast('🔴 Connected to live stream!');
+    } else if (pc.connectionState === 'failed') {
+      updateLiveDebug('❌ Connection failed - need TURN server');
+      toast('⚠️ Connection failed - check network');
+    }
+  };
   pc.ontrack = (e) => {
+    updateLiveDebug(`🎬 Got stream: ${e.streams[0].getVideoTracks().length}v ${e.streams[0].getAudioTracks().length}a`);
     // For viewer: receive streamer's video/audio
     const v = document.getElementById('live-remote-video');
     const ph = document.getElementById('live-placeholder');
@@ -2503,54 +2569,72 @@ function createLivePeerConnection(remoteUserId) {
     if (v) {
       v.style.display = 'block';
       v.srcObject = e.streams[0];
+      v.muted = false;
+      v.play().catch(e => console.warn('Video play error:', e));
       if (ph) ph.style.display = 'none';
       if (ov) ov.style.display = 'flex';
     }
-    // For audio
+    // For audio-only streams
     if (e.streams[0].getAudioTracks().length > 0 && e.streams[0].getVideoTracks().length === 0) {
       const audio = document.createElement('audio');
       audio.srcObject = e.streams[0];
       audio.autoplay = true;
+      audio.id = 'live-audio-' + Date.now();
       document.body.appendChild(audio);
     }
     toast('🔴 Connected to live stream');
   };
-  // If we're the streamer, wait for viewer's "ready" signal
-  // For now: when new viewer joins, server triggers via signaling
   return pc;
 }
 
 // Streamer: when new viewer joins, send them an offer
 async function setupStreamerForViewer(viewerUserId) {
-  if (!liveLocalStream) return;
+  if (!liveLocalStream) {
+    updateLiveDebug('⚠️ No local stream');
+    return;
+  }
+  updateLiveDebug(`Setting up peer for viewer ${viewerUserId.slice(0,6)}...`);
   const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
   livePeerConnections[viewerUserId] = pc;
   liveLocalStream.getTracks().forEach(track => pc.addTrack(track, liveLocalStream));
   try { pc.addTransceiver('audio', { direction: 'sendrecv' }); } catch (e) {}
   try { pc.addTransceiver('video', { direction: 'sendrecv' }); } catch (e) {}
   pc.onicecandidate = (e) => {
-    if (e.candidate) sendLiveSignal(viewerUserId, 'ice-candidate', e.candidate);
+    if (e.candidate) {
+      updateLiveDebug(`ICE candidate → ${viewerUserId.slice(0,6)}`);
+      sendLiveSignal(viewerUserId, 'ice-candidate', e.candidate);
+    }
+  };
+  pc.onconnectionstatechange = () => {
+    updateLiveDebug(`State: ${pc.connectionState} w/ ${viewerUserId.slice(0,6)}`);
   };
   try {
     const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
     await pc.setLocalDescription(offer);
     sendLiveSignal(viewerUserId, 'offer', offer);
-  } catch (e) { console.error('Streamer offer error:', e); }
+    updateLiveDebug(`✅ Offer sent to ${viewerUserId.slice(0,6)}`);
+  } catch (e) {
+    console.error('Streamer offer error:', e);
+    updateLiveDebug('❌ Offer error: ' + e.message);
+  }
 }
 
 // Polling - detect new viewers and send them offers
 async function streamerCheckViewers() {
   if (!liveStream || liveStream.streamerId !== currentUser.id) return;
-  const res = await fetch(API + '/api/live/active?userId=' + currentUser.id).then(r => r.json());
-  const s = (res.streams || []).find(x => x.streamId === liveStream.streamId);
-  if (!s) return;
-  // For each viewer not yet connected, send offer
-  for (const viewerId of (s.viewers || [])) {
-    if (viewerId === currentUser.id) continue;
-    if (!livePeerConnections[viewerId]) {
-      setupStreamerForViewer(viewerId);
+  try {
+    const res = await fetch(API + '/api/live/active?userId=' + currentUser.id).then(r => r.json());
+    const s = (res.streams || []).find(x => x.streamId === liveStream.streamId);
+    if (!s) return;
+    // For each viewer not yet connected, send offer immediately
+    for (const viewerId of (s.viewers || [])) {
+      if (viewerId === currentUser.id) continue;
+      if (!livePeerConnections[viewerId]) {
+        console.log('Sending offer to new viewer:', viewerId);
+        setupStreamerForViewer(viewerId);
+      }
     }
-  }
+  } catch (e) { console.error('streamerCheckViewers error:', e); }
 }
 
 async function endLiveStream() {
@@ -3086,14 +3170,19 @@ let callTimerInterval = null;
 let signalPollInterval = null;
 
 // ICE servers - loaded dynamically from backend (TURN + STUN)
-// Falls back to Google STUN servers if API fails
+// Falls back to Google STUN + free TURN servers if API fails
 let ICE_SERVERS = [
+  // Free STUN servers
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
   { urls: 'stun:stun3.l.google.com:19302' },
   { urls: 'stun:stun4.l.google.com:19302' },
   { urls: 'stun:stun.cloudflare.com:3478' },
+  // Free public TURN servers (fallback - production should use Metered/Twilio)
+  // OpenRelay Project (free)
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
 ];
 let usingTurn = false;
 
