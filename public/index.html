@@ -759,6 +759,8 @@
       </div>
     </div>
 
+    <div id="liveNowSection" class="hide"></div>
+
     <div id="homeFeed"><div class="empty"><div class="emoji">📭</div><div class="text">Loading feed...</div></div></div>
   </div>
 
@@ -1163,6 +1165,8 @@ async function loadHomeFeed() {
     allPosts.sort((a, b) => b.createdAt - a.createdAt);
     // Only load stories on first load
     if (isFirstLoad) loadStories();
+    // Load active live streams from user's groups
+    if (currentUser) loadLiveNowSection();
     if (allPosts.length === 0) {
       container.innerHTML = '<div class="empty"><div class="emoji">👋</div><div class="text">अभी कोई पोस्ट नहीं है।<br>कोई ग्रुप join करें या खुद का बनाएं!</div></div>';
       lastFeedData = [];
@@ -1191,6 +1195,37 @@ async function loadHomeFeed() {
 // === STORIES ===
 let lastStoriesData = null;
 let storiesLoaded = false;
+async function loadLiveNowSection() {
+  if (!currentUser) return;
+  try {
+    const res = await fetch(API + '/api/live/active?userId=' + currentUser.id).then(r => r.json());
+    const section = document.getElementById('liveNowSection');
+    if (!res.streams || res.streams.length === 0) {
+      section.classList.add('hide');
+      section.innerHTML = '';
+      return;
+    }
+    section.classList.remove('hide');
+    section.innerHTML = `
+      <h3 style="margin:8px 0 8px 0;font-size:14px;display:flex;align-items:center;gap:6px;">
+        <span class="live-dot" style="background:#ff0000;"></span> LIVE NOW
+      </h3>
+      ${res.streams.map(s => {
+        const typeLabel = s.type === 'screen' ? '🖥️ Screen' : s.type === 'both' ? '📹+🖥️' : s.type === 'audio' ? '🎤 Audio' : '📹 Camera';
+        return `
+        <div class="live-banner" onclick="joinLiveStream('${s.streamId}')" style="margin-bottom:8px;">
+          <span class="live-dot"></span>
+          <span style="font-weight:800;">🔴 LIVE</span>
+          <span style="flex:1;">${esc(s.title)}</span>
+          <span style="font-size:11px;opacity:0.8;">${typeLabel}</span>
+          <span>👁 ${s.viewerCount || 0}</span>
+          <span style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:6px;font-size:11px;">Join →</span>
+        </div>`;
+      }).join('')}
+    `;
+  } catch (e) { console.error(e); }
+}
+
 async function loadStories(force = false) {
   // Only load stories once per session unless forced
   if (storiesLoaded && !force) return;
@@ -1655,16 +1690,19 @@ function renderGroupsList(groups) {
     list.innerHTML = '<div class="empty"><div class="emoji">👥</div><div class="text">कोई ग्रुप नहीं मिला।<br>नया ग्रुप बनाएं या search करें!</div></div>';
     return;
   }
-  list.innerHTML = groups.map(g => `
+  list.innerHTML = groups.map(g => {
+    const isAdminUser = currentUser && (g.admin === currentUser.id || (g.admins || []).includes(currentUser.id));
+    return `
     <div class="group-card" onclick="openGroup('${g.id}')">
       <div class="group-icon" style="background:${esc(g.color || '#667eea')};">${esc(g.icon || '💬')}</div>
       <div class="group-info">
         <div class="group-name">${esc(g.name)} <span class="group-tag ${g.type}">${g.type === 'public' ? '🌐 Public' : '🔒 Private'}</span></div>
         <div class="group-desc">${esc(g.description || 'No description')}</div>
-        <div class="group-meta">👥 ${g.memberCount || 0} members • ${g.postCount || 0} posts</div>
+        <div class="group-meta">👥 ${g.memberCount || 0} members • ${g.postCount || 0} posts${isAdminUser ? ' • 👑 You are admin' : ''}</div>
+        ${isAdminUser ? `<button class="btn" style="margin-top:8px;background:linear-gradient(135deg,#ff0000,#cc0000);font-size:12px;padding:8px;" onclick="event.stopPropagation();startGoLive('${g.id}')">🔴 Go Live in this Group</button>` : ''}
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function setGroupFilter(f) {
@@ -1763,9 +1801,20 @@ async function openGroup(groupId) {
       <div class="row">
         ${isMember ? `<button class="btn secondary" onclick="leaveGroup('${g.id}')">Leave Group</button>` :
                      `<button class="btn" onclick="joinGroup('${g.id}')">${g.type === 'private' ? 'Request to Join' : 'Join Group'}</button>`}
-        ${isAdmin ? `<button class="btn go-live-btn" onclick="startGoLive('${g.id}')">🔴 Go Live</button>` : ''}
-        ${isAdmin ? `<button class="btn secondary" onclick="openGroupSettings('${g.id}')">⚙️ Settings</button>` : ''}
       </div>
+      ${(isAdmin || isOwner) ? `
+      <div class="row mt-12" style="margin-top:8px;">
+        <button class="btn go-live-btn" style="background:linear-gradient(135deg,#ff0000,#cc0000);flex:1;font-weight:800;" onclick="startGoLive('${g.id}')">🔴 Go Live (Screen Share / Camera / Audio)</button>
+      </div>
+      <div class="row mt-12" style="margin-top:8px;">
+        <button class="btn secondary" style="flex:1;" onclick="openInviteCreator()">🔗 Invite Link</button>
+        <button class="btn secondary" style="flex:1;" onclick="openGroupSettings('${g.id}')">⚙️ Settings</button>
+      </div>
+      ` : (isMember ? `
+      <div class="row mt-12" style="margin-top:8px;">
+        <button class="btn secondary" style="flex:1;" onclick="joinGroup('${g.id}')">📡 Watching for live streams</button>
+      </div>
+      ` : '')}
       <div id="activeLiveBanner"></div>
       <div style="margin-top:8px;font-size:11px;opacity:0.7;">📋 Invite Code: <b>${esc(g.inviteCode || '')}</b></div>
     </div>
