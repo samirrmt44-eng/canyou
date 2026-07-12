@@ -17,7 +17,7 @@
   }
   .hero-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
   .logo-area { display: flex; align-items: center; gap: 12px; }
-  .logo-img { width: 52px; height: 52px; border-radius: 14px; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+  .logo-img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2px solid #fff; }
   .logo-text h1 {
     font-size: 26px; font-weight: 900; letter-spacing: -0.5px;
     background: linear-gradient(90deg, #fff, #ffd700);
@@ -25,7 +25,7 @@
     background-clip: text;
   }
   .logo-text .tagline { font-size: 11px; opacity: 0.95; font-weight: 500; }
-  .logo-text .challenge-text { font-size: 9px; color: #ff6b6b; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+  .logo-text .challenge-text { font-size: 9px; color: #ffd700; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
 
   .user-area { display: flex; align-items: center; gap: 8px; }
   .user-chip {
@@ -66,37 +66,92 @@
 
   /* === LAYOUT === */
   .container {
-    max-width: 1200px; margin: 0 auto; padding: 20px;
-    display: grid; grid-template-columns: 280px 1fr 320px; gap: 20px;
+    max-width: 900px; margin: 0 auto; padding: 20px;
   }
-  @media (max-width: 1024px) { .container { grid-template-columns: 1fr; } .sidebar-left, .sidebar-right { display: none; } }
 
-  .sidebar { display: flex; flex-direction: column; gap: 16px; }
-  .card {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 16px; padding: 16px; backdrop-filter: blur(10px);
-  }
-  .card h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #ffd700; display: flex; align-items: center; gap: 6px; }
-
-  .lb-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-  .lb-row:last-child { border-bottom: none; }
-  .lb-rank { font-weight: 800; font-size: 14px; min-width: 28px; }
-  .lb-rank.gold { color: #ffd700; }
-  .lb-rank.silver { color: #c0c0c0; }
-  .lb-rank.bronze { color: #cd7f32; }
-  .lb-name { flex: 1; font-size: 13px; font-weight: 600; }
-  .lb-loc { font-size: 10px; opacity: 0.7; }
-  .lb-rep { font-size: 11px; color: #ffd700; font-weight: 700; }
-  .lb-badges { font-size: 10px; }
-
-  /* === LINK POST CARD === */
-  .feed { display: flex; flex-direction: column; gap: 20px; }
+  /* === LINK POST CARD (FACEBOOK STYLE) === */
+  .feed { display: flex; flex-direction: column; gap: 24px; max-width: 720px; margin: 0 auto; }
   .post {
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 20px; overflow: hidden; backdrop-filter: blur(10px);
+    border-radius: 16px; overflow: hidden; backdrop-filter: blur(10px);
     transition: all 0.3s;
   }
-  .post:hover { border-color: rgba(102, 126, 234, 0.5); transform: translateY(-2px); }
+  .post:hover { border-color: rgba(102, 126, 234, 0.5); }
+
+  .post-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px;
+  }
+  .post-header .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700, #ff6b6b);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 16px; color: #fff; flex-shrink: 0;
+  }
+  .post-header .info { flex: 1; min-width: 0; }
+  .post-header .name { font-weight: 700; font-size: 14px; }
+  .post-header .meta { font-size: 11px; opacity: 0.6; }
+  .platform-tag { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+  .platform-tag.youtube { background: rgba(255, 0, 0, 0.3); color: #ff9999; }
+  .platform-tag.twitter { background: rgba(29, 161, 242, 0.3); color: #99d3ff; }
+  .platform-tag.instagram { background: rgba(225, 48, 108, 0.3); color: #f9a8d4; }
+  .platform-tag.facebook { background: rgba(24, 119, 242, 0.3); color: #99c2ff; }
+  .platform-tag.reddit { background: rgba(255, 69, 0, 0.3); color: #ffb088; }
+  .platform-tag.odysee { background: rgba(240, 147, 251, 0.3); color: #fbcfe8; }
+  .platform-tag.news { background: rgba(102, 126, 234, 0.3); color: #a4b8ff; }
+  .platform-tag.web { background: rgba(255,255,255,0.1); color: #c0c0c0; }
+  .platform-tag.rss { background: rgba(76, 175, 80, 0.3); color: #a5d6a7; }
+
+  /* === FULL-WIDTH MEDIA (THE KEY CHANGE) === */
+  .post-title {
+    padding: 0 16px 12px;
+    font-size: 17px; font-weight: 800; line-height: 1.4;
+    color: #fff;
+  }
+  .post-domain {
+    padding: 0 16px 8px;
+    font-size: 12px; color: #a4b8ff;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .post-description {
+    padding: 0 16px 14px;
+    font-size: 14px; line-height: 1.5; opacity: 0.85;
+  }
+
+  .post-media {
+    width: 100%;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+  }
+  .post-media img {
+    width: 100%; height: auto; max-height: 600px; object-fit: cover;
+    display: block;
+  }
+  .post-media iframe {
+    width: 100%; aspect-ratio: 16/9; border: 0; display: block;
+  }
+  .post-media .play-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.4); cursor: pointer;
+    transition: background 0.3s;
+  }
+  .post-media .play-overlay:hover { background: rgba(0,0,0,0.6); }
+  .post-media .play-overlay .play-btn {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(255, 0, 0, 0.9);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; color: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    transition: transform 0.2s;
+  }
+  .post-media .play-overlay:hover .play-btn { transform: scale(1.1); }
+  .post-media .play-overlay .duration {
+    position: absolute; bottom: 12px; right: 12px;
+    background: rgba(0,0,0,0.8); color: #fff;
+    padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;
+  }
 
   /* === CHALLENGE BANNER === */
   .challenge-banner {
@@ -109,60 +164,33 @@
   }
   .challenge-banner.accepted { background: linear-gradient(90deg, #4caf50, #66bb6a); }
 
-  /* === LINK PREVIEW === */
-  .link-preview {
-    display: flex; gap: 12px; padding: 16px 20px;
-    background: rgba(255,255,255,0.03);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-  }
-  .link-thumb {
-    width: 100px; height: 70px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
-    background: #000;
-  }
-  .link-info { flex: 1; min-width: 0; }
-  .link-title { font-size: 15px; font-weight: 700; line-height: 1.3; margin-bottom: 4px;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .link-domain { font-size: 11px; color: #a4b8ff; margin-bottom: 4px; }
-  .link-desc { font-size: 12px; opacity: 0.7;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .platform-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
-  .platform-tag.youtube { background: rgba(255, 0, 0, 0.3); color: #ff9999; }
-  .platform-tag.twitter { background: rgba(29, 161, 242, 0.3); color: #99d3ff; }
-  .platform-tag.instagram { background: rgba(225, 48, 108, 0.3); color: #f9a8d4; }
-  .platform-tag.facebook { background: rgba(24, 119, 242, 0.3); color: #99c2ff; }
-  .platform-tag.reddit { background: rgba(255, 69, 0, 0.3); color: #ffb088; }
-  .platform-tag.odysee { background: rgba(240, 147, 251, 0.3); color: #fbcfe8; }
-  .platform-tag.news { background: rgba(102, 126, 234, 0.3); color: #a4b8ff; }
-  .platform-tag.web { background: rgba(255,255,255,0.1); color: #c0c0c0; }
-
-  .added-by { font-size: 11px; opacity: 0.6; margin-top: 4px; }
-
   /* === POST ACTIONS === */
+  .post-stats {
+    padding: 10px 16px 6px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; opacity: 0.7;
+  }
   .post-actions {
-    padding: 10px 20px; display: flex; gap: 8px;
-    background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.05);
+    padding: 8px 16px; display: flex; gap: 4px;
+    border-top: 1px solid rgba(255,255,255,0.05);
   }
   .action-btn {
-    flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
-    color: #e4e6eb; padding: 8px 12px; border-radius: 10px; cursor: pointer;
-    font-size: 12px; font-weight: 600; transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center; gap: 4px;
+    flex: 1; background: transparent; border: none;
+    color: #a4b8ff; padding: 10px 12px; border-radius: 10px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
   }
-  .action-btn:hover { background: rgba(255,255,255,0.15); }
-  .action-btn.primary {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    border: none; color: #fff; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-  }
-  .action-btn .count { background: rgba(0,0,0,0.3); padding: 1px 6px; border-radius: 8px; font-size: 10px; }
+  .action-btn:hover { background: rgba(255,255,255,0.1); }
+  .action-btn .count { font-size: 12px; opacity: 0.8; }
 
   /* === COMMENTS SECTION (THE STAR!) === */
-  .comments-section { padding: 0 20px 20px; }
+  .comments-section { padding: 0 16px 16px; }
   .comments-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;
     flex-wrap: wrap; gap: 8px;
   }
-  .comments-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .comments-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
   .sort-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
   .sort-tab {
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
@@ -174,7 +202,7 @@
   /* === COMMENTS === */
   .comment {
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px; padding: 12px 14px; margin-bottom: 10px;
+    border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
     display: flex; gap: 10px; transition: all 0.2s;
   }
   .comment:hover { background: rgba(255,255,255,0.08); }
@@ -185,7 +213,7 @@
   .comment.rank-2 { background: rgba(192, 192, 192, 0.1); border: 1px solid rgba(192, 192, 192, 0.3); }
   .comment.rank-3 { background: rgba(205, 127, 50, 0.1); border: 1px solid rgba(205, 127, 50, 0.3); }
 
-  .comment-vote-col { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 40px; }
+  .comment-vote-col { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 36px; }
   .vote-btn {
     background: transparent; border: none; color: #a4b8ff; cursor: pointer;
     font-size: 16px; padding: 2px 6px; border-radius: 6px; transition: all 0.2s;
@@ -227,10 +255,10 @@
   /* === COMMENT FORM === */
   .comment-form {
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 14px; padding: 12px; margin-bottom: 12px;
+    border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;
   }
   .comment-form textarea {
-    width: 100%; min-height: 60px; background: transparent; border: none; color: #fff;
+    width: 100%; min-height: 50px; background: transparent; border: none; color: #fff;
     font-size: 14px; font-family: inherit; resize: vertical;
   }
   .comment-form textarea:focus { outline: none; }
@@ -250,20 +278,20 @@
   }
 
   .empty-comments {
-    text-align: center; padding: 30px 20px; background: rgba(255,215,0,0.05);
-    border: 2px dashed rgba(255,215,0,0.3); border-radius: 14px; margin-bottom: 12px;
+    text-align: center; padding: 24px 16px; background: rgba(255,215,0,0.05);
+    border: 2px dashed rgba(255,215,0,0.3); border-radius: 12px; margin-bottom: 12px;
   }
-  .empty-comments .emoji { font-size: 40px; margin-bottom: 8px; }
-  .empty-comments .text { font-size: 14px; color: #ffd700; font-weight: 700; }
-  .empty-comments .sub { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+  .empty-comments .emoji { font-size: 36px; margin-bottom: 6px; }
+  .empty-comments .text { font-size: 13px; color: #ffd700; font-weight: 700; }
+  .empty-comments .sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 4px; }
 
   /* === LINK ADDER (Main feature!) === */
   .link-adder {
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
     border: 2px solid rgba(102, 126, 234, 0.4);
-    border-radius: 20px; padding: 18px; margin-bottom: 16px;
+    border-radius: 16px; padding: 16px; margin-bottom: 16px;
   }
-  .link-adder h3 { color: #ffd700; margin-bottom: 10px; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+  .link-adder h3 { color: #ffd700; margin-bottom: 8px; font-size: 15px; display: flex; align-items: center; gap: 6px; }
   .link-adder p { font-size: 12px; opacity: 0.8; margin-bottom: 10px; }
   .link-adder-input { display: flex; gap: 6px; }
   .link-adder-input input {
@@ -278,6 +306,21 @@
   }
   .link-adder-input button:hover { transform: scale(1.05); }
 
+  /* === FILTER BAR === */
+  .filter-bar {
+    display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .filter-bar button {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: #a4b8ff; padding: 8px 14px; border-radius: 20px; cursor: pointer;
+    font-size: 12px; font-weight: 600; white-space: nowrap;
+  }
+  .filter-bar button.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; border: none;
+  }
+
   /* === AUTH MODAL === */
   .auth-modal {
     position: fixed; inset: 0; background: rgba(0,0,0,0.85);
@@ -291,7 +334,7 @@
     max-width: 440px; width: 90%; text-align: center;
     box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
   }
-  .auth-logo { width: 80px; height: 80px; border-radius: 20px; margin: 0 auto 16px; display: block; box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4); }
+  .auth-logo { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 16px; display: block; box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4); border: 3px solid #ffd700; }
   .auth-box h2 {
     color: #ffd700; margin-bottom: 6px; font-size: 28px; font-weight: 900;
     background: linear-gradient(90deg, #fff, #ffd700);
@@ -320,7 +363,7 @@
   }
   .toast.show { opacity: 1; }
 
-  .skeleton { background: rgba(255,255,255,0.05); border-radius: 20px; height: 200px; margin-bottom: 20px; animation: pulse 1.5s infinite; }
+  .skeleton { background: rgba(255,255,255,0.05); border-radius: 16px; height: 200px; margin-bottom: 20px; animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 0.3; } }
 
   footer { text-align: center; padding: 30px; color: rgba(255,255,255,0.4); font-size: 12px; }
@@ -378,17 +421,6 @@
 </div>
 
 <div class="container">
-  <aside class="sidebar sidebar-left">
-    <div class="card">
-      <h3>🏆 #DainikState — Your Area</h3>
-      <div id="lbLocal"><div style="opacity:0.5;font-size:12px;">Loading...</div></div>
-    </div>
-    <div class="card">
-      <h3>🌍 Global Champions</h3>
-      <div id="lbGlobal"><div style="opacity:0.5;font-size:12px;">Loading...</div></div>
-    </div>
-  </aside>
-
   <main>
     <!-- LINK ADDER (Main feature) -->
     <div class="link-adder" id="linkAdder" style="display:none;">
@@ -415,26 +447,6 @@
       <div class="skeleton"></div><div class="skeleton"></div>
     </div>
   </main>
-
-  <aside class="sidebar sidebar-right">
-    <div class="card">
-      <h3>💪 The Challenge</h3>
-      <div style="font-size:12px;line-height:1.6;opacity:0.9;">
-        <p style="margin-bottom:8px;color:#ff6b6b;font-weight:800;">"DainikState"</p>
-        <p style="margin-bottom:8px;opacity:0.8;">🔗 <b>Drop</b> any link</p>
-        <p style="margin-bottom:8px;opacity:0.8;">💪 <b>Accept</b> the challenge</p>
-        <p style="margin-bottom:8px;opacity:0.8;">🏆 <b>Win</b> — unique comment = #1 RANK</p>
-        <p style="margin-bottom:8px;opacity:0.8;">🌍 <b>Local</b> first — your area's voice</p>
-        <p style="opacity:0.8;">⭐ <b>Earn</b> reputation & recognition</p>
-      </div>
-    </div>
-    <div class="card">
-      <h3>🔥 Trending Tags</h3>
-      <div style="font-size:12px;line-height:1.8;">
-        <div>#DainikState</div><div>#DainikState</div><div>#DainikState</div><div>#RajyaKiAwaaz</div><div>#DainikState</div>
-      </div>
-    </div>
-  </aside>
 </div>
 
 <footer>© 2026 <span class="brand">DainikState</span> — राज्य की आवाज़, राज्य की ताकत 🏆<br>
@@ -482,6 +494,8 @@ let currentUser = null;
 let sessionId = null;
 let feedLinks = [];
 let currentUserLocation = '';
+let mediaRecorder = null;
+let audioChunks = [];
 
 function esc(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function toast(msg) {
@@ -569,6 +583,80 @@ function showProfile() {
   toast(`👤 ${currentUser.name} | 📍 ${currentUser.location} | ⭐ ${currentUser.reputation.toFixed(1)} | ${badges}`);
 }
 
+// === MEDIA HELPERS (Facebook-style full embed) ===
+function getYouTubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function getOdyseeId(url) {
+  if (!url) return null;
+  const m = url.match(/odysee\.com\/@[^:]+:([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function renderMedia(link) {
+  // Facebook style: full-width media, play inline (NO new tab!)
+  const ytId = getYouTubeId(link.url);
+  const odyseeId = getOdyseeId(link.url);
+  const platform = (link.platform || '').toLowerCase();
+  const mediaId = 'media-' + link.id;
+  const thumb = link.thumbnail || `https://ui-avatars.com/api/?name=${encodeURIComponent(link.domain || 'Link')}&size=600&background=667eea&color=fff&bold=true`;
+
+  // YouTube: show thumbnail + play button. Click → load iframe inline
+  if (ytId) {
+    return `
+      <div class="post-media" id="${mediaId}">
+        <div class="play-overlay" onclick="playMedia('${mediaId}', '${ytId}', 'youtube')">
+          <div class="play-btn">▶</div>
+        </div>
+        <img src="https://i.ytimg.com/vi/${ytId}/hqdefault.jpg" alt="video" loading="lazy" />
+      </div>`;
+  }
+
+  // Odysee: similar inline play
+  if (odyseeId) {
+    return `
+      <div class="post-media" id="${mediaId}">
+        <div class="play-overlay" onclick="playMedia('${mediaId}', '${odyseeId}', 'odysee')">
+          <div class="play-btn">▶</div>
+        </div>
+        <img src="${esc(thumb)}" alt="video" loading="lazy" />
+      </div>`;
+  }
+
+  // News / web with thumbnail → full-width image (click expands, NOT opens new tab)
+  if (link.thumbnail && link.thumbnail.startsWith('http')) {
+    return `
+      <div class="post-media" id="${mediaId}">
+        <img src="${esc(thumb)}" alt="image" loading="lazy" style="cursor:zoom-in;" onclick="expandImage('${esc(thumb)}')" />
+      </div>`;
+  }
+
+  // Plain text link (no media) → don't show anything
+  return '';
+}
+
+function playMedia(mediaId, videoId, type) {
+  const el = document.getElementById(mediaId);
+  if (!el) return;
+  if (type === 'youtube') {
+    // Inline YouTube iframe — autoplay inside the post
+    el.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+  } else if (type === 'odysee') {
+    el.innerHTML = `<iframe src="https://odysee.com/embed/${videoId}" allowfullscreen></iframe>`;
+  }
+}
+
+function expandImage(src) {
+  // Full-screen image viewer inside the app (NOT new tab)
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:3000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+  overlay.innerHTML = `<img src="${src}" style="max-width:95%;max-height:95%;object-fit:contain;" /><div style="position:absolute;top:20px;right:20px;color:#fff;font-size:32px;cursor:pointer;" onclick="this.parentElement.remove()">✕</div>`;
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
 // === ADD LINK (Core feature) ===
 async function addLink() {
   const url = document.getElementById('linkUrl').value.trim();
@@ -591,14 +679,12 @@ async function addLink() {
 
 // === FEED ===
 let currentFilter = 'all';
-let currentFile = null;
 
 function setFilter(type) {
   currentFilter = type;
   document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
   const btn = document.querySelector(`.filter-bar button[data-filter="${type}"]`);
   if (btn) btn.classList.add('active');
-  console.log('Filter:', type);
   loadFeed();
 }
 
@@ -612,11 +698,9 @@ async function loadFeed() {
     } else if (currentFilter !== 'all') {
       url += '&platform=' + currentFilter;
     }
-    console.log('Loading feed:', url);
     const res = await fetch(url);
     const data = await res.json();
     feedLinks = data.links || [];
-    console.log('Loaded', feedLinks.length, 'links');
     renderFeed();
     updateStats();
   } catch (e) { console.error('Feed error:', e); }
@@ -625,7 +709,7 @@ async function loadFeed() {
 function renderFeed() {
   const feed = document.getElementById('feed');
   if (feedLinks.length === 0) {
-    feed.innerHTML = '<div class="card" style="text-align:center;padding:40px;">No links yet. Drop the first one! 🔗</div>';
+    feed.innerHTML = '<div class="card" style="text-align:center;padding:40px;background:rgba(255,255,255,0.05);border-radius:16px;">No links yet. Drop the first one! 🔗</div>';
     return;
   }
   feed.innerHTML = feedLinks.map(link => renderLink(link)).join('');
@@ -634,27 +718,41 @@ function renderFeed() {
 
 function renderLink(link) {
   const challengeId = `challenge-${link.id}`;
+  const author = (link.addedBy || 'Someone').trim();
+  const avatarChar = (author[0] || 'U').toUpperCase();
+  const media = renderMedia(link);
+
   return `
     <div class="post" data-id="${link.id}">
+      <div class="post-header">
+        <div class="avatar">${esc(avatarChar)}</div>
+        <div class="info">
+          <div class="name">${esc(author)} <span class="platform-tag ${link.platform}">${link.platform}</span></div>
+          <div class="meta">📍 ${esc(link.domain)} • ${timeAgo(link.addedAt)}</div>
+        </div>
+      </div>
+
+      <div class="post-title">${esc(link.title || link.domain)}</div>
+      ${link.description ? `<div class="post-description">${esc(link.description)}</div>` : ''}
+
+      ${media}
+
       <div class="challenge-banner" id="${challengeId}">
         <span>🏆</span>
         <span><strong>DainikState</strong> — राज्य की आवाज़, राज्य की ताकत</span>
       </div>
-      <div class="link-preview" onclick="window.open('${esc(link.url)}', '_blank')" style="cursor:pointer;">
-        <img src="${esc(link.thumbnail)}" class="link-thumb" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(link.domain || 'Link')}&size=200&background=667eea&color=fff&bold=true'" />
-        <div class="link-info">
-          <div class="link-title">${esc(link.title)}</div>
-          <div class="link-domain">🌐 ${esc(link.domain)}</div>
-          <div class="link-desc">${esc(link.description)}</div>
-          <span class="platform-tag ${link.platform}">${link.platform}</span>
-          <div class="added-by">Added by <b>${esc(link.addedBy)}</b> • ${timeAgo(link.addedAt)}</div>
-        </div>
+
+      <div class="post-stats">
+        <span>👍 <span id="ccount-${link.id}">${link.commentCount || 0}</span> comments</span>
+        <span>${(link.commentCount || 0) > 0 ? '🔥 Trending' : '🆕 New'}</span>
       </div>
+
       <div class="post-actions">
-        <button class="action-btn" onclick="window.open('${esc(link.url)}', '_blank')">🔗 Open</button>
-        <button class="action-btn primary" onclick="focusComment('${link.id}')">💬 Comment <span class="count" id="ccount-${link.id}">${link.commentCount || 0}</span></button>
+        <button class="action-btn" onclick="focusComment('${link.id}')">💬 Comment</button>
+        <button class="action-btn" onclick="voteLink('${link.id}','up',this)">👍 Like</button>
         <button class="action-btn" onclick="shareLink('${esc(link.url)}')">↗ Share</button>
       </div>
+
       <div class="comments-section" id="comments-${link.id}">
         <div class="comments-header">
           <div class="comments-title">💬 Discussion <span style="color:#ffd700;">(${link.commentCount || 0})</span></div>
@@ -750,7 +848,6 @@ async function submitComment(linkId, parentId = null) {
       if (!parentId) {
         const t = document.getElementById(`ctext-${linkId}`);
         if (t) t.value = '';
-        // Mark challenge as accepted
         const banner = document.getElementById(`challenge-${linkId}`);
         if (banner) {
           banner.classList.add('accepted');
@@ -758,7 +855,6 @@ async function submitComment(linkId, parentId = null) {
         }
       }
       await loadComments(linkId);
-      // Update count
       const link = feedLinks.find(l => l.id === linkId);
       if (link) link.commentCount = (link.commentCount || 0) + 1;
       updateStats();
@@ -791,13 +887,23 @@ async function vote(commentId, linkId, voteType, btn) {
     if (data.success) {
       if (btn) btn.classList.add('voted');
       loadComments(linkId);
-      if (data.userReputation && currentUser.id === data.comment.userId) {
-        currentUser.reputation = data.userReputation;
-        applyUserChip();
-      }
       toast(voteType === 'up' ? '👍 Voted up!' : '👎 Voted down!');
     }
   } catch (e) { toast('Vote failed'); }
+}
+
+async function voteLink(linkId, type, btn) {
+  if (!currentUser) { toast('Please login to like'); return; }
+  try {
+    const res = await fetch(`${API}/api/links/${linkId}/like`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id, type }),
+    });
+    if (res.ok) {
+      if (btn) { btn.style.color = type === 'up' ? '#4caf50' : '#f44336'; }
+      toast(type === 'up' ? '👍 Liked!' : '👎 Disliked');
+    }
+  } catch (e) {}
 }
 
 function reportComment(id) { toast('⚠ Report submitted. Thanks!'); }
@@ -839,7 +945,14 @@ function focusComment(linkId) {
   document.getElementById(`ctext-${linkId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-function shareLink(url) { navigator.clipboard?.writeText(`Check this on DainikState: ${url}`); toast('📋 Link copied!'); }
+function shareLink(url) {
+  if (navigator.share) {
+    navigator.share({ title: 'DainikState', url: url }).catch(() => {});
+  } else {
+    navigator.clipboard?.writeText(`Check this on DainikState: ${url}`);
+    toast('📋 Link copied!');
+  }
+}
 
 async function loadLeaderboard() {
   try {
@@ -847,22 +960,8 @@ async function loadLeaderboard() {
       fetch(`${API}/api/leaderboard?location=${currentUserLocation?.split(',')[0] || 'all'}`).then(r => r.json()),
       fetch(`${API}/api/leaderboard?location=all`).then(r => r.json()),
     ]);
-    renderLeaderboard('lbLocal', local.top, currentUserLocation?.split(',')[0] || 'Global');
-    renderLeaderboard('lbGlobal', global.top.slice(0, 5), 'Global');
+    // Optional: render later if user adds back sidebar
   } catch (e) {}
-}
-
-function renderLeaderboard(elId, top, scope) {
-  const el = document.getElementById(elId);
-  if (!top || top.length === 0) {
-    el.innerHTML = '<div style="opacity:0.5;font-size:12px;">No champions yet in ' + scope + '. Be the first! 🏆</div>';
-    return;
-  }
-  el.innerHTML = top.map((u, i) => {
-    const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1);
-    return `<div class="lb-row"><div class="lb-rank ${cls}">${medal}</div><div style="flex:1"><div class="lb-name">${esc(u.name)}</div><div class="lb-loc">📍 ${esc(u.location)}</div><div class="lb-badges">${(u.badges || []).join(' ')}</div></div><div class="lb-rep">⭐ ${(u.reputation || 1).toFixed(1)}</div></div>`;
-  }).join('');
 }
 
 function updateStats() {
