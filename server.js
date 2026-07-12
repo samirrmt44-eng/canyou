@@ -56,6 +56,9 @@ async function connectDB() {
     callsCol = db.collection('calls');
     callSignalsCol = db.collection('callSignals');
     invitesCol = db.collection('invites');
+    liveStreamsCol = db.collection('liveStreams');
+    liveChatCol = db.collection('liveChat');
+    liveSignalsCol = db.collection('liveSignals');
 
     // Indexes
     await linksCol.createIndex({ addedAt: -1 });
@@ -818,6 +821,185 @@ app.get('/api/explore', async (req, res) => {
     topPosts: topPosts.map(p => { const { _id, ...r } = p; return r; }),
     popularUsers: popularUsers.map(u => { const { _id, sessionId, ...r } = u; return r; }),
   });
+});
+
+// ============================================================
+// LIVE STREAMING (in group)
+// ============================================================
+let liveStreamsCol, liveChatCol;
+
+async function connectDB_more() {
+  liveStreamsCol = db.collection('liveStreams');
+  liveChatCol = db.collection('liveChat');
+  await liveStreamsCol.createIndex({ groupId: 1, status: 1 });
+  await liveStreamsCol.createIndex({ streamId: 1 }, { unique: true });
+  await liveChatCol.createIndex({ streamId: 1, createdAt: 1 });
+}
+
+// Start a live stream in a group
+app.post('/api/groups/:groupId/live/start', async (req, res) => {
+  const { userId, title, description } = req.body;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+  if (!liveStreamsCol) return res.status(503).json({ error: 'DB not ready' });
+  if (!await connectDB_more()) {} // init if needed
+  const group = await groupsCol.findOne({ id: req.params.groupId });
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (!group.admins?.includes(userId)) return res.status(403).json({ error: 'Only admin can start live stream' });
+  // Check if there's already an active stream
+  const existing = await liveStreamsCol.findOne({ groupId: group.id, status: 'live' });
+  if (existing) return res.status(400).json({ error: 'A live stream is already active in this group' });
+  const user = await usersCol.findOne({ id: userId });
+  const streamId = 'live_' + crypto.randomBytes(6).toString('hex');
+  const stream = {
+    _id: streamId, streamId, groupId: group.id,
+    streamerId: userId, streamerName: user?.name || 'Host',
+    streamerAvatar: user?.avatar,
+    title: title || `${user?.name} live!`,
+    description: description || '',
+    type: 'video',  // 'video' | 'audio' | 'screen'
+    status: 'live',  // 'live' | 'ended'
+    viewers: [], viewerCount: 0, peakViewers: 0,
+    startedAt: Date.now(), endedAt: null, duration: 0,
+  };
+  await liveStreamsCol.insertOne(stream);
+  // Post in group as a live post
+  await groupPostsCol.insertOne({
+    _id: 'gplive_' + streamId,
+    id: 'gplive_' + streamId,
+    groupId: group.id,
+    userId,
+    type: 'live',  // new type
+    text: '🔴 LIVE: ' + (title || `${user?.name} is live now!`),
+    mediaUrl: null, thumbnail: null,
+    linkUrl: null, linkTitle: null, linkDescription: null, linkImage: null,
+    pollOptions: null, voiceUrl: null, parentId: null,
+    reactions: { like: [], love: [], laugh: [], wow: [], sad: [], angry: [] },
+    reactionCount: 0, commentCount: 0, shareCount: 0, viewCount: 0,
+    pinned: false, edited: false, deleted: false,
+    liveStreamId: streamId,
+    createdAt: Date.now(), updatedAt: Date.now(),
+  });
+  // Notify all group members
+  for (const memberId of group.members) {
+    if (memberId === userId) continue;
+    await notificationsCol.insertOne({
+      _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+      id: undefined, userId: memberId,
+      type: 'live_stream', from: userId, targetType: 'liveStream', targetId: streamId,
+      message: `🔴 ${user?.name} is live in ${group.name}!`,
+      read: false, createdAt: Date.now(),
+    });
+    const notif = await notificationsCol.findOne({ _id: { $exists: true } }, { sort: { createdAt: -1 } });
+  }
+  res.json({ success: true, stream });
+});
+
+// Get active live streams for a group
+app.get('/api/groups/:groupId/live/active', async (req, res) => {
+  if (!liveStreamsCol) return res.status(503).json({ error: 'DB not ready' });
+  const streams = await liveStreamsCol.find({ groupId: req.params.groupId, status: 'live' }).toArray();
+  res.json({ success: true, streams: streams.map(s => { const { _id, ...r } = s; return r; }) });
+});
+
+// Get all live streams (across groups user is in)
+app.get('/api/live/active', async (req, res) => {
+  const { userId } = req.query;
+  if (!liveStreamsCol) return res.status(503).json({ error: 'DB not ready' });
+  let query = { status: 'live' };
+  if (userId) {
+    const userGroups = await groupsCol.find({ members: userId }).toArray();
+    const groupIds = userGroups.map(g => g.id);
+    query.groupId = { $in: groupIds };
+  }
+  const streams = await liveStreamsCol.find(query).sort({ startedAt: -1 }).limit(20).toArray();
+  res.json({ success: true, count: streams.length, streams: streams.map(s => { const { _id, ...r } = s; return r; }) });
+});
+
+// Join a live stream (track viewer)
+app.post('/api/live/:streamId/join', async (req, res) => {
+  const { userId } = req.body;
+  if (!liveStreamsCol) return res.status(503).json({ error: 'DB not ready' });
+  const stream = await liveStreamsCol.findOne({ streamId: req.params.streamId });
+  if (!stream) return res.status(404).json({ error: 'Stream not found' });
+  if (!stream.viewers?.includes(userId)) {
+    const viewers = [...(stream.viewers || []), userId];
+    const peakViewers = Math.max(viewers.length, stream.peakViewers || 0);
+    await liveStreamsCol.updateOne({ streamId: stream.streamId }, { $set: { viewers, viewerCount: viewers.length, peakViewers } });
+  }
+  res.json({ success: true });
+});
+
+app.post('/api/live/:streamId/leave', async (req, res) => {
+  const { userId } = req.body;
+  if (!liveStreamsCol) return res.status(503).json({ error: 'DB not ready' });
+  const stream = await liveStreamsCol.findOne({ streamId: req.params.streamId });
+  if (!stream) return res.status(404).json({ error: 'Stream not found' });
+  const viewers = (stream.viewers || []).filter(v => v !== userId);
+  await liveStreamsCol.updateOne({ streamId: stream.streamId }, { $set: { viewers, viewerCount: viewers.length } });
+  res.json({ success: true });
+});
+
+// End a live stream
+app.post('/api/live/:streamId/end', async (req, res) => {
+  const { userId } = req.body;
+  if (!liveStreamsCol) return res.status(503).json({ error: 'DB not ready' });
+  const stream = await liveStreamsCol.findOne({ streamId: req.params.streamId });
+  if (!stream) return res.status(404).json({ error: 'Stream not found' });
+  if (stream.streamerId !== userId) return res.status(403).json({ error: 'Only streamer can end' });
+  await liveStreamsCol.updateOne({ streamId: stream.streamId }, { $set: { status: 'ended', endedAt: Date.now(), duration: Math.floor((Date.now() - stream.startedAt) / 1000) } });
+  // Remove the live post
+  await groupPostsCol.deleteOne({ id: 'gplive_' + stream.streamId });
+  res.json({ success: true });
+});
+
+// Live chat - send message
+app.post('/api/live/:streamId/chat', async (req, res) => {
+  const { userId, text } = req.body;
+  if (!userId || !text) return res.status(400).json({ error: 'userId and text required' });
+  if (!liveChatCol) return res.status(503).json({ error: 'DB not ready' });
+  const user = await usersCol.findOne({ id: userId });
+  const msg = {
+    _id: 'lc_' + crypto.randomBytes(6).toString('hex'),
+    streamId: req.params.streamId, userId,
+    userName: user?.name || 'Guest', userAvatar: user?.avatar,
+    text: text.slice(0, 500), createdAt: Date.now(),
+  };
+  await liveChatCol.insertOne(msg);
+  const { _id, ...result } = msg;
+  res.json({ success: true, message: result });
+});
+
+// Get live chat messages
+app.get('/api/live/:streamId/chat', async (req, res) => {
+  if (!liveChatCol) return res.status(503).json({ error: 'DB not ready' });
+  const messages = await liveChatCol.find({ streamId: req.params.streamId }).sort({ createdAt: 1 }).limit(100).toArray();
+  res.json({ success: true, count: messages.length, messages: messages.map(m => { const { _id, ...r } = m; return r; }) });
+});
+
+// Live WebRTC signaling (similar to call but for streaming)
+let liveSignalsCol;
+async function connectDB_live() {
+  liveSignalsCol = db.collection('liveSignals');
+  await liveSignalsCol.createIndex({ streamId: 1, createdAt: 1 });
+}
+app.post('/api/live/:streamId/signal', async (req, res) => {
+  const { fromUserId, toUserId, type, payload } = req.body;
+  if (!liveSignalsCol) return res.status(503).json({ error: 'DB not ready' });
+  const signal = {
+    _id: 'lsig_' + crypto.randomBytes(8).toString('hex'),
+    streamId: req.params.streamId, fromUserId, toUserId, type, payload,
+    createdAt: Date.now(), read: false,
+  };
+  await liveSignalsCol.insertOne(signal);
+  res.json({ success: true });
+});
+app.get('/api/live/:streamId/signals/:userId', async (req, res) => {
+  if (!liveSignalsCol) return res.status(503).json({ error: 'DB not ready' });
+  const signals = await liveSignalsCol.find({
+    streamId: req.params.streamId, toUserId: req.params.userId, read: false,
+  }).sort({ createdAt: 1 }).limit(50).toArray();
+  await liveSignalsCol.updateMany({ _id: { $in: signals.map(s => s._id) } }, { $set: { read: true } });
+  res.json({ success: true, signals: signals.map(s => { const { _id, ...r } = s; return r; }) });
 });
 
 // ============================================================
