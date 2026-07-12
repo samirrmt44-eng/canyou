@@ -2304,9 +2304,16 @@ let callTimerInterval = null;
 let signalPollInterval = null;
 
 const ICE_SERVERS = [
+  // Google STUN servers (free, works on most networks)
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun3.l.google.com:19302' },
+  { urls: 'stun:stun4.l.google.com:19302' },
+  // Cloudflare STUN (faster for some regions)
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  // Twilio STUN
+  { urls: 'stun:global.stun.twilio.com:3478' },
 ];
 
 async function startCall(type, targetUserId, groupId = null) {
@@ -2343,6 +2350,8 @@ async function startCall(type, targetUserId, groupId = null) {
   }
   startCallTimer();
   startSignaling();
+  // IMMEDIATELY poll to detect when receiver accepts
+  setTimeout(() => pollSignals(), 200);
   if (targetUserId) {
     toast('📞 Calling...');
   } else if (groupId) {
@@ -2446,10 +2455,24 @@ function createPeerConnection(remoteUserId, isInitiator) {
     }
   };
   peerConnections[remoteUserId] = pc;
-  // Add local stream
+  // Use addTransceiver for proper SDP negotiation (ensures both audio & video tracks are negotiated)
   if (localStream) {
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    localStream.getTracks().forEach(track => {
+      try {
+        pc.addTrack(track, localStream);
+      } catch (e) {
+        console.warn('addTrack error:', e);
+      }
+    });
   }
+  // Explicitly add transceivers to RECEIVE audio and video (even if we don't send video)
+  // This ensures the offer/answer includes m= sections for both
+  try { pc.addTransceiver('audio', { direction: 'sendrecv' }); } catch (e) { /* may already have */ }
+  try {
+    if (currentCall && currentCall.type === 'video') {
+      pc.addTransceiver('video', { direction: 'sendrecv' });
+    }
+  } catch (e) { /* may already have */ }
   // ICE candidate
   pc.onicecandidate = (e) => {
     if (e.candidate) {
@@ -2461,27 +2484,51 @@ function createPeerConnection(remoteUserId, isInitiator) {
     console.log('Connection state:', pc.connectionState, 'with', remoteUserId);
     if (pc.connectionState === 'connected') {
       toast('✅ Call connected!');
+    } else if (pc.connectionState === 'failed') {
+      console.error('Connection failed - likely NAT/firewall issue. TURN server needed.');
+      toast('⚠️ Connection unstable - trying recovery...');
     }
+  };
+  // ICE connection state
+  pc.oniceconnectionstatechange = () => {
+    console.log('ICE state:', pc.iceConnectionState);
   };
   // Remote stream
   pc.ontrack = (e) => {
-    console.log('Got remote stream');
+    console.log('Got remote stream:', e.streams[0]);
     const remote = document.getElementById('callRemote');
     remote.innerHTML = '';
-    const v = document.createElement('video');
-    v.srcObject = e.streams[0];
-    v.autoplay = true;
-    v.playsInline = true;
-    v.style.width = '100%';
-    v.style.height = '100%';
-    v.style.objectFit = 'cover';
-    remote.appendChild(v);
+    if (e.streams[0].getVideoTracks().length > 0) {
+      // Video call - show video element
+      const v = document.createElement('video');
+      v.srcObject = e.streams[0];
+      v.autoplay = true;
+      v.playsInline = true;
+      v.style.width = '100%';
+      v.style.height = '100%';
+      v.style.objectFit = 'cover';
+      remote.appendChild(v);
+    } else {
+      // Voice call - show audio element + animated avatar
+      const audio = document.createElement('audio');
+      audio.srcObject = e.streams[0];
+      audio.autoplay = true;
+      audio.id = 'remoteAudio';
+      document.body.appendChild(audio);  // attach to body so audio plays
+      // Show animated avatar in remote area
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'call-remote-avatar';
+      avatarDiv.textContent = '👤';
+      avatarDiv.style.animation = 'pulse 1.5s infinite';
+      remote.appendChild(avatarDiv);
+    }
   };
   if (isInitiator) {
-    pc.createOffer().then(offer => {
-      pc.setLocalDescription(offer);
-      sendSignal(remoteUserId, 'offer', offer);
-    }).catch(e => console.error('Offer error:', e));
+    pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: currentCall && currentCall.type === 'video' })
+      .then(offer => {
+        pc.setLocalDescription(offer);
+        sendSignal(remoteUserId, 'offer', offer);
+      }).catch(e => console.error('Offer error:', e));
   }
   // Store queue reference
   pc._iceQueue = iceCandidateQueue;
@@ -2602,11 +2649,12 @@ async function acceptCall() {
   try {
     const callRes = await fetch(API + '/api/calls/' + callId).then(r => r.json());
     const type = callRes.call?.type || 'voice';
+    currentCall = callRes.call;  // Set currentCall BEFORE getting media
     localStream = await navigator.mediaDevices.getUserMedia({
       video: type === 'video', audio: true,
     });
   } catch (e) { toast('Camera/Mic denied'); return; }
-  // Answer
+  // Answer on backend
   await fetch(API + '/api/calls/' + callId + '/answer', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId: currentUser.id }),
@@ -2621,6 +2669,8 @@ async function acceptCall() {
   }
   startCallTimer();
   startSignaling();
+  // IMMEDIATELY poll once so the caller can send us an offer without waiting 800ms
+  setTimeout(() => pollSignals(), 200);
 }
 
 async function declineCall() {
