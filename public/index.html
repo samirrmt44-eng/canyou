@@ -449,6 +449,22 @@
   .page { display: none; }
   .page.active { display: block; }
 
+  /* === VIDEO PAUSE INDICATOR === */
+  .video-paused-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0; transition: opacity 0.3s;
+    z-index: 2;
+  }
+  .video-paused-overlay.show { opacity: 1; }
+  .video-paused-overlay .play-icon {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: rgba(255,255,255,0.9); color: #000;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 700;
+  }
+
   /* === CALL SCREEN === */
   .call-screen {
     position: fixed; inset: 0; background: #0a0e1a;
@@ -1018,6 +1034,8 @@ async function loadHomeFeed() {
     }
     lastFeedData = newDataStr;
     container.innerHTML = allPosts.map(p => renderPost(p)).join('');
+    // Track new videos for auto-pause
+    setTimeout(scanForNewMedia, 100);
   } catch (e) {
     if (isFirstLoad) {
       container.innerHTML = '<div class="empty"><div class="emoji">❌</div><div class="text">Failed to load feed</div></div>';
@@ -1611,6 +1629,7 @@ async function loadGroupPosts(groupId) {
     return;
   }
   container.innerHTML = res.posts.map(p => renderPost(p)).join('');
+  setTimeout(scanForNewMedia, 100);
 }
 
 async function joinGroup(groupId) {
@@ -2016,6 +2035,137 @@ async function doUserSearch(query) {
   }, 300);
 }
 
+// === AUTO-PAUSE VIDEOS WHEN OUT OF VIEWPORT ===
+// Tracks all <video> and YouTube <iframe> elements, pauses when scrolled off-screen
+let videoObserver = null;
+let autoPausedVideos = new WeakSet();  // Videos we auto-paused (so user can manually resume)
+const videoTrackingMap = new Map();  // element -> { type, id, lastState }
+
+function initVideoObserver() {
+  if (videoObserver) return;
+  videoObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const el = entry.target;
+      const meta = videoTrackingMap.get(el);
+      if (!meta) return;
+      if (!entry.isIntersecting || entry.intersectionRatio < 0.5) {
+        // Video is < 50% visible - pause it
+        pauseMediaElement(el, meta);
+      } else {
+        // Video is visible - don't auto-resume (respect user's pause)
+        // But if WE auto-paused it, we could resume
+        if (autoPausedVideos.has(el)) {
+          resumeMediaElement(el, meta);
+        }
+      }
+    });
+  }, {
+    threshold: [0, 0.25, 0.5, 0.75, 1.0],
+    rootMargin: '0px'
+  });
+}
+
+function pauseMediaElement(el, meta) {
+  if (meta.type === 'video') {
+    if (el && !el.paused && el.readyState > 2) {
+      autoPausedVideos.add(el);
+      el.pause();
+    }
+  } else if (meta.type === 'youtube') {
+    // YouTube iframe - send pause message
+    try {
+      el.contentWindow?.postMessage(JSON.stringify({
+        event: 'command',
+        func: 'pauseVideo',
+        args: ''
+      }), '*');
+    } catch (e) { /* ignore */ }
+  } else if (meta.type === 'odysee') {
+    try {
+      el.contentWindow?.postMessage(JSON.stringify({
+        method: 'pause'
+      }), '*');
+    } catch (e) { /* ignore */ }
+  }
+  // Show visual indicator
+  showPauseIndicator(el);
+}
+
+function resumeMediaElement(el, meta) {
+  if (meta.type === 'video') {
+    if (el && el.paused && autoPausedVideos.has(el)) {
+      el.play().catch(() => {});
+      autoPausedVideos.delete(el);
+    }
+  } else if (meta.type === 'youtube') {
+    try {
+      el.contentWindow?.postMessage(JSON.stringify({
+        event: 'command',
+        func: 'playVideo',
+        args: ''
+      }), '*');
+    } catch (e) { /* ignore */ }
+  }
+  hidePauseIndicator(el);
+}
+
+function showPauseIndicator(el) {
+  const wrapper = el.closest('.post-media, .call-videos');
+  if (!wrapper) return;
+  let indicator = wrapper.querySelector('.video-paused-overlay');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.className = 'video-paused-overlay';
+    indicator.innerHTML = '<div class="play-icon">▶</div><div style="color:#fff;margin-top:8px;font-size:12px;opacity:0.8;">Tap to resume</div>';
+    // Make clickable to resume
+    indicator.style.pointerEvents = 'auto';
+    indicator.style.cursor = 'pointer';
+    indicator.onclick = () => {
+      const meta = videoTrackingMap.get(el);
+      if (meta) resumeMediaElement(el, meta);
+      hidePauseIndicator(el);
+    };
+    wrapper.appendChild(indicator);
+  }
+  indicator.classList.add('show');
+}
+
+function hidePauseIndicator(el) {
+  const wrapper = el.closest('.post-media, .call-videos');
+  if (!wrapper) return;
+  const indicator = wrapper.querySelector('.video-paused-overlay');
+  if (indicator) indicator.classList.remove('show');
+}
+
+// Track a new video/iframe element
+function trackMediaElement(el, type, id) {
+  if (!videoObserver) initVideoObserver();
+  videoTrackingMap.set(el, { type, id });
+  videoObserver.observe(el);
+}
+
+// Untrack element (call this when removing from DOM)
+function untrackMediaElement(el) {
+  if (videoObserver) videoObserver.unobserve(el);
+  videoTrackingMap.delete(el);
+}
+
+// Scan DOM for new media (call after content updates)
+function scanForNewMedia() {
+  // Track all <video> in posts that aren't already tracked
+  document.querySelectorAll('.post-media video, .post-media iframe').forEach(el => {
+    if (!videoTrackingMap.has(el)) {
+      let type = 'video';
+      let id = el.src || Math.random().toString(36).slice(2);
+      if (el.tagName === 'IFRAME') {
+        if (el.src.includes('youtube')) type = 'youtube';
+        else if (el.src.includes('odysee')) type = 'odysee';
+      }
+      trackMediaElement(el, type, id);
+    }
+  });
+}
+
 // === BOOT ===
 loadIceServers();
 checkAuth();
@@ -2036,13 +2186,15 @@ function smartRefresh() {
   }
   // Notifications - every 30 sec
   if (currentPage === 'notifications' && (!lastRefreshTime.notif || now - lastRefreshTime.notif > 30000)) {
-    lastRefreshTime.notif = now;
+    lastNotificationsFetch = now;
     loadNotifications();
   }
   // Incoming call check - every 10 sec
   if (currentUser && !currentCall) {
     checkForIncomingCall();
   }
+  // Scan for new media elements to track for auto-pause
+  scanForNewMedia();
 }
 refreshInterval = setInterval(smartRefresh, 15000);
 
@@ -2337,6 +2489,33 @@ async function loadIceServers() {
 async function startCall(type, targetUserId, groupId = null) {
   if (!currentUser) { toast('Please register first'); return; }
   if (currentCall) { toast('❌ You are already in a call'); return; }
+  // Pre-check: if group call, verify user is not blocked
+  if (groupId && currentGroup) {
+    try {
+      const gr = await fetch(API + '/api/groups/' + currentGroup).then(r => r.json());
+      if (gr.success) {
+        const g = gr.group;
+        if (g.blockedMembers?.includes(currentUser.id)) {
+          toast('🚫 Admin ने आपको block किया है — आप call नहीं कर सकते');
+          return;
+        }
+        if (!g.members.includes(currentUser.id)) {
+          toast('❌ पहले group join करें');
+          return;
+        }
+        const whoCanCall = g.whoCanCall || 'everyone';
+        const isAdmin = g.admins?.includes(currentUser.id);
+        if (whoCanCall === 'admins_only' && !isAdmin) {
+          toast('🚫 सिर्फ admin ही call कर सकते हैं इस group में');
+          return;
+        }
+        if (whoCanCall === 'specific' && !(g.allowedCallers || []).includes(currentUser.id) && !isAdmin) {
+          toast('🚫 Admin ने आपको call permission नहीं दी है');
+          return;
+        }
+      }
+    } catch (e) { /* continue */ }
+  }
   // Request media FIRST - if denied, don't start call
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
@@ -2356,7 +2535,16 @@ async function startCall(type, targetUserId, groupId = null) {
   if (!res.success) {
     // Release media if backend fails
     if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-    toast('❌ ' + (res.error || 'Failed to start call'));
+    // Better error messages for common cases
+    if (res.error && res.error.includes('blocked')) {
+      toast('🚫 Admin ने आपको block किया है');
+    } else if (res.error && res.error.includes('admin')) {
+      toast('🚫 ' + res.error);
+    } else if (res.error && res.error.includes('allowed')) {
+      toast('🚫 आपको call permission नहीं है');
+    } else {
+      toast('❌ ' + (res.error || 'Failed to start call'));
+    }
     return;
   }
   currentCall = res.call;
