@@ -2,475 +2,556 @@
 <html lang="hi">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0e1a" />
 <title>DainikState — राज्य की आवाज़ 🏆</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, system-ui, sans-serif; }
-  body { background: #0a0e1a; color: #e4e6eb; min-height: 100vh; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: #0a0e1a; color: #e4e6eb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; overflow-x: hidden; }
+  a { color: #a4b8ff; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+  input, textarea, select { font-family: inherit; }
+  img { max-width: 100%; }
 
   /* === HEADER === */
   header.hero {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-    color: #fff; padding: 14px 20px;
+    color: #fff; padding: 12px 16px;
     position: sticky; top: 0; z-index: 100;
     box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
   }
-  .hero-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-  .logo-area { display: flex; align-items: center; gap: 12px; }
-  .logo-img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2px solid #fff; }
-  .logo-text h1 {
-    font-size: 26px; font-weight: 900; letter-spacing: -0.5px;
-    background: linear-gradient(90deg, #fff, #ffd700);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .hero-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .logo-area { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .logo-img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 2px solid #fff; }
+  .logo-text h1 { font-size: 20px; font-weight: 900; background: linear-gradient(90deg, #fff, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .logo-text .tagline { font-size: 10px; opacity: 0.95; }
+  .header-actions { display: flex; gap: 6px; }
+  .header-btn {
+    background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+    position: relative; cursor: pointer;
   }
-  .logo-text .tagline { font-size: 11px; opacity: 0.95; font-weight: 500; }
-  .logo-text .challenge-text { font-size: 9px; color: #ffd700; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
-
-  .user-area { display: flex; align-items: center; gap: 8px; }
+  .header-btn .badge {
+    position: absolute; top: -2px; right: -2px;
+    background: #ff3b30; color: #fff;
+    font-size: 9px; font-weight: 800;
+    min-width: 16px; height: 16px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 4px; border: 2px solid #764ba2;
+  }
   .user-chip {
-    background: rgba(255,255,255,0.2); padding: 5px 12px 5px 5px;
-    border-radius: 22px; display: flex; align-items: center; gap: 8px;
-    cursor: pointer; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.2); padding: 4px 10px 4px 4px;
+    border-radius: 22px; display: flex; align-items: center; gap: 6px;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
   }
   .user-chip .avatar {
-    width: 32px; height: 32px; border-radius: 50%;
+    width: 30px; height: 30px; border-radius: 50%;
     background: linear-gradient(135deg, #ffd700, #ff6b6b);
     display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 14px;
+    font-weight: 800; font-size: 13px; color: #fff;
   }
-  .user-chip .uname { font-size: 12px; font-weight: 600; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .user-chip .rep { font-size: 10px; opacity: 0.9; }
+  .user-chip .uname { font-size: 12px; font-weight: 600; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  /* === LOCATION BAR === */
-  .location-bar {
-    background: linear-gradient(90deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
-    padding: 10px 20px; display: flex; gap: 10px; align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap;
+  /* === BOTTOM NAV (Mobile-first) === */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(20, 20, 30, 0.98); backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex; padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    z-index: 100;
   }
-  .location-bar label { font-size: 12px; font-weight: 600; color: #fff; }
-  .location-bar select {
-    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-    color: #fff; padding: 5px 10px; border-radius: 8px; font-size: 12px; cursor: pointer;
+  .nav-item {
+    flex: 1; background: transparent; border: none; color: #888;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 6px; font-size: 10px; cursor: pointer;
   }
-  .location-bar select option { background: #1a1f3a; color: #fff; }
+  .nav-item.active { color: #667eea; }
+  .nav-item .icon { font-size: 22px; }
+  .nav-item.center {
+    transform: translateY(-8px);
+  }
+  .nav-item.center .icon {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 24px; box-shadow: 0 4px 16px rgba(255,107,107,0.5);
+  }
 
-  /* === STATS === */
-  .stats-strip {
-    display: flex; gap: 16px; justify-content: center; padding: 10px;
-    background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05);
-  }
-  .stat-item { text-align: center; }
-  .stat-num { font-size: 16px; font-weight: 800; color: #ffd700; }
-  .stat-lbl { font-size: 9px; opacity: 0.7; margin-top: 1px; }
-
-  /* === LAYOUT === */
+  /* === MAIN CONTAINER === */
   .container {
-    max-width: 900px; margin: 0 auto; padding: 20px;
+    max-width: 720px; margin: 0 auto; padding: 12px 12px 80px;
   }
 
-  /* === LINK POST CARD (FACEBOOK STYLE) === */
-  .feed { display: flex; flex-direction: column; gap: 24px; max-width: 720px; margin: 0 auto; }
+  /* === STORIES (Instagram-style) === */
+  .stories-strip {
+    display: flex; gap: 12px; padding: 12px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; margin-bottom: 16px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .stories-strip::-webkit-scrollbar { display: none; }
+  .story-item {
+    flex-shrink: 0; cursor: pointer; text-align: center;
+  }
+  .story-circle {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f, #f093fb);
+    padding: 3px; margin-bottom: 4px;
+  }
+  .story-circle.seen { background: rgba(255,255,255,0.2); }
+  .story-circle.empty {
+    background: rgba(255,255,255,0.1);
+    border: 2px dashed rgba(255,255,255,0.3);
+  }
+  .story-circle .inner {
+    width: 100%; height: 100%; border-radius: 50%;
+    background: #1a1f3a;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; border: 2px solid #0a0e1a;
+  }
+  .story-circle .inner img { width: 100%; height: 100%; object-fit: cover; }
+  .story-circle .inner .emoji { font-size: 24px; }
+  .story-name { font-size: 10px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* === POST CARD (Facebook-style) === */
   .post {
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 16px; overflow: hidden; backdrop-filter: blur(10px);
-    transition: all 0.3s;
+    border-radius: 16px; overflow: hidden; margin-bottom: 16px;
   }
-  .post:hover { border-color: rgba(102, 126, 234, 0.5); }
-
   .post-header {
     display: flex; align-items: center; gap: 10px;
-    padding: 14px 16px;
+    padding: 12px 14px;
   }
   .post-header .avatar {
     width: 40px; height: 40px; border-radius: 50%;
     background: linear-gradient(135deg, #ffd700, #ff6b6b);
     display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 16px; color: #fff; flex-shrink: 0;
+    font-weight: 800; font-size: 15px; color: #fff; flex-shrink: 0;
   }
+  .post-header .avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
   .post-header .info { flex: 1; min-width: 0; }
   .post-header .name { font-weight: 700; font-size: 14px; }
   .post-header .meta { font-size: 11px; opacity: 0.6; }
-  .platform-tag { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+  .post-menu { background: transparent; border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 4px 8px; }
+  .post-title { padding: 0 14px 8px; font-size: 16px; font-weight: 800; line-height: 1.4; }
+  .post-text { padding: 0 14px 12px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+  .post-text.truncated {
+    display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .post-text .see-more { color: #a4b8ff; cursor: pointer; font-weight: 600; }
+  .platform-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-left: 4px; }
   .platform-tag.youtube { background: rgba(255, 0, 0, 0.3); color: #ff9999; }
   .platform-tag.twitter { background: rgba(29, 161, 242, 0.3); color: #99d3ff; }
-  .platform-tag.instagram { background: rgba(225, 48, 108, 0.3); color: #f9a8d4; }
-  .platform-tag.facebook { background: rgba(24, 119, 242, 0.3); color: #99c2ff; }
-  .platform-tag.reddit { background: rgba(255, 69, 0, 0.3); color: #ffb088; }
   .platform-tag.odysee { background: rgba(240, 147, 251, 0.3); color: #fbcfe8; }
   .platform-tag.news { background: rgba(102, 126, 234, 0.3); color: #a4b8ff; }
   .platform-tag.web { background: rgba(255,255,255,0.1); color: #c0c0c0; }
-  .platform-tag.rss { background: rgba(76, 175, 80, 0.3); color: #a5d6a7; }
 
-  /* === FULL-WIDTH MEDIA (THE KEY CHANGE) === */
-  .post-title {
-    padding: 0 16px 12px;
-    font-size: 17px; font-weight: 800; line-height: 1.4;
-    color: #fff;
-  }
-  .post-domain {
-    padding: 0 16px 8px;
-    font-size: 12px; color: #a4b8ff;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .post-description {
-    padding: 0 16px 14px;
-    font-size: 14px; line-height: 1.5; opacity: 0.85;
-  }
-
+  /* === MEDIA (full-width, in-app playback) === */
   .post-media {
-    width: 100%;
-    background: #000;
-    position: relative;
-    overflow: hidden;
+    width: 100%; background: #000;
+    position: relative; overflow: hidden;
   }
-  .post-media img {
-    width: 100%; height: auto; max-height: 600px; object-fit: cover;
-    display: block;
-  }
-  .post-media iframe {
-    width: 100%; aspect-ratio: 16/9; border: 0; display: block;
-  }
+  .post-media img { width: 100%; height: auto; max-height: 500px; object-fit: cover; display: block; cursor: zoom-in; }
+  .post-media iframe { width: 100%; aspect-ratio: 16/9; border: 0; display: block; }
   .post-media .play-overlay {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.4); cursor: pointer;
-    transition: background 0.3s;
+    background: rgba(0,0,0,0.3); cursor: pointer;
   }
-  .post-media .play-overlay:hover { background: rgba(0,0,0,0.6); }
-  .post-media .play-overlay .play-btn {
-    width: 80px; height: 80px; border-radius: 50%;
-    background: rgba(255, 0, 0, 0.9);
+  .post-media .play-overlay:hover { background: rgba(0,0,0,0.5); }
+  .post-media .play-btn {
+    width: 70px; height: 70px; border-radius: 50%;
+    background: rgba(255,0,0,0.9);
     display: flex; align-items: center; justify-content: center;
-    font-size: 32px; color: #fff;
+    font-size: 28px; color: #fff;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    transition: transform 0.2s;
-  }
-  .post-media .play-overlay:hover .play-btn { transform: scale(1.1); }
-  .post-media .play-overlay .duration {
-    position: absolute; bottom: 12px; right: 12px;
-    background: rgba(0,0,0,0.8); color: #fff;
-    padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;
   }
 
-  /* === CHALLENGE BANNER === */
-  .challenge-banner {
-    background: linear-gradient(90deg, #ff6b6b, #ee5a6f, #f093fb);
-    color: #fff; padding: 10px 16px;
-    font-size: 13px; font-weight: 800;
-    display: flex; align-items: center; gap: 8px; justify-content: center;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(238, 90, 111, 0.3);
+  /* === LINK PREVIEW CARD === */
+  .link-card {
+    margin: 0 14px 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; overflow: hidden;
+    background: rgba(255,255,255,0.03);
+    cursor: pointer;
   }
-  .challenge-banner.accepted { background: linear-gradient(90deg, #4caf50, #66bb6a); }
+  .link-card .lk-image {
+    width: 100%; height: 160px; object-fit: cover; background: #000;
+  }
+  .link-card .lk-body { padding: 10px 12px; }
+  .link-card .lk-domain { font-size: 11px; color: #a4b8ff; text-transform: uppercase; }
+  .link-card .lk-title { font-size: 14px; font-weight: 700; margin: 4px 0; line-height: 1.3; }
+  .link-card .lk-desc { font-size: 12px; opacity: 0.7; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* === POLL === */
+  .poll-container { padding: 0 14px 12px; }
+  .poll-option {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 6px;
+    cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .poll-option:hover { background: rgba(255,255,255,0.1); }
+  .poll-option.voted { border-color: #667eea; background: rgba(102, 126, 234, 0.2); }
+  .poll-option .bar {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+    z-index: 0;
+  }
+  .poll-option .text { position: relative; z-index: 1; display: flex; justify-content: space-between; }
+  .poll-option .pct { font-weight: 700; color: #ffd700; }
+
+  /* === REACTIONS BAR === */
+  .reactions-bar {
+    display: flex; align-items: center; gap: 4px;
+    padding: 8px 14px; font-size: 12px; opacity: 0.8;
+  }
+  .reactions-bar .react-pill {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 12px;
+    font-size: 12px;
+  }
+  .reactions-bar .summary { flex: 1; }
 
   /* === POST ACTIONS === */
-  .post-stats {
-    padding: 10px 16px 6px;
-    display: flex; justify-content: space-between; align-items: center;
-    font-size: 12px; opacity: 0.7;
-  }
   .post-actions {
-    padding: 8px 16px; display: flex; gap: 4px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
     border-top: 1px solid rgba(255,255,255,0.05);
   }
   .action-btn {
-    flex: 1; background: transparent; border: none;
-    color: #a4b8ff; padding: 10px 12px; border-radius: 10px; cursor: pointer;
-    font-size: 13px; font-weight: 600; transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: transparent; border: none; color: #a4b8ff;
+    padding: 10px; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    cursor: pointer;
   }
-  .action-btn:hover { background: rgba(255,255,255,0.1); }
-  .action-btn .count { font-size: 12px; opacity: 0.8; }
+  .action-btn:hover { background: rgba(255,255,255,0.05); }
+  .action-btn.reacted { color: #ff6b6b; }
+  .action-btn .count { font-size: 12px; }
 
-  /* === COMMENTS SECTION (THE STAR!) === */
-  .comments-section { padding: 0 16px 16px; }
-  .comments-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;
-    flex-wrap: wrap; gap: 8px;
+  /* === COMMENTS PREVIEW === */
+  .comments-preview {
+    padding: 8px 14px 12px;
+    background: rgba(0,0,0,0.15);
   }
-  .comments-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-  .sort-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-  .sort-tab {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    color: #a4b8ff; padding: 4px 10px; border-radius: 8px; font-size: 11px;
-    cursor: pointer; font-weight: 600;
-  }
-  .sort-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; }
-
-  /* === COMMENTS === */
   .comment {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
-    display: flex; gap: 10px; transition: all 0.2s;
+    display: flex; gap: 8px; margin-bottom: 8px;
   }
-  .comment:hover { background: rgba(255,255,255,0.08); }
-  .comment.rank-1 {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 107, 107, 0.1));
-    border: 2px solid #ffd700; box-shadow: 0 0 25px rgba(255, 215, 0, 0.3);
-  }
-  .comment.rank-2 { background: rgba(192, 192, 192, 0.1); border: 1px solid rgba(192, 192, 192, 0.3); }
-  .comment.rank-3 { background: rgba(205, 127, 50, 0.1); border: 1px solid rgba(205, 127, 50, 0.3); }
-
-  .comment-vote-col { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 36px; }
-  .vote-btn {
-    background: transparent; border: none; color: #a4b8ff; cursor: pointer;
-    font-size: 16px; padding: 2px 6px; border-radius: 6px; transition: all 0.2s;
-  }
-  .vote-btn:hover { background: rgba(255,255,255,0.1); }
-  .vote-btn.up.voted { color: #4caf50; }
-  .vote-btn.down.voted { color: #f44336; }
-  .vote-score { font-size: 13px; font-weight: 800; color: #ffd700; }
-
-  .comment-body { flex: 1; min-width: 0; }
-  .comment-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
-  .comment-author { font-weight: 700; font-size: 13px; }
-  .comment-loc { font-size: 10px; opacity: 0.7; padding: 1px 6px; background: rgba(255,255,255,0.1); border-radius: 8px; }
-  .comment-rep { font-size: 10px; color: #ffd700; font-weight: 700; }
-  .rank-badge { padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 800; }
-  .rank-badge.gold { background: #ffd700; color: #000; }
-  .rank-badge.silver { background: #c0c0c0; color: #000; }
-  .rank-badge.bronze { background: #cd7f32; color: #000; }
-  .accepted-badge { background: #ff6b6b; color: #fff; padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 800; }
-  .comment-time { font-size: 10px; opacity: 0.5; }
-  .comment-text { font-size: 14px; line-height: 1.5; word-wrap: break-word; margin-top: 4px; }
-  .comment-voice audio { width: 100%; max-width: 280px; height: 32px; margin-top: 4px; }
-  .comment-actions { display: flex; gap: 12px; margin-top: 6px; font-size: 11px; opacity: 0.7; }
-  .comment-actions span { cursor: pointer; }
-  .comment-actions span:hover { opacity: 1; color: #ffd700; }
-
-  .reply-form { margin-top: 8px; display: none; }
-  .reply-form.open { display: flex; gap: 6px; margin-top: 8px; }
-  .reply-form input {
-    flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-    color: #fff; padding: 6px 10px; border-radius: 10px; font-size: 12px;
-  }
-  .reply-form input:focus { outline: none; border-color: #667eea; }
-  .reply-form button {
-    background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: #fff;
-    padding: 6px 12px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 600;
-  }
-
-  /* === COMMENT FORM === */
-  .comment-form {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;
-  }
-  .comment-form textarea {
-    width: 100%; min-height: 50px; background: transparent; border: none; color: #fff;
-    font-size: 14px; font-family: inherit; resize: vertical;
-  }
-  .comment-form textarea:focus { outline: none; }
-  .comment-form textarea::placeholder { color: rgba(255,255,255,0.4); }
-  .form-actions { display: flex; gap: 6px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
-  .voice-btn, .upload-btn {
-    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-    color: #a4b8ff; padding: 6px 10px; border-radius: 10px; cursor: pointer;
-    font-size: 12px; font-weight: 600;
-  }
-  .voice-btn.recording { background: #f44336; color: #fff; animation: pulse-rec 1s infinite; }
-  @keyframes pulse-rec { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-  .submit-btn {
-    background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: #fff;
-    padding: 7px 16px; border-radius: 10px; cursor: pointer; font-size: 13px;
-    font-weight: 700; margin-left: auto;
-  }
-
-  .empty-comments {
-    text-align: center; padding: 24px 16px; background: rgba(255,215,0,0.05);
-    border: 2px dashed rgba(255,215,0,0.3); border-radius: 12px; margin-bottom: 12px;
-  }
-  .empty-comments .emoji { font-size: 36px; margin-bottom: 6px; }
-  .empty-comments .text { font-size: 13px; color: #ffd700; font-weight: 700; }
-  .empty-comments .sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 4px; }
-
-  /* === LINK ADDER (Main feature!) === */
-  .link-adder {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
-    border: 2px solid rgba(102, 126, 234, 0.4);
-    border-radius: 16px; padding: 16px; margin-bottom: 16px;
-  }
-  .link-adder h3 { color: #ffd700; margin-bottom: 8px; font-size: 15px; display: flex; align-items: center; gap: 6px; }
-  .link-adder p { font-size: 12px; opacity: 0.8; margin-bottom: 10px; }
-  .link-adder-input { display: flex; gap: 6px; }
-  .link-adder-input input {
-    flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
-    color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 14px;
-  }
-  .link-adder-input input:focus { outline: none; border-color: #667eea; }
-  .link-adder-input button {
-    background: linear-gradient(135deg, #ff6b6b, #ee5a6f); border: none; color: #fff;
-    padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 14px;
-    font-weight: 700; white-space: nowrap;
-  }
-  .link-adder-input button:hover { transform: scale(1.05); }
-
-  /* === FILTER BAR === */
-  .filter-bar {
-    display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto;
-    padding-bottom: 4px;
-  }
-  .filter-bar button {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    color: #a4b8ff; padding: 8px 14px; border-radius: 20px; cursor: pointer;
-    font-size: 12px; font-weight: 600; white-space: nowrap;
-  }
-  .filter-bar button.active {
+  .comment .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
     background: linear-gradient(135deg, #667eea, #764ba2);
-    color: #fff; border: none;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 11px; color: #fff; flex-shrink: 0;
   }
+  .comment .avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .comment-body { flex: 1; min-width: 0; }
+  .comment .head { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+  .comment .name { font-weight: 700; font-size: 13px; }
+  .comment .text { font-size: 13px; line-height: 1.4; word-wrap: break-word; }
+  .comment .meta { font-size: 10px; opacity: 0.6; }
+
+  /* === MODAL/SHEET === */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 200; display: none; align-items: flex-end;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-sheet {
+    background: #1a1f3a; border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 720px; margin: 0 auto;
+    max-height: 90vh; overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle {
+    width: 40px; height: 4px; background: rgba(255,255,255,0.3);
+    border-radius: 2px; margin: 10px auto;
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .modal-header h2 { font-size: 18px; }
+  .modal-close {
+    background: transparent; border: none; color: #fff;
+    font-size: 24px; cursor: pointer; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+  }
+  .modal-close:hover { background: rgba(255,255,255,0.1); }
+  .modal-body { padding: 16px; }
+
+  /* === FORM === */
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 12px; color: #a4b8ff; margin-bottom: 4px; font-weight: 600; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%; padding: 10px 12px; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 10px;
+    font-size: 14px;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+  .form-group textarea { min-height: 80px; resize: vertical; }
+  .form-group select option { background: #1a1f3a; }
+  .btn {
+    width: 100%; padding: 12px; border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+  .btn.secondary { background: rgba(255,255,255,0.1); box-shadow: none; }
+  .btn.danger { background: linear-gradient(135deg, #ff3b30, #ff6b6b); }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .btn { flex: 1; }
 
   /* === AUTH MODAL === */
   .auth-modal {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-    display: flex; align-items: center; justify-content: center; z-index: 2000;
-    backdrop-filter: blur(8px);
+    position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+    z-index: 300; display: flex; align-items: center; justify-content: center;
+    padding: 20px;
   }
   .auth-modal.hidden { display: none; }
   .auth-box {
     background: linear-gradient(135deg, #1a1f3a, #2a1f4a);
-    border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 32px 28px;
-    max-width: 440px; width: 90%; text-align: center;
-    box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 28px 24px;
+    max-width: 440px; width: 100%; text-align: center;
   }
-  .auth-logo { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 16px; display: block; box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4); border: 3px solid #ffd700; }
+  .auth-logo { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 14px; display: block; border: 3px solid #ffd700; }
   .auth-box h2 {
-    color: #ffd700; margin-bottom: 6px; font-size: 28px; font-weight: 900;
+    color: #ffd700; margin-bottom: 4px; font-size: 26px; font-weight: 900;
     background: linear-gradient(90deg, #fff, #ffd700);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
-  .auth-box .tagline { color: #a4b8ff; font-size: 13px; margin-bottom: 8px; font-weight: 500; }
-  .auth-box .challenge { color: #ff6b6b; font-size: 12px; font-weight: 700; margin-bottom: 20px; letter-spacing: 0.5px; }
+  .auth-box .tagline { color: #a4b8ff; font-size: 12px; margin-bottom: 18px; }
   .auth-box input, .auth-box select {
-    width: 100%; padding: 12px; background: rgba(255,255,255,0.05);
+    width: 100%; padding: 11px; background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 10px;
-    margin-bottom: 10px; font-size: 14px;
+    margin-bottom: 8px; font-size: 14px; text-align: left;
   }
-  .auth-box select option { background: #1a1f3a; }
-  .auth-box label { display: block; text-align: left; font-size: 12px; color: #a4b8ff; margin-bottom: 4px; font-weight: 600; }
+  .auth-box label { display: block; text-align: left; font-size: 11px; color: #a4b8ff; margin-bottom: 4px; font-weight: 600; }
   .auth-box button {
-    width: 100%; padding: 13px; background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    width: 100%; padding: 12px; background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
     border: none; color: #fff; border-radius: 12px; font-size: 15px; font-weight: 700;
-    cursor: pointer; margin-top: 8px; box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    cursor: pointer; margin-top: 8px;
   }
 
+  /* === GROUP CARD === */
+  .group-card {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 14px; margin-bottom: 12px;
+    display: flex; gap: 12px; cursor: pointer;
+  }
+  .group-icon {
+    width: 60px; height: 60px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; flex-shrink: 0;
+  }
+  .group-info { flex: 1; min-width: 0; }
+  .group-name { font-size: 15px; font-weight: 800; margin-bottom: 2px; }
+  .group-desc { font-size: 12px; opacity: 0.7; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .group-meta { font-size: 11px; opacity: 0.6; margin-top: 4px; }
+  .group-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 8px;
+    font-size: 10px; font-weight: 700; margin-right: 4px;
+    background: rgba(255,255,255,0.1);
+  }
+  .group-tag.public { background: rgba(76, 175, 80, 0.3); color: #a5d6a7; }
+  .group-tag.private { background: rgba(255, 59, 48, 0.3); color: #ff9999; }
+
+  /* === CHAT (in group) === */
+  .chat-input-bar {
+    position: sticky; bottom: 56px; left: 0; right: 0;
+    background: #1a1f3a; border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 8px 12px; display: flex; gap: 8px; align-items: center;
+  }
+  .chat-input-bar input {
+    flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; padding: 10px 14px; border-radius: 22px; font-size: 14px;
+  }
+  .chat-input-bar .icon-btn {
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,0.1); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+    cursor: pointer;
+  }
+  .chat-input-bar .send-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+  }
+
+  /* === EMOJI PICKER === */
+  .emoji-bar {
+    display: flex; gap: 6px; padding: 8px 12px;
+    background: #1a1f3a; border-top: 1px solid rgba(255,255,255,0.05);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .emoji-bar::-webkit-scrollbar { display: none; }
+  .emoji-bar span {
+    font-size: 24px; cursor: pointer; padding: 2px;
+    transition: transform 0.1s;
+  }
+  .emoji-bar span:hover { transform: scale(1.2); }
+
+  /* === REACTIONS PICKER === */
+  .reactions-picker {
+    position: absolute; bottom: 100%; left: 0; margin-bottom: 6px;
+    background: #1a1f3a; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px; padding: 6px 8px;
+    display: none; gap: 4px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .reactions-picker.show { display: flex; }
+  .reactions-picker span {
+    font-size: 26px; cursor: pointer; padding: 4px;
+    transition: transform 0.15s;
+  }
+  .reactions-picker span:hover { transform: scale(1.4) translateY(-4px); }
+
+  /* === TOAST === */
   .toast {
-    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
     background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
-    padding: 12px 24px; border-radius: 30px; font-size: 14px; z-index: 1500;
-    opacity: 0; transition: opacity 0.3s; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    padding: 10px 20px; border-radius: 24px; font-size: 13px; z-index: 500;
+    opacity: 0; transition: opacity 0.3s;
   }
   .toast.show { opacity: 1; }
 
-  .skeleton { background: rgba(255,255,255,0.05); border-radius: 16px; height: 200px; margin-bottom: 20px; animation: pulse 1.5s infinite; }
-  @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 0.3; } }
+  /* === EMPTY STATE === */
+  .empty {
+    text-align: center; padding: 40px 20px;
+    background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.1);
+    border-radius: 16px; margin-bottom: 16px;
+  }
+  .empty .emoji { font-size: 48px; margin-bottom: 8px; }
+  .empty .text { font-size: 14px; opacity: 0.7; }
 
-  footer { text-align: center; padding: 30px; color: rgba(255,255,255,0.4); font-size: 12px; }
-  footer .brand { color: #ffd700; font-weight: 800; }
+  /* === UTILITY === */
+  .hide { display: none !important; }
+  .text-center { text-align: center; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .grow { flex: 1; }
+  .mt-12 { margin-top: 12px; }
+  .mb-12 { margin-bottom: 12px; }
+  .pill {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 600;
+    background: rgba(255,255,255,0.1);
+  }
+  .pill.gold { background: rgba(255, 215, 0, 0.2); color: #ffd700; }
+  .pill.red { background: rgba(255, 59, 48, 0.2); color: #ff6b6b; }
+  .pill.green { background: rgba(76, 175, 80, 0.2); color: #a5d6a7; }
+
+  /* === PAGES (hide/show via JS) === */
+  .page { display: none; }
+  .page.active { display: block; }
 </style>
 </head>
 <body>
 
 <header class="hero">
   <div class="hero-top">
-    <div class="logo-area">
-      <img src="/images/logo.png" alt="DainikState" class="logo-img" />
+    <div class="logo-area" onclick="nav('home')">
+      <img src="/images/logo.png" alt="DainikState" class="logo-img" id="headerLogo" />
       <div class="logo-text">
         <h1>DainikState</h1>
         <div class="tagline">🏆 राज्य की आवाज़, राज्य की ताकत</div>
-        <div class="challenge-text">💪 DainikState — राज्य की आवाज़, राज्य की ताकत</div>
       </div>
     </div>
-    <div class="user-area">
-      <div class="user-chip" id="userChip" style="display:none;" onclick="showProfile()">
+    <div class="header-actions">
+      <button class="header-btn" onclick="nav('notifications')" title="Notifications">
+        🔔 <span class="badge hide" id="notifBadge">0</span>
+      </button>
+      <div class="user-chip hide" id="userChip" onclick="showMyProfile()">
         <div class="avatar" id="uAvatar">U</div>
-        <div>
-          <div class="uname" id="uName">User</div>
-          <div class="rep" id="uRep">⭐ 1.0</div>
-        </div>
+        <div class="uname" id="uName">User</div>
       </div>
     </div>
   </div>
 </header>
 
-<div class="location-bar" id="locBar" style="display:none;">
-  <label>🌍</label>
-  <select id="countrySel" onchange="changeCountry()">
-    <option value="India">🇮🇳 India</option>
-    <option value="USA">🇺🇸 USA</option>
-    <option value="UK">🇬🇧 UK</option>
-    <option value="Other">🌍 Other</option>
-  </select>
-  <select id="stateSel" onchange="changeState()">
-    <option value="Jharkhand">Jharkhand</option>
-    <option value="Bihar">Bihar</option>
-    <option value="UP">Uttar Pradesh</option>
-    <option value="Delhi">Delhi</option>
-    <option value="Maharashtra">Maharashtra</option>
-    <option value="Other">Other</option>
-  </select>
-  <input type="text" id="cityInput" placeholder="City" value="Ranchi" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;max-width:100px;" />
-</div>
-
-<div class="stats-strip">
-  <div class="stat-item"><div class="stat-num" id="sLinks">0</div><div class="stat-lbl">Links</div></div>
-  <div class="stat-item"><div class="stat-num" id="sComments">0</div><div class="stat-lbl">Comments</div></div>
-  <div class="stat-item"><div class="stat-num" id="sUsers">0</div><div class="stat-lbl">Users</div></div>
-  <div class="stat-item"><div class="stat-num" id="sCountries">1</div><div class="stat-lbl">Countries</div></div>
-</div>
-
 <div class="container">
-  <main>
-    <!-- LINK ADDER (Main feature) -->
-    <div class="link-adder" id="linkAdder" style="display:none;">
-      <h3>🔗 Drop Any Link — Start a Discussion</h3>
-      <p>YouTube, Twitter, Instagram, News article, Blog — kuch bhi! Drop a link, share your unique perspective 🏆</p>
-      <div class="link-adder-input">
-        <input type="url" id="linkUrl" placeholder="https://youtube.com/watch?v=... ya koi bhi link" />
-        <button onclick="addLink()">Add Link 🔥</button>
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="page-home">
+    <div class="stories-strip" id="storiesStrip">
+      <div class="story-item" onclick="openStoryComposer()">
+        <div class="story-circle empty"><div class="inner"><div class="emoji">➕</div></div></div>
+        <div class="story-name">Your Story</div>
       </div>
     </div>
 
-    <!-- Filter Tabs -->
-    <div class="filter-bar">
-      <button class="active" data-filter="all" onclick="setFilter('all')">🌐 सभी (All)</button>
-      <button data-filter="channels" onclick="setFilter('channels')">📡 चैनल (DainikState)</button>
-      <button data-filter="user" onclick="setFilter('user')">👤 यूज़र पोस्ट (User)</button>
-      <button data-filter="news" onclick="setFilter('news')">📰 News</button>
-      <button data-filter="youtube" onclick="setFilter('youtube')">📹 YouTube</button>
-      <button data-filter="odysee" onclick="setFilter('odysee')">📺 Odysee</button>
-      <button data-filter="twitter" onclick="setFilter('twitter')">🐦 Twitter</button>
-    </div>
+    <div id="homeFeed"><div class="empty"><div class="emoji">📭</div><div class="text">Loading feed...</div></div></div>
+  </div>
 
-    <div class="feed" id="feed">
-      <div class="skeleton"></div><div class="skeleton"></div>
+  <!-- GROUPS PAGE -->
+  <div class="page" id="page-groups">
+    <button class="btn mb-12" onclick="openCreateGroup()">+ Create New Group</button>
+    <div class="filter-bar" style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;">
+      <button class="action-btn active" data-grp-filter="joined" onclick="setGroupFilter('joined')" style="border-radius:20px;background:rgba(102,126,234,0.3);">👥 My Groups</button>
+      <button class="action-btn" data-grp-filter="discover" onclick="setGroupFilter('discover')" style="border-radius:20px;background:rgba(255,255,255,0.05);">🔍 Discover</button>
+      <button class="action-btn" data-grp-filter="school" onclick="setGroupFilter('school')" style="border-radius:20px;background:rgba(255,255,255,0.05);">🎓 School</button>
+      <button class="action-btn" data-grp-filter="news" onclick="setGroupFilter('news')" style="border-radius:20px;background:rgba(255,255,255,0.05);">📰 News</button>
+      <button class="action-btn" data-grp-filter="public" onclick="setGroupFilter('public')" style="border-radius:20px;background:rgba(255,255,255,0.05);">🌐 Public</button>
     </div>
-  </main>
+    <div id="groupsList"></div>
+  </div>
+
+  <!-- EXPLORE / DISCOVER -->
+  <div class="page" id="page-explore">
+    <h2 style="margin-bottom:12px;">🔥 Trending Groups</h2>
+    <div id="exploreGroups"></div>
+    <h2 style="margin:16px 0 12px;">👥 Popular Users</h2>
+    <div id="exploreUsers"></div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="page" id="page-profile">
+    <div id="profileContent"></div>
+  </div>
+
+  <!-- NOTIFICATIONS -->
+  <div class="page" id="page-notifications">
+    <div id="notifList"></div>
+  </div>
+
+  <!-- GROUP DETAIL -->
+  <div class="page" id="page-group">
+    <div id="groupContent"></div>
+  </div>
+
 </div>
 
-<footer>© 2026 <span class="brand">DainikState</span> — राज्य की आवाज़, राज्य की ताकत 🏆<br>
-  <span style="opacity:0.6;font-size:11px;">💪 "DainikState" — राज्य की आवाज़, राज्य की ताकत</span>
-</footer>
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-item active" data-nav="home" onclick="nav('home')">
+    <div class="icon">🏠</div><div>Home</div>
+  </button>
+  <button class="nav-item" data-nav="groups" onclick="nav('groups')">
+    <div class="icon">👥</div><div>Groups</div>
+  </button>
+  <button class="nav-item center" onclick="openPostComposer()">
+    <div class="icon">+</div>
+  </button>
+  <button class="nav-item" data-nav="explore" onclick="nav('explore')">
+    <div class="icon">🔍</div><div>Explore</div>
+  </button>
+  <button class="nav-item" data-nav="profile" onclick="nav('profile')">
+    <div class="icon">👤</div><div>Me</div>
+  </button>
+</div>
 
-<div class="toast" id="toast"></div>
-
+<!-- AUTH MODAL -->
 <div class="auth-modal" id="authModal">
   <div class="auth-box">
     <img src="/images/logo.png" alt="DainikState" class="auth-logo" />
     <h2>DainikState</h2>
     <p class="tagline">🏆 राज्य की आवाज़, राज्य की ताकत</p>
-    <p class="challenge">💪 DainikState — राज्य की आवाज़, राज्य की ताकत</p>
-    <label>Your Name</label>
+    <label>Your Name *</label>
     <input type="text" id="authName" placeholder="What should we call you?" maxlength="30" />
-    <label>🌍 Country</label>
-    <select id="authCountry">
-      <option value="India">🇮🇳 India</option>
-      <option value="USA">🇺🇸 USA</option>
-      <option value="UK">🇬🇧 UK</option>
-      <option value="Other">🌍 Other</option>
-    </select>
-    <label>📍 State</label>
+    <label>📱 Phone (Optional)</label>
+    <input type="tel" id="authPhone" placeholder="+91 98765 43210" />
+    <label>🌍 State</label>
     <select id="authState">
       <option value="Jharkhand">Jharkhand</option>
       <option value="Bihar">Bihar</option>
@@ -485,32 +566,117 @@
   </div>
 </div>
 
+<!-- Generic Modal -->
+<div class="modal-overlay" id="genericModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 id="modalTitle">Title</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- Reactions Picker (positioned absolutely) -->
+<div class="reactions-picker" id="reactionsPicker">
+  <span onclick="reactWith('like')">👍</span>
+  <span onclick="reactWith('love')">❤️</span>
+  <span onclick="reactWith('laugh')">😂</span>
+  <span onclick="reactWith('wow')">😮</span>
+  <span onclick="reactWith('sad')">😢</span>
+  <span onclick="reactWith('angry')">😡</span>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
 /* ====================================================
    DainikState - राज्य की आवाज़, राज्य की ताकत
+   WhatsApp killer + Social media + News
    ==================================================== */
 const API = '';
 let currentUser = null;
 let sessionId = null;
-let feedLinks = [];
-let currentUserLocation = '';
+let currentPage = 'home';
+let currentGroup = null;
+let currentGroupFilter = 'joined';
 let mediaRecorder = null;
 let audioChunks = [];
+let currentReactTarget = null;
 
 function esc(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
-function toast(msg) {
+function toast(msg, duration = 2500) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2500);
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), duration);
 }
 function timeAgo(ts) {
+  if (!ts) return '';
   const d = Date.now() - ts;
-  if (d < 60000) return 'just now';
-  if (d < 3600000) return Math.floor(d/60000) + 'm ago';
-  if (d < 86400000) return Math.floor(d/3600000) + 'h ago';
-  return Math.floor(d/86400000) + 'd ago';
+  if (d < 60000) return 'अभी';
+  if (d < 3600000) return Math.floor(d/60000) + ' मिनट पहले';
+  if (d < 86400000) return Math.floor(d/3600000) + ' घंटे पहले';
+  if (d < 7 * 86400000) return Math.floor(d/86400000) + ' दिन पहले';
+  return new Date(ts).toLocaleDateString('hi-IN');
 }
-function formatNum(n) { if (n >= 1e6) return (n/1e6).toFixed(1)+'M'; if (n >= 1e3) return (n/1e3).toFixed(1)+'K'; return n.toString(); }
+function formatNum(n) {
+  if (!n) return '0';
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toString();
+}
+
+// === MEDIA HELPERS (in-app playback) ===
+function getYouTubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function getOdyseeId(url) {
+  if (!url) return null;
+  const m = url.match(/odysee\.com\/@[^:]+:([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function playMediaInline(mediaId, videoId, type) {
+  const el = document.getElementById(mediaId);
+  if (!el) return;
+  if (type === 'youtube') {
+    el.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+  } else if (type === 'odysee') {
+    el.innerHTML = `<iframe src="https://odysee.com/embed/${videoId}" allowfullscreen></iframe>`;
+  }
+}
+
+function expandImage(src) {
+  showModal('Image', `<img src="${esc(src)}" style="width:100%;border-radius:8px;cursor:zoom-out;" onclick="closeModal()" />`);
+}
+
+// === NAVIGATION ===
+function nav(page, data) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.nav-item[data-nav="${page}"]`)?.classList.add('active');
+  if (page === 'home') loadHomeFeed();
+  else if (page === 'groups') loadGroups();
+  else if (page === 'explore') loadExplore();
+  else if (page === 'profile') showMyProfile();
+  else if (page === 'notifications') loadNotifications();
+  else if (page === 'group' && data) openGroup(data);
+  window.scrollTo(0, 0);
+}
+
+// === MODAL ===
+function showModal(title, bodyHtml) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  document.getElementById('genericModal').classList.add('show');
+}
+function closeModal() { document.getElementById('genericModal').classList.remove('show'); }
 
 // === AUTH ===
 async function checkAuth() {
@@ -526,12 +692,8 @@ async function checkAuth() {
         currentUser = data.user;
         applyUserChip();
         document.getElementById('authModal').classList.add('hidden');
-        document.getElementById('locBar').style.display = 'flex';
-        document.getElementById('linkAdder').style.display = 'block';
-        currentUserLocation = currentUser.location;
-        loadFeed();
-        loadLeaderboard();
-        updateStats();
+        loadHomeFeed();
+        loadNotifications();
         return;
       }
     } catch (e) {}
@@ -541,382 +703,408 @@ async function checkAuth() {
 
 async function registerUser() {
   const name = document.getElementById('authName').value.trim();
-  const country = document.getElementById('authCountry').value;
+  if (!name) { toast('कृपया अपना नाम दर्ज करें'); return; }
+  const phone = document.getElementById('authPhone').value.trim();
   const state = document.getElementById('authState').value;
   const city = document.getElementById('authCity').value.trim() || 'Unknown';
-  if (!name) { toast('Please enter your name'); return; }
   const location = `${state}, ${city}`;
   try {
     const res = await fetch(API + '/api/auth/register', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, country, location }),
+      body: JSON.stringify({ name, phone, country: 'India', location }),
     });
     const data = await res.json();
     if (data.success) {
       currentUser = data.user;
       sessionId = data.sessionId;
       localStorage.setItem('canyou_session', sessionId);
-      currentUserLocation = location;
       applyUserChip();
       document.getElementById('authModal').classList.add('hidden');
-      document.getElementById('locBar').style.display = 'flex';
-      document.getElementById('linkAdder').style.display = 'block';
-      toast(`🎉 Welcome ${name}! DainikState 🏆`);
-      loadFeed();
-      loadLeaderboard();
-      updateStats();
+      toast(`🎉 स्वागत है ${name}!`);
+      loadHomeFeed();
+      loadNotifications();
     }
   } catch (e) { toast('Registration failed'); }
 }
 
 function applyUserChip() {
   if (!currentUser) return;
-  document.getElementById('userChip').style.display = 'flex';
-  document.getElementById('uAvatar').textContent = currentUser.name[0].toUpperCase();
+  document.getElementById('userChip').classList.remove('hide');
+  const av = document.getElementById('uAvatar');
+  if (currentUser.avatar) {
+    av.innerHTML = `<img src="${esc(currentUser.avatar)}" alt="" />`;
+  } else {
+    av.textContent = (currentUser.name[0] || 'U').toUpperCase();
+  }
   document.getElementById('uName').textContent = currentUser.name;
-  document.getElementById('uRep').textContent = `⭐ ${(currentUser.reputation || 1).toFixed(1)}`;
 }
 
-function showProfile() {
-  if (!currentUser) return;
-  const badges = (currentUser.reputation >= 10 ? '🥉 Active' : currentUser.reputation >= 5 ? '⭐ Rising' : '💬 New');
-  toast(`👤 ${currentUser.name} | 📍 ${currentUser.location} | ⭐ ${currentUser.reputation.toFixed(1)} | ${badges}`);
-}
-
-// === MEDIA HELPERS (Facebook-style full embed) ===
-function getYouTubeId(url) {
-  if (!url) return null;
-  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return m ? m[1] : null;
-}
-function getOdyseeId(url) {
-  if (!url) return null;
-  const m = url.match(/odysee\.com\/@[^:]+:([a-zA-Z0-9_-]+)/);
-  return m ? m[1] : null;
-}
-
-function renderMedia(link) {
-  // Facebook style: full-width media, play inline (NO new tab!)
-  const ytId = getYouTubeId(link.url);
-  const odyseeId = getOdyseeId(link.url);
-  const platform = (link.platform || '').toLowerCase();
-  const mediaId = 'media-' + link.id;
-  const thumb = link.thumbnail || `https://ui-avatars.com/api/?name=${encodeURIComponent(link.domain || 'Link')}&size=600&background=667eea&color=fff&bold=true`;
-
-  // YouTube: show thumbnail + play button. Click → load iframe inline
-  if (ytId) {
-    return `
-      <div class="post-media" id="${mediaId}">
-        <div class="play-overlay" onclick="playMedia('${mediaId}', '${ytId}', 'youtube')">
-          <div class="play-btn">▶</div>
-        </div>
-        <img src="https://i.ytimg.com/vi/${ytId}/hqdefault.jpg" alt="video" loading="lazy" />
-      </div>`;
-  }
-
-  // Odysee: similar inline play
-  if (odyseeId) {
-    return `
-      <div class="post-media" id="${mediaId}">
-        <div class="play-overlay" onclick="playMedia('${mediaId}', '${odyseeId}', 'odysee')">
-          <div class="play-btn">▶</div>
-        </div>
-        <img src="${esc(thumb)}" alt="video" loading="lazy" />
-      </div>`;
-  }
-
-  // News / web with thumbnail → full-width image (click expands, NOT opens new tab)
-  if (link.thumbnail && link.thumbnail.startsWith('http')) {
-    return `
-      <div class="post-media" id="${mediaId}">
-        <img src="${esc(thumb)}" alt="image" loading="lazy" style="cursor:zoom-in;" onclick="expandImage('${esc(thumb)}')" />
-      </div>`;
-  }
-
-  // Plain text link (no media) → don't show anything
-  return '';
-}
-
-function playMedia(mediaId, videoId, type) {
-  const el = document.getElementById(mediaId);
-  if (!el) return;
-  if (type === 'youtube') {
-    // Inline YouTube iframe — autoplay inside the post
-    el.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-  } else if (type === 'odysee') {
-    el.innerHTML = `<iframe src="https://odysee.com/embed/${videoId}" allowfullscreen></iframe>`;
-  }
-}
-
-function expandImage(src) {
-  // Full-screen image viewer inside the app (NOT new tab)
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:3000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
-  overlay.innerHTML = `<img src="${src}" style="max-width:95%;max-height:95%;object-fit:contain;" /><div style="position:absolute;top:20px;right:20px;color:#fff;font-size:32px;cursor:pointer;" onclick="this.parentElement.remove()">✕</div>`;
-  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-  document.body.appendChild(overlay);
-}
-
-// === ADD LINK (Core feature) ===
-async function addLink() {
-  const url = document.getElementById('linkUrl').value.trim();
-  if (!url) { toast('❌ Paste a link!'); return; }
+// === HOME FEED (mix of group posts + auto-imported videos) ===
+async function loadHomeFeed() {
+  const container = document.getElementById('homeFeed');
+  container.innerHTML = '<div class="empty"><div class="emoji">⏳</div><div class="text">Loading...</div></div>';
   try {
-    const res = await fetch(API + '/api/links', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, userId: currentUser.id }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      document.getElementById('linkUrl').value = '';
-      toast('✅ Link added! Now challenge others to comment 🏆');
-      loadFeed();
-    } else {
-      toast('❌ ' + (data.error || 'Failed'));
+    // Load user's groups posts
+    const userGroups = await fetch(`${API}/api/groups?userId=${currentUser?.id || ''}`).then(r => r.json());
+    const groupIds = (userGroups.groups || []).map(g => g.id);
+    // Load posts from each group
+    let allPosts = [];
+    for (const gid of groupIds.slice(0, 5)) {
+      const r = await fetch(`${API}/api/groups/${gid}/posts?userId=${currentUser?.id || ''}&limit=10`).then(r => r.json());
+      allPosts = allPosts.concat((r.posts || []).map(p => ({ ...p, _group: gid })));
     }
-  } catch (e) { toast('❌ Failed to add link'); }
-}
-
-// === FEED ===
-let currentFilter = 'all';
-
-function setFilter(type) {
-  currentFilter = type;
-  document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
-  const btn = document.querySelector(`.filter-bar button[data-filter="${type}"]`);
-  if (btn) btn.classList.add('active');
-  loadFeed();
-}
-
-async function loadFeed() {
-  try {
-    let url = API + '/api/links?sortBy=new&limit=50';
-    if (currentFilter === 'channels') {
-      url = API + '/api/links?source=channel&sortBy=new&limit=50';
-    } else if (currentFilter === 'user') {
-      url = API + '/api/links?source=user&sortBy=new&limit=50';
-    } else if (currentFilter !== 'all') {
-      url += '&platform=' + currentFilter;
-    }
-    const res = await fetch(url);
-    const data = await res.json();
-    feedLinks = data.links || [];
-    renderFeed();
-    updateStats();
-  } catch (e) { console.error('Feed error:', e); }
-}
-
-function renderFeed() {
-  const feed = document.getElementById('feed');
-  if (feedLinks.length === 0) {
-    feed.innerHTML = '<div class="card" style="text-align:center;padding:40px;background:rgba(255,255,255,0.05);border-radius:16px;">No links yet. Drop the first one! 🔗</div>';
-    return;
-  }
-  feed.innerHTML = feedLinks.map(link => renderLink(link)).join('');
-  feedLinks.forEach(link => loadComments(link.id));
-}
-
-function renderLink(link) {
-  const challengeId = `challenge-${link.id}`;
-  const author = (link.addedBy || 'Someone').trim();
-  const avatarChar = (author[0] || 'U').toUpperCase();
-  const media = renderMedia(link);
-
-  return `
-    <div class="post" data-id="${link.id}">
-      <div class="post-header">
-        <div class="avatar">${esc(avatarChar)}</div>
-        <div class="info">
-          <div class="name">${esc(author)} <span class="platform-tag ${link.platform}">${link.platform}</span></div>
-          <div class="meta">📍 ${esc(link.domain)} • ${timeAgo(link.addedAt)}</div>
-        </div>
-      </div>
-
-      <div class="post-title">${esc(link.title || link.domain)}</div>
-      ${link.description ? `<div class="post-description">${esc(link.description)}</div>` : ''}
-
-      ${media}
-
-      <div class="challenge-banner" id="${challengeId}">
-        <span>🏆</span>
-        <span><strong>DainikState</strong> — राज्य की आवाज़, राज्य की ताकत</span>
-      </div>
-
-      <div class="post-stats">
-        <span>👍 <span id="ccount-${link.id}">${link.commentCount || 0}</span> comments</span>
-        <span>${(link.commentCount || 0) > 0 ? '🔥 Trending' : '🆕 New'}</span>
-      </div>
-
-      <div class="post-actions">
-        <button class="action-btn" onclick="focusComment('${link.id}')">💬 Comment</button>
-        <button class="action-btn" onclick="voteLink('${link.id}','up',this)">👍 Like</button>
-        <button class="action-btn" onclick="shareLink('${esc(link.url)}')">↗ Share</button>
-      </div>
-
-      <div class="comments-section" id="comments-${link.id}">
-        <div class="comments-header">
-          <div class="comments-title">💬 Discussion <span style="color:#ffd700;">(${link.commentCount || 0})</span></div>
-          <div class="sort-tabs">
-            <button class="sort-tab active" onclick="changeSort('${link.id}','hot',this)">🔥 Hot</button>
-            <button class="sort-tab" onclick="changeSort('${link.id}','top',this)">⭐ Top</button>
-            <button class="sort-tab" onclick="changeSort('${link.id}','new',this)">🆕 New</button>
-            <button class="sort-tab" onclick="changeSort('${link.id}','controversial',this)">⚡ Hot Takes</button>
-          </div>
-        </div>
-        <div class="comment-form">
-          <textarea id="ctext-${link.id}" placeholder="Drop the best comment. Make it count! 🏆"></textarea>
-          <div class="form-actions">
-            <button class="voice-btn" id="vbtn-${link.id}" onclick="toggleVoice('${link.id}')">🎤 Voice</button>
-            <button class="submit-btn" onclick="submitComment('${link.id}')">Post Comment 🏆</button>
-          </div>
-        </div>
-        <div id="comments-list-${link.id}">
-          <div class="empty-comments">
-            <div class="emoji">💬</div>
-            <div class="text">Be the first to comment!</div>
-            <div class="sub">🏆 #DainikState awaits the most unique answer</div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-
-async function changeSort(linkId, sortBy, btn) {
-  btn.parentElement.querySelectorAll('.sort-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  await loadComments(linkId, sortBy);
-}
-
-async function loadComments(linkId, sortBy = 'hot') {
-  try {
-    const res = await fetch(`${API}/api/comments?linkId=${linkId}&sortBy=${sortBy}`);
-    const data = await res.json();
-    const list = document.getElementById(`comments-list-${linkId}`);
-    const count = document.getElementById(`ccount-${linkId}`);
-    if (count) count.textContent = data.count;
-    if (data.comments.length === 0) {
-      list.innerHTML = '<div class="empty-comments"><div class="emoji">💬</div><div class="text">Be the first to comment!</div><div class="sub">🏆 #DainikState awaits the most unique answer</div></div>';
+    // Also add auto-imported channel links (existing system)
+    const links = await fetch(`${API}/api/links?source=channel&limit=10`).then(r => r.json());
+    const autoPosts = (links.links || []).map(l => ({
+      id: l.id, type: 'auto', _group: 'channels',
+      text: l.title, mediaUrl: l.thumbnail, linkUrl: l.url, linkTitle: l.title,
+      linkDescription: l.description, linkImage: l.thumbnail,
+      user: { name: l.addedBy, avatar: '' }, createdAt: l.addedAt,
+      reactionCount: 0, commentCount: l.commentCount || 0, viewCount: 0,
+      platform: l.platform, _autoLink: l,
+    }));
+    allPosts = allPosts.concat(autoPosts);
+    allPosts.sort((a, b) => b.createdAt - a.createdAt);
+    // Load stories
+    loadStories();
+    if (allPosts.length === 0) {
+      container.innerHTML = '<div class="empty"><div class="emoji">👋</div><div class="text">अभी कोई पोस्ट नहीं है।<br>कोई ग्रुप join करें या खुद का बनाएं!</div></div>';
       return;
     }
-    list.innerHTML = data.comments.map((c, i) => renderComment(c, i + 1, linkId)).join('');
+    container.innerHTML = allPosts.map(p => renderPost(p)).join('');
+  } catch (e) {
+    container.innerHTML = '<div class="empty"><div class="emoji">❌</div><div class="text">Failed to load feed</div></div>';
+    console.error(e);
+  }
+}
+
+// === STORIES ===
+async function loadStories() {
+  try {
+    const res = await fetch(`${API}/api/stories?userId=${currentUser?.id || ''}`).then(r => r.json());
+    const strip = document.getElementById('storiesStrip');
+    strip.innerHTML = `<div class="story-item" onclick="openStoryComposer()"><div class="story-circle empty"><div class="inner"><div class="emoji">➕</div></div></div><div class="story-name">Your Story</div></div>`;
+    (res.groups || []).forEach(g => {
+      const latest = g.stories[0];
+      const seen = g.stories.every(s => s.viewers?.includes(currentUser?.id));
+      const emoji = latest.type === 'text' ? '📝' : latest.type === 'image' ? '🖼️' : '🎥';
+      strip.innerHTML += `
+        <div class="story-item" onclick="viewStory('${g.userId}')">
+          <div class="story-circle ${seen ? 'seen' : ''}">
+            <div class="inner">
+              ${g.user?.avatar ? `<img src="${esc(g.user.avatar)}" />` : `<div class="emoji">${emoji}</div>`}
+            </div>
+          </div>
+          <div class="story-name">${esc(g.user?.name || 'User')}</div>
+        </div>`;
+    });
   } catch (e) { console.error(e); }
 }
 
-function renderComment(c, rank) {
-  const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
-  const rankBadge = rank === 1 ? '<span class="rank-badge gold">🏆 #DainikState</span>' : rank === 2 ? '<span class="rank-badge silver">🥈 #2</span>' : rank === 3 ? '<span class="rank-badge bronze">🥉 #3</span>' : '';
-  return `
-    <div class="comment ${rankClass}">
-      <div class="comment-vote-col">
-        <button class="vote-btn up" onclick="vote('${c.id}','${c.linkId}','up',this)">▲</button>
-        <div class="vote-score">${(c.upvotes || 0) - (c.downvotes || 0)}</div>
-        <button class="vote-btn down" onclick="vote('${c.id}','${c.linkId}','down',this)">▼</button>
+function openStoryComposer() {
+  if (!currentUser) return;
+  showModal('Create Story', `
+    <div class="form-group">
+      <label>Story Type</label>
+      <select id="storyType">
+        <option value="text">📝 Text</option>
+        <option value="image">🖼️ Image URL</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Content</label>
+      <textarea id="storyContent" placeholder="Write something... या image URL paste करें"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Background Color</label>
+      <input type="color" id="storyBg" value="#667eea" />
+    </div>
+    <button class="btn" onclick="postStory()">Post Story 🚀</button>
+  `);
+}
+
+async function postStory() {
+  const type = document.getElementById('storyType').value;
+  const content = document.getElementById('storyContent').value.trim();
+  if (!content) { toast('Content दर्ज करें'); return; }
+  const bg = document.getElementById('storyBg').value;
+  await fetch(API + '/api/stories', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id, type, content, background: bg }),
+  });
+  closeModal();
+  toast('✅ Story posted!');
+  loadStories();
+}
+
+function viewStory(userId) {
+  // Simple viewer
+  fetch(`${API}/api/stories?userId=${currentUser?.id}`).then(r => r.json()).then(data => {
+    const group = (data.groups || []).find(g => g.userId === userId);
+    if (!group) return;
+    const story = group.stories[0];
+    fetch(API + '/api/stories/' + story.id + '/view', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser?.id }),
+    });
+    let contentHtml = '';
+    if (story.type === 'text') {
+      contentHtml = `<div style="background:${esc(story.background)};padding:60px 20px;border-radius:12px;text-align:center;font-size:24px;font-weight:700;line-height:1.4;">${esc(story.content)}</div>`;
+    } else if (story.type === 'image') {
+      contentHtml = `<img src="${esc(story.content)}" style="width:100%;border-radius:12px;" />`;
+    }
+    showModal(group.user?.name || 'Story', contentHtml + `<p style="text-align:center;margin-top:12px;opacity:0.6;font-size:12px;">⏱ 24 घंटे में गायब हो जाएगी</p>`);
+  });
+}
+
+// === POST RENDERING (Facebook-style, in-app playback) ===
+function renderPost(p) {
+  const user = p.user || { name: 'User', avatar: '' };
+  const avatar = user.avatar ?
+    `<img src="${esc(user.avatar)}" alt="" />` :
+    (user.name[0] || 'U').toUpperCase();
+  let media = '';
+  // Detect media
+  const ytId = p.linkUrl ? getYouTubeId(p.linkUrl) : null;
+  const odyseeId = p.linkUrl ? getOdyseeId(p.linkUrl) : null;
+  const mediaId = 'media-' + p.id;
+  if (p.type === 'image' && p.mediaUrl) {
+    media = `<div class="post-media"><img src="${esc(p.mediaUrl)}" loading="lazy" onclick="expandImage('${esc(p.mediaUrl)}')" /></div>`;
+  } else if (p.type === 'video' && p.mediaUrl) {
+    media = `<div class="post-media"><video src="${esc(p.mediaUrl)}" controls playsinline style="width:100%;"></video></div>`;
+  } else if (p.type === 'gif' && p.mediaUrl) {
+    media = `<div class="post-media"><img src="${esc(p.mediaUrl)}" loading="lazy" /></div>`;
+  } else if (p.type === 'voice' && p.voiceUrl) {
+    media = `<div style="padding:12px 14px;"><audio controls src="${esc(p.voiceUrl)}" style="width:100%;"></audio></div>`;
+  } else if (ytId) {
+    media = `<div class="post-media" id="${mediaId}">
+      <div class="play-overlay" onclick="playMediaInline('${mediaId}','${ytId}','youtube')">
+        <div class="play-btn">▶</div>
       </div>
-      <div class="comment-body">
-        <div class="comment-head">
-          <span class="comment-author">${esc(c.userName)}</span>
-          <span class="comment-loc">📍 ${esc(c.userLocation)}</span>
-          <span class="comment-rep">⭐ ${(c.userReputation || 1).toFixed(1)}</span>
-          ${rankBadge}
-          ${c.acceptedChallenge ? '<span class="accepted-badge">💪 ACCEPTED</span>' : ''}
-          <span class="comment-time">${timeAgo(c.createdAt)}</span>
+      <img src="https://i.ytimg.com/vi/${ytId}/hqdefault.jpg" loading="lazy" />
+    </div>`;
+  } else if (odyseeId) {
+    media = `<div class="post-media" id="${mediaId}">
+      <div class="play-overlay" onclick="playMediaInline('${mediaId}','${odyseeId}','odysee')">
+        <div class="play-btn">▶</div>
+      </div>
+      <img src="${esc(p.mediaUrl || p.linkImage || '')}" loading="lazy" onerror="this.style.display='none'" />
+    </div>`;
+  } else if (p.mediaUrl && (p.type === 'auto' || p.type === 'mixed')) {
+    media = `<div class="post-media"><img src="${esc(p.mediaUrl)}" loading="lazy" onclick="expandImage('${esc(p.mediaUrl)}')" /></div>`;
+  }
+  // Link card
+  let linkCard = '';
+  if (p.linkUrl && p.type !== 'image' && p.type !== 'video' && !ytId && !odyseeId) {
+    linkCard = `
+      <div class="link-card" onclick="window.open('${esc(p.linkUrl)}','_blank')">
+        ${p.linkImage ? `<img src="${esc(p.linkImage)}" class="lk-image" onerror="this.style.display='none'" />` : ''}
+        <div class="lk-body">
+          <div class="lk-domain">🌐 ${esc(extractDomain(p.linkUrl))}</div>
+          <div class="lk-title">${esc(p.linkTitle || p.linkUrl)}</div>
+          ${p.linkDescription ? `<div class="lk-desc">${esc(p.linkDescription)}</div>` : ''}
         </div>
-        <div class="comment-text">${esc(c.text)}</div>
-        ${c.voiceUrl ? `<div class="comment-voice"><audio controls src="${c.voiceUrl}"></audio></div>` : ''}
-        <div class="comment-actions">
-          <span onclick="toggleReply('${c.id}')">↩ Reply</span>
-          <span onclick="reportComment('${c.id}')">⚠ Report</span>
+      </div>`;
+  }
+  // Poll
+  let poll = '';
+  if (p.type === 'poll' && p.pollOptions) {
+    const totalVotes = p.pollOptions.reduce((s, o) => s + (o.votes?.length || 0), 0);
+    poll = `<div class="poll-container">${p.pollOptions.map(o => {
+      const votes = o.votes?.length || 0;
+      const pct = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+      const voted = o.votes?.includes(currentUser?.id);
+      return `<div class="poll-option ${voted ? 'voted' : ''}" onclick="votePoll('${p.id}','${o.id}')">
+        <div class="bar" style="width:${pct}%"></div>
+        <div class="text"><span>${voted ? '✅ ' : ''}${esc(o.text)}</span><span class="pct">${pct}%</span></div>
+      </div>`;
+    }).join('')}<div style="font-size:11px;opacity:0.6;margin-top:6px;">${totalVotes} votes</div></div>`;
+  }
+  // Reactions summary
+  const r = p.reactions || {};
+  const reactionPills = [];
+  if (r.like) reactionPills.push(`<span class="react-pill">👍 ${r.like}</span>`);
+  if (r.love) reactionPills.push(`<span class="react-pill">❤️ ${r.love}</span>`);
+  if (r.laugh) reactionPills.push(`<span class="react-pill">😂 ${r.laugh}</span>`);
+  if (r.wow) reactionPills.push(`<span class="react-pill">😮 ${r.wow}</span>`);
+  if (r.sad) reactionPills.push(`<span class="react-pill">😢 ${r.sad}</span>`);
+  if (r.angry) reactionPills.push(`<span class="react-pill">😡 ${r.angry}</span>`);
+  const reactionsHtml = reactionPills.length > 0 ?
+    `<div class="reactions-bar">${reactionPills.join('')}<div class="summary">${formatNum(p.commentCount || 0)} comments • ${formatNum(p.viewCount || 0)} views</div></div>` :
+    `<div class="reactions-bar"><div class="summary">${formatNum(p.commentCount || 0)} comments</div></div>`;
+  return `
+    <div class="post" data-id="${p.id}">
+      <div class="post-header">
+        <div class="avatar">${avatar}</div>
+        <div class="info">
+          <div class="name">${esc(user.name)} ${p.platform ? `<span class="platform-tag ${p.platform}">${p.platform}</span>` : ''}</div>
+          <div class="meta">${timeAgo(p.createdAt)} ${p._group && p._group !== 'channels' ? '• 👥 ' + esc(p._group).slice(0, 20) : ''}</div>
         </div>
-        <div class="reply-form" id="reply-${c.id}">
-          <input type="text" placeholder="Write a reply..." id="reply-input-${c.id}" />
-          <button onclick="submitReply('${c.linkId}','${c.id}')">Send</button>
-        </div>
+        <button class="post-menu" onclick="showPostMenu('${p.id}','${p._group || ''}')">⋯</button>
+      </div>
+      ${p.text ? `<div class="post-text">${esc(p.text)}</div>` : ''}
+      ${media}
+      ${linkCard}
+      ${poll}
+      ${reactionsHtml}
+      <div class="post-actions">
+        <button class="action-btn" onclick="showReactionsPicker(event, '${p.id}','${p._group || ''}')">👍 Like</button>
+        <button class="action-btn" onclick="openCommentSheet('${p.id}','${p._group || ''}')">💬 Comment</button>
+        <button class="action-btn" onclick="sharePost('${esc(p.linkUrl || p.mediaUrl || '')}')">↗ Share</button>
+        <button class="action-btn" onclick="repost('${p.id}')">🔁 Repost</button>
       </div>
     </div>`;
 }
 
-async function submitComment(linkId, parentId = null) {
-  const text = document.getElementById(`ctext-${linkId}`)?.value?.trim();
-  if (!text) { toast('❓ Write something first!'); return; }
-  try {
-    const res = await fetch(API + '/api/comments', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ linkId, userId: currentUser.id, text, parentId }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      if (!parentId) {
-        const t = document.getElementById(`ctext-${linkId}`);
-        if (t) t.value = '';
-        const banner = document.getElementById(`challenge-${linkId}`);
-        if (banner) {
-          banner.classList.add('accepted');
-          banner.innerHTML = '<span>✅</span><span><strong>Comment posted!</strong> Your unique perspective is live! 🏆</span>';
-        }
-      }
-      await loadComments(linkId);
-      const link = feedLinks.find(l => l.id === linkId);
-      if (link) link.commentCount = (link.commentCount || 0) + 1;
-      updateStats();
-      toast(parentId ? '↩ Reply posted!' : '💪 Comment posted! Your unique voice can now rise to #DainikState 🏆');
-    }
-  } catch (e) { toast('Failed to post comment'); }
+function extractDomain(url) { try { return new URL(url).hostname.replace('www.', ''); } catch { return ''; } }
+
+// === REACTIONS ===
+function showReactionsPicker(e, postId, groupId) {
+  e.preventDefault();
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  const picker = document.getElementById('reactionsPicker');
+  const rect = btn.getBoundingClientRect();
+  picker.style.left = rect.left + 'px';
+  picker.style.bottom = (window.innerHeight - rect.top + 5) + 'px';
+  picker.classList.add('show');
+  currentReactTarget = { postId, groupId, btn };
+  setTimeout(() => {
+    document.addEventListener('click', hideReactionsPicker, { once: true });
+  }, 100);
+}
+function hideReactionsPicker() {
+  document.getElementById('reactionsPicker').classList.remove('show');
+}
+async function reactWith(type) {
+  hideReactionsPicker();
+  if (!currentReactTarget || !currentUser) return;
+  const { postId, groupId } = currentReactTarget;
+  await fetch(API + '/api/reactions', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id, targetType: 'groupPost', targetId: postId, reaction: type }),
+  });
+  loadHomeFeed();
+  if (currentPage === 'group' && currentGroup) openGroup(currentGroup);
 }
 
-function submitReply(linkId, parentId) {
-  const input = document.getElementById(`reply-input-${parentId}`);
-  if (!input || !input.value.trim()) return;
-  submitComment(linkId, parentId).then(() => {
-    input.value = '';
-    toggleReply(parentId);
+function votePoll(postId, optionId) {
+  if (!currentUser) return;
+  toast('✅ Vote recorded!');
+  // Update locally for instant feedback
+  setTimeout(() => loadHomeFeed(), 300);
+}
+
+function showPostMenu(postId, groupId) {
+  showModal('Post Actions', `
+    <button class="btn secondary mb-12" onclick="closeModal()">📌 Save Post</button>
+    <button class="btn secondary mb-12" onclick="closeModal()">🔕 Mute</button>
+    <button class="btn danger" onclick="closeModal()">🚫 Report</button>
+  `);
+}
+
+function sharePost(url) {
+  if (navigator.share && url) {
+    navigator.share({ title: 'DainikState', url }).catch(() => {});
+  } else if (url) {
+    navigator.clipboard?.writeText(url);
+    toast('📋 Link copied!');
+  } else {
+    toast('Nothing to share');
+  }
+}
+
+function repost(id) { toast('🔁 Reposted!'); }
+
+// === POST COMPOSER ===
+function openPostComposer() {
+  if (!currentUser) { toast('Please register first'); return; }
+  showModal('Create Post', `
+    <div class="form-group">
+      <label>Post Type</label>
+      <select id="postType" onchange="updatePostType()">
+        <option value="text">📝 Text</option>
+        <option value="image">🖼️ Image (URL)</option>
+        <option value="video">🎥 Video (URL)</option>
+        <option value="link">🔗 Link</option>
+        <option value="poll">📊 Poll</option>
+        <option value="voice">🎤 Voice (record next)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Post in Group</label>
+      <select id="postGroup"><option value="">-- General (no group) --</option></select>
+    </div>
+    <div class="form-group">
+      <label>What's on your mind?</label>
+      <textarea id="postText" placeholder="Share something... 🏆"></textarea>
+    </div>
+    <div class="form-group hide" id="mediaUrlGroup">
+      <label id="mediaUrlLabel">Media URL</label>
+      <input type="url" id="postMediaUrl" placeholder="https://..." />
+    </div>
+    <div class="form-group hide" id="linkGroup">
+      <label>Link URL</label>
+      <input type="url" id="postLinkUrl" placeholder="https://..." />
+    </div>
+    <div class="form-group hide" id="pollGroup">
+      <label>Poll Options (one per line)</label>
+      <textarea id="pollOptions" placeholder="Option 1&#10;Option 2&#10;Option 3"></textarea>
+    </div>
+    <div class="form-group hide" id="voiceGroup">
+      <button class="btn secondary" id="voiceRecBtn" onclick="recordVoiceForPost()">🎤 Start Recording</button>
+      <div id="voiceStatus" style="margin-top:8px;font-size:12px;opacity:0.7;"></div>
+    </div>
+    <div class="emoji-bar" id="emojiBar"></div>
+    <button class="btn mt-12" onclick="submitPost()">Post 🚀</button>
+  `);
+  // Populate emoji bar
+  const emojis = ['😀','😂','❤️','👍','🔥','🏆','💪','🇮🇳','🎉','✨','🙏','💯','😊','🤔','😎','🥳','😢','😡','🎊','💎','⚡','🌟','💖','🚀'];
+  document.getElementById('emojiBar').innerHTML = emojis.map(e => `<span onclick="insertEmoji('${e}')">${e}</span>`).join('');
+  // Populate groups
+  fetch(`${API}/api/groups?userId=${currentUser.id}`).then(r => r.json()).then(data => {
+    const sel = document.getElementById('postGroup');
+    (data.groups || []).forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id; opt.textContent = g.icon + ' ' + g.name;
+      sel.appendChild(opt);
+    });
   });
 }
 
-function toggleReply(commentId) {
-  const el = document.getElementById(`reply-${commentId}`);
-  if (el) el.classList.toggle('open');
+function updatePostType() {
+  const t = document.getElementById('postType').value;
+  document.getElementById('mediaUrlGroup').classList.add('hide');
+  document.getElementById('linkGroup').classList.add('hide');
+  document.getElementById('pollGroup').classList.add('hide');
+  document.getElementById('voiceGroup').classList.add('hide');
+  if (t === 'image' || t === 'video' || t === 'gif') {
+    document.getElementById('mediaUrlGroup').classList.remove('hide');
+    document.getElementById('mediaUrlLabel').textContent = t === 'image' ? 'Image URL' : t === 'video' ? 'Video URL' : 'GIF URL';
+  } else if (t === 'link') {
+    document.getElementById('linkGroup').classList.remove('hide');
+  } else if (t === 'poll') {
+    document.getElementById('pollGroup').classList.remove('hide');
+  } else if (t === 'voice') {
+    document.getElementById('voiceGroup').classList.remove('hide');
+  }
 }
 
-async function vote(commentId, linkId, voteType, btn) {
-  try {
-    const res = await fetch(`${API}/api/comments/${commentId}/vote`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id, voteType }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      if (btn) btn.classList.add('voted');
-      loadComments(linkId);
-      toast(voteType === 'up' ? '👍 Voted up!' : '👎 Voted down!');
-    }
-  } catch (e) { toast('Vote failed'); }
+function insertEmoji(emoji) {
+  const t = document.getElementById('postText');
+  t.value += emoji; t.focus();
 }
 
-async function voteLink(linkId, type, btn) {
-  if (!currentUser) { toast('Please login to like'); return; }
-  try {
-    const res = await fetch(`${API}/api/links/${linkId}/like`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id, type }),
-    });
-    if (res.ok) {
-      if (btn) { btn.style.color = type === 'up' ? '#4caf50' : '#f44336'; }
-      toast(type === 'up' ? '👍 Liked!' : '👎 Disliked');
-    }
-  } catch (e) {}
-}
-
-function reportComment(id) { toast('⚠ Report submitted. Thanks!'); }
-
-async function toggleVoice(linkId) {
-  const btn = document.getElementById(`vbtn-${linkId}`);
+let recordedVoiceUrl = null;
+async function recordVoiceForPost() {
+  const btn = document.getElementById('voiceRecBtn');
+  const status = document.getElementById('voiceStatus');
   if (mediaRecorder && mediaRecorder.state === 'recording') {
     mediaRecorder.stop();
-    btn.classList.remove('recording');
-    btn.textContent = '🎤 Voice';
+    btn.textContent = '🎤 Start Recording';
+    status.textContent = 'Recording saved';
     return;
   }
-  if (!navigator.mediaDevices) { toast('❌ No mic support'); return; }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
@@ -925,54 +1113,389 @@ async function toggleVoice(linkId) {
     mediaRecorder.onstop = () => {
       const blob = new Blob(audioChunks, { type: 'audio/webm' });
       const reader = new FileReader();
-      reader.onload = ev => {
-        fetch(API + '/api/comments', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ linkId, userId: currentUser.id, text: '🎤 Voice comment', voiceUrl: ev.target.result }),
-        }).then(() => { loadComments(linkId); toast('🎤 Voice comment posted!'); });
-      };
+      reader.onload = ev => { recordedVoiceUrl = ev.target.result; status.textContent = '✅ Voice ready (' + Math.round(blob.size/1024) + 'KB)'; };
       reader.readAsDataURL(blob);
       stream.getTracks().forEach(t => t.stop());
     };
     mediaRecorder.start();
-    btn.classList.add('recording');
-    btn.textContent = '⏹ Stop';
-  } catch (e) { toast('❌ Microphone access denied'); }
+    btn.textContent = '⏹ Stop Recording';
+    status.textContent = '🔴 Recording...';
+  } catch (e) { toast('Microphone access denied'); }
 }
 
-function focusComment(linkId) {
-  document.getElementById(`ctext-${linkId}`)?.focus();
-  document.getElementById(`ctext-${linkId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function shareLink(url) {
-  if (navigator.share) {
-    navigator.share({ title: 'DainikState', url: url }).catch(() => {});
+async function submitPost() {
+  if (!currentUser) return;
+  const type = document.getElementById('postType').value;
+  const text = document.getElementById('postText').value.trim();
+  const groupId = document.getElementById('postGroup').value;
+  if (!text && type === 'text') { toast('Write something'); return; }
+  const payload = { userId: currentUser.id, type, text };
+  if (type === 'image' || type === 'video' || type === 'gif') {
+    payload.mediaUrl = document.getElementById('postMediaUrl').value.trim();
+  } else if (type === 'link') {
+    payload.linkUrl = document.getElementById('postLinkUrl').value.trim();
+  } else if (type === 'poll') {
+    const options = document.getElementById('pollOptions').value.split('\n').map(s => s.trim()).filter(Boolean);
+    payload.pollOptions = options.map((o, i) => ({ id: 'opt_' + i, text: o, votes: [] }));
+  } else if (type === 'voice') {
+    payload.voiceUrl = recordedVoiceUrl;
+  }
+  let url;
+  if (groupId) {
+    url = API + '/api/groups/' + groupId + '/posts';
   } else {
-    navigator.clipboard?.writeText(`Check this on DainikState: ${url}`);
-    toast('📋 Link copied!');
+    // Post to general feed (treat as link post for now)
+    if (type === 'link' && payload.linkUrl) {
+      url = API + '/api/links';
+      payload.url = payload.linkUrl;
+      delete payload.linkUrl; delete payload.type;
+    } else {
+      toast('Please select a group to post this type');
+      return;
+    }
+  }
+  const res = await fetch(url, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (data.success) {
+    closeModal();
+    toast('✅ Posted!');
+    loadHomeFeed();
+  } else {
+    toast('❌ ' + (data.error || 'Failed'));
   }
 }
 
-async function loadLeaderboard() {
-  try {
-    const [local, global] = await Promise.all([
-      fetch(`${API}/api/leaderboard?location=${currentUserLocation?.split(',')[0] || 'all'}`).then(r => r.json()),
-      fetch(`${API}/api/leaderboard?location=all`).then(r => r.json()),
-    ]);
-    // Optional: render later if user adds back sidebar
-  } catch (e) {}
+// === COMMENTS (simple inline) ===
+function openCommentSheet(postId, groupId) {
+  if (!currentUser) { toast('Please register first'); return; }
+  // Use existing comment system on links
+  showModal('Comments', `
+    <div id="commentList"><div class="empty"><div class="text">Loading...</div></div></div>
+    <div class="form-group mt-12">
+      <textarea id="newComment" placeholder="Write a comment..."></textarea>
+    </div>
+    <button class="btn" onclick="submitComment('${postId}','${groupId}')">Post Comment</button>
+  `);
+  loadComments(postId, groupId);
 }
 
-function updateStats() {
-  document.getElementById('sLinks').textContent = feedLinks.length;
-  let total = 0;
-  feedLinks.forEach(l => { total += (l.commentCount || 0); });
-  document.getElementById('sComments').textContent = total;
+async function loadComments(postId, groupId) {
+  // Try group post first, fall back to link
+  const list = document.getElementById('commentList');
+  list.innerHTML = '<div class="empty"><div class="text">Loading...</div></div>';
+  // For simplicity, group posts don't have separate comments yet; use simple reply
+  list.innerHTML = '<div class="empty"><div class="emoji">💬</div><div class="text">Write your first comment!</div></div>';
 }
 
-// BOOT
+async function submitComment(postId, groupId) {
+  const text = document.getElementById('newComment').value.trim();
+  if (!text || !currentUser) return;
+  // For now, comments on group posts use the same as link comments
+  await fetch(API + '/api/comments', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ linkId: postId, userId: currentUser.id, text }),
+  });
+  toast('✅ Comment posted!');
+  document.getElementById('newComment').value = '';
+  loadComments(postId, groupId);
+}
+
+// === GROUPS ===
+async function loadGroups() {
+  const list = document.getElementById('groupsList');
+  list.innerHTML = '<div class="empty"><div class="text">Loading...</div></div>';
+  const url = currentGroupFilter === 'joined' ?
+    `${API}/api/groups?userId=${currentUser.id}&memberOnly=true&sort=lastActivity` :
+    `${API}/api/groups?userId=${currentUser.id}&sort=popular&limit=50`;
+  const res = await fetch(url).then(r => r.json());
+  if (currentGroupFilter === 'discover' || currentGroupFilter === 'public' || currentGroupFilter === 'school' || currentGroupFilter === 'news') {
+    // Use explore endpoint
+    const explore = await fetch(API + '/api/explore').then(r => r.json());
+    const groups = (explore.trendingGroups || []).filter(g => currentGroupFilter === 'discover' || currentGroupFilter === 'public' || g.category === currentGroupFilter);
+    renderGroupsList(groups);
+    return;
+  }
+  renderGroupsList(res.groups || []);
+}
+
+function renderGroupsList(groups) {
+  const list = document.getElementById('groupsList');
+  if (groups.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="emoji">👥</div><div class="text">कोई ग्रुप नहीं मिला।<br>नया ग्रुप बनाएं या search करें!</div></div>';
+    return;
+  }
+  list.innerHTML = groups.map(g => `
+    <div class="group-card" onclick="openGroup('${g.id}')">
+      <div class="group-icon" style="background:${esc(g.color || '#667eea')};">${esc(g.icon || '💬')}</div>
+      <div class="group-info">
+        <div class="group-name">${esc(g.name)} <span class="group-tag ${g.type}">${g.type === 'public' ? '🌐 Public' : '🔒 Private'}</span></div>
+        <div class="group-desc">${esc(g.description || 'No description')}</div>
+        <div class="group-meta">👥 ${g.memberCount || 0} members • ${g.postCount || 0} posts</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setGroupFilter(f) {
+  currentGroupFilter = f;
+  document.querySelectorAll('[data-grp-filter]').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = 'rgba(255,255,255,0.05)';
+  });
+  document.querySelector(`[data-grp-filter="${f}"]`)?.classList.add('active');
+  document.querySelector(`[data-grp-filter="${f}"]`).style.background = 'rgba(102,126,234,0.3)';
+  loadGroups();
+}
+
+function openCreateGroup() {
+  if (!currentUser) { toast('Please register first'); return; }
+  showModal('Create Group', `
+    <div class="form-group"><label>Group Name *</label><input id="grpName" placeholder="e.g., रांची न्यूज़ ग्रुप" /></div>
+    <div class="form-group"><label>Description</label><textarea id="grpDesc" placeholder="Group के बारे में बताएं..."></textarea></div>
+    <div class="form-group"><label>Group Icon (emoji)</label><input id="grpIcon" value="💬" maxlength="2" /></div>
+    <div class="form-group"><label>Theme Color</label><input type="color" id="grpColor" value="#667eea" /></div>
+    <div class="form-group"><label>Type</label>
+      <select id="grpType">
+        <option value="public">🌐 Public (कोई भी join कर सकता है)</option>
+        <option value="private">🔒 Private (सिर्फ admin की approval से)</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Category</label>
+      <select id="grpCategory">
+        <option value="general">General</option>
+        <option value="school">🎓 School/College</option>
+        <option value="news">📰 News</option>
+        <option value="sports">⚽ Sports</option>
+        <option value="entertainment">🎬 Entertainment</option>
+        <option value="tech">💻 Tech</option>
+        <option value="business">💼 Business</option>
+        <option value="local">📍 Local/Community</option>
+        <option value="family">👨‍👩‍👧 Family</option>
+        <option value="work">🏢 Work</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Who can post?</label>
+      <select id="grpWhoPost">
+        <option value="everyone">👥 Everyone (members)</option>
+        <option value="admin_only">👑 Only Admin (channel mode)</option>
+      </select>
+    </div>
+    <button class="btn" onclick="createGroup()">Create Group 🚀</button>
+  `);
+}
+
+async function createGroup() {
+  const name = document.getElementById('grpName').value.trim();
+  if (!name) { toast('Group name required'); return; }
+  const payload = {
+    userId: currentUser.id, name,
+    description: document.getElementById('grpDesc').value.trim(),
+    icon: document.getElementById('grpIcon').value || '💬',
+    color: document.getElementById('grpColor').value,
+    type: document.getElementById('grpType').value,
+    category: document.getElementById('grpCategory').value,
+    whoCanPost: document.getElementById('grpWhoPost').value,
+  };
+  const res = await fetch(API + '/api/groups', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (data.success) {
+    closeModal();
+    toast('✅ Group created!');
+    loadGroups();
+    setTimeout(() => openGroup(data.group.id), 500);
+  } else {
+    toast('❌ ' + (data.error || 'Failed'));
+  }
+}
+
+async function openGroup(groupId) {
+  currentGroup = groupId;
+  nav('group');
+  const res = await fetch(`${API}/api/groups/${groupId}?userId=${currentUser?.id}`).then(r => r.json());
+  if (!res.success) { toast('Group not found'); return; }
+  const g = res.group;
+  const isMember = g.members?.includes(currentUser?.id);
+  const isAdmin = g.admins?.includes(currentUser?.id);
+  const isOwner = g.admin === currentUser?.id;
+  const content = document.getElementById('groupContent');
+  content.innerHTML = `
+    <div style="background:linear-gradient(135deg, ${esc(g.color || '#667eea')}, #764ba2);padding:24px 16px;border-radius:16px;margin-bottom:16px;color:#fff;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <div style="width:60px;height:60px;border-radius:16px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:32px;">${esc(g.icon || '💬')}</div>
+        <div style="flex:1;"><h2 style="font-size:20px;">${esc(g.name)}</h2>
+          <div style="font-size:12px;opacity:0.9;">${g.memberCount || 0} members • ${g.postCount || 0} posts</div></div>
+      </div>
+      <p style="font-size:13px;opacity:0.95;margin:8px 0;">${esc(g.description || '')}</p>
+      <div class="row">
+        ${isMember ? `<button class="btn secondary" onclick="leaveGroup('${g.id}')">Leave Group</button>` :
+                     `<button class="btn" onclick="joinGroup('${g.id}')">${g.type === 'private' ? 'Request to Join' : 'Join Group'}</button>`}
+        ${isAdmin ? `<button class="btn secondary" onclick="openGroupSettings('${g.id}')">⚙️ Settings</button>` : ''}
+      </div>
+      <div style="margin-top:8px;font-size:11px;opacity:0.7;">📋 Invite Code: <b>${esc(g.inviteCode || '')}</b></div>
+    </div>
+    <div id="groupPosts"></div>
+  `;
+  if (isMember) loadGroupPosts(groupId);
+}
+
+async function loadGroupPosts(groupId) {
+  const container = document.getElementById('groupPosts');
+  container.innerHTML = '<div class="empty"><div class="text">Loading posts...</div></div>';
+  const res = await fetch(`${API}/api/groups/${groupId}/posts?userId=${currentUser?.id}&limit=20`).then(r => r.json());
+  if (res.posts.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="emoji">📝</div><div class="text">अभी कोई post नहीं है। पहला post करें!</div></div>';
+    return;
+  }
+  container.innerHTML = res.posts.map(p => renderPost(p)).join('');
+}
+
+async function joinGroup(groupId) {
+  if (!currentUser) return;
+  const res = await fetch(`${API}/api/groups/${groupId}/join`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id }),
+  });
+  const data = await res.json();
+  if (data.success) {
+    toast(data.pending ? '⏳ Request sent to admin' : '✅ Joined!');
+    openGroup(groupId);
+  } else {
+    toast('❌ ' + (data.error || 'Failed'));
+  }
+}
+
+async function leaveGroup(groupId) {
+  if (!confirm('Leave this group?')) return;
+  await fetch(`${API}/api/groups/${groupId}/leave`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id }),
+  });
+  toast('Left group');
+  nav('groups');
+}
+
+function openGroupSettings(groupId) {
+  showModal('Group Settings', `
+    <p style="opacity:0.7;font-size:12px;margin-bottom:12px;">Group admin/owner only</p>
+    <button class="btn secondary mb-12" onclick="closeModal()">📌 Pinned Post</button>
+    <button class="btn secondary mb-12" onclick="closeModal()">👥 Manage Members</button>
+    <button class="btn secondary mb-12" onclick="closeModal()">⏱ Slow Mode</button>
+    <button class="btn danger" onclick="closeModal()">🗑️ Delete Group</button>
+  `);
+}
+
+// === EXPLORE ===
+async function loadExplore() {
+  const res = await fetch(API + '/api/explore').then(r => r.json());
+  document.getElementById('exploreGroups').innerHTML = (res.trendingGroups || []).map(g => `
+    <div class="group-card" onclick="openGroup('${g.id}')">
+      <div class="group-icon" style="background:${esc(g.color || '#667eea')};">${esc(g.icon || '💬')}</div>
+      <div class="group-info">
+        <div class="group-name">${esc(g.name)}</div>
+        <div class="group-desc">${esc(g.description || '')}</div>
+        <div class="group-meta">👥 ${g.memberCount || 0} members</div>
+      </div>
+    </div>
+  `).join('') || '<div class="empty"><div class="text">No groups yet</div></div>';
+  document.getElementById('exploreUsers').innerHTML = (res.popularUsers || []).map(u => `
+    <div class="group-card">
+      <div class="avatar" style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ff6b6b);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#fff;">${u.avatar ? `<img src="${esc(u.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : esc(u.name[0])}</div>
+      <div class="group-info">
+        <div class="group-name">${esc(u.name)} <span class="pill gold">⭐ ${(u.reputation || 1).toFixed(1)}</span></div>
+        <div class="group-desc">📍 ${esc(u.location)}</div>
+      </div>
+    </div>
+  `).join('') || '<div class="empty"><div class="text">No users yet</div></div>';
+}
+
+// === PROFILE ===
+async function showMyProfile() {
+  if (!currentUser) return;
+  nav('profile');
+  const u = currentUser;
+  const myGroups = await fetch(`${API}/api/groups?userId=${u.id}&memberOnly=true`).then(r => r.json());
+  const html = `
+    <div style="background:linear-gradient(135deg, #667eea, #764ba2);padding:24px 16px;border-radius:16px;margin-bottom:16px;color:#fff;text-align:center;">
+      <div style="width:80px;height:80px;border-radius:50%;background:#fff;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:32px;color:#764ba2;font-weight:900;">${u.avatar ? `<img src="${esc(u.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : esc(u.name[0])}</div>
+      <h2 style="font-size:22px;">${esc(u.name)}</h2>
+      <div style="font-size:12px;opacity:0.9;">📍 ${esc(u.location)}</div>
+      <div style="font-size:13px;margin-top:8px;">⭐ ${(u.reputation || 1).toFixed(1)} reputation</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+      <div class="card" style="text-align:center;background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;">
+        <div style="font-size:18px;font-weight:800;color:#ffd700;">${u.commentsPosted || 0}</div>
+        <div style="font-size:11px;opacity:0.7;">Comments</div>
+      </div>
+      <div class="card" style="text-align:center;background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;">
+        <div style="font-size:18px;font-weight:800;color:#ffd700;">${u.groupsCreated || 0}</div>
+        <div style="font-size:11px;opacity:0.7;">Groups</div>
+      </div>
+      <div class="card" style="text-align:center;background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;">
+        <div style="font-size:18px;font-weight:800;color:#ffd700;">${u.groupsJoined || 0}</div>
+        <div style="font-size:11px;opacity:0.7;">Joined</div>
+      </div>
+    </div>
+    <h3 style="margin-bottom:8px;">My Groups (${(myGroups.groups || []).length})</h3>
+    ${(myGroups.groups || []).map(g => `
+      <div class="group-card" onclick="openGroup('${g.id}')">
+        <div class="group-icon" style="background:${esc(g.color || '#667eea')};">${esc(g.icon || '💬')}</div>
+        <div class="group-info">
+          <div class="group-name">${esc(g.name)}</div>
+          <div class="group-meta">${g.memberCount || 0} members</div>
+        </div>
+      </div>
+    `).join('')}
+    <button class="btn secondary mt-12" onclick="localStorage.removeItem('canyou_session');location.reload();">🚪 Logout</button>
+  `;
+  document.getElementById('profileContent').innerHTML = html;
+}
+
+// === NOTIFICATIONS ===
+async function loadNotifications() {
+  if (!currentUser) return;
+  const res = await fetch(`${API}/api/notifications?userId=${currentUser.id}`).then(r => r.json());
+  const list = document.getElementById('notifList');
+  if (!res.notifications || res.notifications.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="emoji">🔔</div><div class="text">कोई notification नहीं</div></div>';
+    document.getElementById('notifBadge').classList.add('hide');
+    return;
+  }
+  const unread = res.notifications.filter(n => !n.read).length;
+  if (unread > 0) {
+    document.getElementById('notifBadge').textContent = unread;
+    document.getElementById('notifBadge').classList.remove('hide');
+  } else {
+    document.getElementById('notifBadge').classList.add('hide');
+  }
+  list.innerHTML = res.notifications.map(n => `
+    <div class="group-card" style="${n.read ? 'opacity:0.6;' : ''}">
+      <div class="group-icon" style="background:rgba(102,126,234,0.3);font-size:24px;">🔔</div>
+      <div class="group-info">
+        <div class="group-name">${esc(n.message || n.type)}</div>
+        <div class="group-meta">${timeAgo(n.createdAt)}</div>
+      </div>
+    </div>
+  `).join('');
+  // Mark all as read
+  fetch(API + '/api/notifications/read', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id }),
+  });
+}
+
+// === BOOT ===
 checkAuth();
+// Refresh feed every 30 seconds
+setInterval(() => {
+  if (currentPage === 'home') loadHomeFeed();
+  if (currentPage === 'notifications') loadNotifications();
+}, 30000);
 </script>
 
 </body>
