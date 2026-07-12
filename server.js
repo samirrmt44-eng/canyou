@@ -58,18 +58,66 @@ const DEFAULT_CHANNELS = [
     platform: 'youtube',
     channelId: 'UCIvx776Jt6gejhpiJ563VCQ',
     handle: '@DainikState',
-    name: 'DainikState',
+    name: 'DainikState YouTube',
     autoSync: true,
-    syncInterval: 60,  // minutes
+    syncInterval: 30,
   },
   {
     platform: 'odysee',
     channelId: '@DainikState:1',
-    name: 'DainikState (Odysee)',
+    name: 'DainikState Odysee',
     autoSync: true,
-    syncInterval: 60,
+    syncInterval: 30,
+  },
+  {
+    platform: 'rss',
+    channelId: 'dainikstate.com',
+    feedUrl: 'https://dainikstate.com/feed/',
+    name: 'DainikState News',
+    autoSync: true,
+    syncInterval: 30,
   },
 ];
+
+
+// RSS Feed Fetcher (for news sites like dainikstate.com)
+async function fetchRSSFeed(feedUrl) {
+  try {
+    const response = await axios.get(feedUrl, { timeout: 15000 });
+    const parser = new xml2js.Parser({ explicitArray: false });
+    const result = await parser.parseStringPromise(response.data);
+    if (!result.rss || !result.rss.channel || !result.rss.channel.item) return [];
+
+    const items = Array.isArray(result.rss.channel.item) ? result.rss.channel.item : [result.rss.channel.item];
+    return items.map(item => {
+      const title = typeof item.title === 'object' ? item.title._ : item.title;
+      const desc = item.description ? (typeof item.description === 'object' ? item.description._ : item.description) : '';
+      const link = typeof item.link === 'object' ? item.link._ : item.link;
+      const pubDate = item.pubDate ? new Date(item.pubDate).getTime() : Date.now();
+
+      // Extract first image from description
+      const imgMatch = desc.match(/<img[^>]+src=["']([^"']+)["']/i);
+      const thumbnail = imgMatch ? imgMatch[1] : `https://ui-avatars.com/api/?name=DainikState+News&size=600&background=b71c1c&color=fff&bold=true`;
+
+      // Clean description (remove HTML)
+      const cleanDesc = desc.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+
+      return {
+        platform: 'news',
+        url: link,
+        videoId: link,
+        title: title,
+        description: cleanDesc,
+        thumbnail,
+        author: 'DainikState Desk',
+        publishedAt: pubDate,
+      };
+    });
+  } catch (err) {
+    console.error('RSS fetch failed:', err.message);
+    return [];
+  }
+}
 
 // ============================================================
 // YOUTUBE RSS FEED PARSER (No API key needed!)
@@ -146,6 +194,8 @@ async function syncChannel(channel) {
     videos = await fetchYouTubeRSS(channel.channelId);
   } else if (channel.platform === 'odysee') {
     videos = await fetchOdyseeVideos(channel.channelId);
+  } else if (channel.platform === 'rss' && channel.feedUrl) {
+    videos = await fetchRSSFeed(channel.feedUrl);
   }
 
   if (videos.length === 0) {
