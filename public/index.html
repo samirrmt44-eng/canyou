@@ -1620,11 +1620,110 @@ async function leaveGroup(groupId) {
 function openGroupSettings(groupId) {
   showModal('Group Settings', `
     <p style="opacity:0.7;font-size:12px;margin-bottom:12px;">Group admin/owner only</p>
+    <button class="btn secondary mb-12" onclick="openCallPermissions('${groupId}')">📞 Call Permissions</button>
+    <button class="btn secondary mb-12" onclick="openManageCallers('${groupId}')">🎤 Manage Callers</button>
     <button class="btn secondary mb-12" onclick="closeModal()">📌 Pinned Post</button>
     <button class="btn secondary mb-12" onclick="closeModal()">👥 Manage Members</button>
     <button class="btn secondary mb-12" onclick="closeModal()">⏱ Slow Mode</button>
     <button class="btn danger" onclick="closeModal()">🗑️ Delete Group</button>
   `);
+}
+
+async function openCallPermissions(groupId) {
+  const res = await fetch(API + '/api/groups/' + groupId).then(r => r.json());
+  if (!res.success) return;
+  const g = res.group;
+  const current = g.whoCanCall || 'everyone';
+  showModal('📞 Call Permissions', `
+    <p style="opacity:0.7;font-size:13px;margin-bottom:12px;">Choose who can start voice/video calls in this group.</p>
+    <div class="form-group">
+      <label>Who can call?</label>
+      <select id="callPerm" onchange="updateCallPerm()">
+        <option value="everyone" ${current === 'everyone' ? 'selected' : ''}>👥 Everyone (all members)</option>
+        <option value="admins_only" ${current === 'admins_only' ? 'selected' : ''}>👑 Only Admins</option>
+        <option value="specific" ${current === 'specific' ? 'selected' : ''}>🎯 Specific Members (you choose)</option>
+      </select>
+    </div>
+    <p style="font-size:11px;opacity:0.6;margin-top:8px;" id="callPermHelp">Anyone in the group can start calls.</p>
+    <button class="btn mt-12" onclick="saveCallPermissions('${groupId}')">Save</button>
+  `);
+}
+
+function updateCallPerm() {
+  const v = document.getElementById('callPerm').value;
+  const help = document.getElementById('callPermHelp');
+  if (v === 'everyone') help.textContent = 'Anyone in the group can start calls.';
+  else if (v === 'admins_only') help.textContent = 'Only admins and the owner can start calls.';
+  else help.textContent = 'Choose specific members from the next screen.';
+}
+
+async function saveCallPermissions(groupId) {
+  const whoCanCall = document.getElementById('callPerm').value;
+  const res = await fetch(API + '/api/groups/' + groupId + '/settings', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ adminId: currentUser.id, whoCanCall }),
+  }).then(r => r.json());
+  if (res.success) {
+    toast('✅ Call permissions updated');
+    if (whoCanCall === 'specific') {
+      closeModal();
+      setTimeout(() => openManageCallers(groupId), 300);
+    } else {
+      closeModal();
+    }
+  } else {
+    toast('❌ ' + (res.error || 'Failed'));
+  }
+}
+
+async function openManageCallers(groupId) {
+  const res = await fetch(API + '/api/groups/' + groupId + '/members').then(r => r.json());
+  if (!res.success) return;
+  const g = await fetch(API + '/api/groups/' + groupId).then(r => r.json());
+  const allowed = g.group.allowedCallers || [];
+  const whoCanCall = g.group.whoCanCall || 'everyone';
+  showModal('🎤 Manage Callers', `
+    <p style="opacity:0.7;font-size:13px;margin-bottom:12px;">
+      ${whoCanCall === 'specific' ? 'Select who can call in this group:' : 'Currently: ' + (whoCanCall === 'everyone' ? 'Everyone can call' : 'Only admins can call')}
+    </p>
+    <div id="callersList" style="max-height: 50vh; overflow-y: auto;">
+      ${res.members.map(m => {
+        const isAllowed = whoCanCall === 'everyone' ||
+                          (whoCanCall === 'admins_only' && m.isAdmin) ||
+                          (whoCanCall === 'specific' && (allowed.includes(m.id) || m.isAdmin));
+        const canModify = !m.isOwner && (m.isAdmin || whoCanCall !== 'admins_only');
+        return `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:6px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ff6b6b);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0;">
+            ${m.avatar ? `<img src="${esc(m.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : esc((m.name||'?')[0])}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:13px;">${esc(m.name)} ${m.isOwner ? '👑' : m.isAdmin ? '⭐' : ''}</div>
+            <div style="font-size:11px;opacity:0.6;">📍 ${esc(m.location || 'Unknown')}</div>
+          </div>
+          ${m.isOwner ? '<span class="pill gold">Owner</span>' :
+            m.isAdmin ? '<span class="pill">Admin</span>' :
+            whoCanCall === 'specific' ?
+              `<button class="btn" style="padding:6px 12px;font-size:12px;width:auto;${isAllowed ? '' : 'background:rgba(255,255,255,0.1);'}" onclick="toggleCaller('${groupId}','${m.id}', ${isAllowed})">${isAllowed ? '✅ Allowed' : '➕ Allow'}</button>` :
+              (isAllowed ? '<span class="pill green">Can Call</span>' : '<span class="pill">No</span>')}
+        </div>`;
+      }).join('')}
+    </div>
+    ${whoCanCall !== 'specific' ? `<button class="btn mt-12" onclick="openCallPermissions('${groupId}')">⚙️ Change Mode</button>` : ''}
+  `);
+}
+
+async function toggleCaller(groupId, userId, currentlyAllowed) {
+  const res = await fetch(API + '/api/groups/' + groupId + '/allow-caller', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, adminId: currentUser.id, action: currentlyAllowed ? 'remove' : 'add' }),
+  }).then(r => r.json());
+  if (res.success) {
+    toast(currentlyAllowed ? '❌ Removed' : '✅ Allowed');
+    openManageCallers(groupId);
+  } else {
+    toast('❌ ' + (res.error || 'Failed'));
+  }
 }
 
 // === EXPLORE ===
@@ -1872,19 +1971,69 @@ async function acceptInvite(code) {
 
 function shareInviteLink(code) {
   const url = location.origin + '/i/' + code;
-  const text = `Join my group "${currentGroup ? '' : ''}" on DainikState! ${url}`;
+  const text = `Join my group on DainikState! 🏆 ${url}`;
   if (navigator.share) {
-    navigator.share({ title: 'Join my group on DainikState', text, url });
+    navigator.share({ title: 'Join my group on DainikState', text, url }).catch(() => {});
   } else {
     const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(wa, '_blank');
   }
 }
 
+function shareViaWhatsApp(code) {
+  const url = location.origin + '/i/' + code;
+  const text = `🏆 Join my group on *DainikState*!\n\n${url}\n\n_DainikState - राज्य की आवाज़, राज्य की ताकत_`;
+  // Open WhatsApp with pre-filled text (works on mobile + desktop)
+  const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(wa, '_blank');
+  toast('📱 WhatsApp khul raha hai...');
+}
+
+function openSMSShare(code) {
+  const url = location.origin + '/i/' + code;
+  const text = encodeURIComponent(`Join my DainikState group! ${url}`);
+  // Pre-fill phone numbers from user's contacts if possible, else just open SMS app
+  showModal('📱 Send via SMS', `
+    <p style="opacity:0.7;font-size:13px;margin-bottom:12px;">
+      Enter mobile numbers (one per line, with country code like 91 for India):
+    </p>
+    <div class="form-group">
+      <label>Phone Numbers</label>
+      <textarea id="smsNumbers" placeholder="919876543210&#10;918888777666&#10;919999888777" rows="4"></textarea>
+    </div>
+    <p style="font-size:11px;opacity:0.6;margin-bottom:12px;">
+      Will open your SMS app with the invite message pre-filled.
+    </p>
+    <div class="row" style="gap:8px;">
+      <button class="btn" onclick="sendSMS('${code}')">📱 Open SMS App</button>
+      <button class="btn secondary" onclick="copyInviteLink('${code}'); closeModal();">📋 Copy Link Instead</button>
+    </div>
+  `);
+}
+
+function sendSMS(code) {
+  const url = location.origin + '/i/' + code;
+  const numbers = document.getElementById('smsNumbers').value.trim();
+  const message = `Join my DainikState group! 🏆 ${url}`;
+  if (!numbers) {
+    // No numbers: just open SMS app with message
+    window.location.href = `sms:?body=${encodeURIComponent(message)}`;
+    toast('📱 SMS app khul raha hai...');
+    setTimeout(() => closeModal(), 1000);
+    return;
+  }
+  // With numbers: open SMS app with all numbers pre-filled (separated by comma)
+  // Most SMS apps support sms:number1,number2?body=...
+  const numList = numbers.split('\n').map(n => n.trim().replace(/[^0-9+]/g, '')).filter(Boolean).join(',');
+  window.location.href = `sms:${numList}?body=${encodeURIComponent(message)}`;
+  toast(`📱 ${numList.split(',').length} number par SMS khul raha hai...`);
+  setTimeout(() => closeModal(), 1500);
+}
+
 function copyInviteLink(code) {
   const url = location.origin + '/i/' + code;
   navigator.clipboard?.writeText(url);
-  toast('📋 Link copied: ' + url);
+  toast('📋 Link copied!');
 }
 
 // === INVITE CREATION (in group settings) ===
@@ -1924,9 +2073,11 @@ async function loadExistingInvites() {
       <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:10px;margin-bottom:8px;">
         <div style="font-size:12px;opacity:0.7;margin-bottom:4px;">Code: <b>${esc(inv.code)}</b> • Used ${inv.usedCount}${inv.maxUses > 0 ? '/' + inv.maxUses : ''} times</div>
         <div style="font-size:11px;opacity:0.6;">${inv.expiresAt ? 'Expires ' + timeAgo(inv.expiresAt) : 'Never expires'}</div>
-        <div class="row mt-12" style="margin-top:8px;">
-          <button class="btn secondary" style="flex:1;padding:8px;font-size:12px;" onclick="copyInviteLink('${inv.code}')">📋 Copy</button>
-          <button class="btn secondary" style="flex:1;padding:8px;font-size:12px;" onclick="shareInviteLink('${inv.code}')">↗ Share</button>
+        <div class="row mt-12" style="margin-top:8px;gap:4px;flex-wrap:wrap;">
+          <button class="btn secondary" style="flex:1;padding:8px;font-size:12px;min-width:60px;" onclick="copyInviteLink('${inv.code}')">📋 Copy</button>
+          <button class="btn secondary" style="flex:1;padding:8px;font-size:12px;min-width:60px;background:#25D366;" onclick="shareViaWhatsApp('${inv.code}')">💬 WhatsApp</button>
+          <button class="btn secondary" style="flex:1;padding:8px;font-size:12px;min-width:60px;" onclick="openSMSShare('${inv.code}')">📱 SMS</button>
+          <button class="btn secondary" style="flex:1;padding:8px;font-size:12px;min-width:60px;" onclick="shareInviteLink('${inv.code}')">↗ More</button>
         </div>
       </div>
     `).join('');
@@ -1943,9 +2094,32 @@ async function createInviteLink() {
   if (res.success) {
     toast('✅ Link created: ' + res.invite.code);
     loadExistingInvites();
-    copyInviteLink(res.invite.code);
+    // Show share sheet
+    showInviteShareSheet(res.invite.code, res.url);
   } else {
     toast('❌ ' + (res.error || 'Failed'));
+  }
+}
+
+function showInviteShareSheet(code, fullUrl) {
+  const url = fullUrl || (location.origin + '/i/' + code);
+  // Replace the create button with share options
+  const container = document.getElementById('inviteLinkContainer');
+  if (container) {
+    const shareHtml = `
+      <div style="background:rgba(76, 175, 80, 0.1);border:2px solid rgba(76, 175, 80, 0.4);border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">✅ Link ready!</div>
+        <div style="font-size:11px;opacity:0.8;word-break:break-all;background:rgba(0,0,0,0.3);padding:6px;border-radius:6px;font-family:monospace;">${esc(url)}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn" style="background:#25D366;" onclick="shareViaWhatsApp('${code}')">💬 WhatsApp</button>
+        <button class="btn" style="background:#4caf50;" onclick="openSMSShare('${code}')">📱 SMS</button>
+        <button class="btn secondary" onclick="copyInviteLink('${code}')">📋 Copy</button>
+        <button class="btn secondary" onclick="shareInviteLink('${code}')">↗ More</button>
+      </div>
+    `;
+    // Insert at top of invite container
+    container.insertAdjacentHTML('afterbegin', shareHtml);
   }
 }
 
@@ -2251,6 +2425,15 @@ openGroup = async function(groupId) {
   const isMember = g.members?.includes(currentUser?.id);
   const isAdmin = g.admins?.includes(currentUser?.id);
   const isOwner = g.admin === currentUser?.id;
+  // Check if user can call
+  const whoCanCall = g.whoCanCall || 'everyone';
+  const canCall = !isMember ? false :
+    whoCanCall === 'everyone' ? true :
+    whoCanCall === 'admins_only' ? isAdmin :
+    (g.allowedCallers || []).includes(currentUser?.id) || isAdmin;
+  const callPermText = whoCanCall === 'everyone' ? '👥 All members can call' :
+    whoCanCall === 'admins_only' ? '👑 Only admins can call' :
+    '🎯 Specific members only';
   const content = document.getElementById('groupContent');
   content.innerHTML = `
     <div style="background:linear-gradient(135deg, ${esc(g.color || '#667eea')}, #764ba2);padding:24px 16px;border-radius:16px;margin-bottom:16px;color:#fff;">
@@ -2267,9 +2450,10 @@ openGroup = async function(groupId) {
         ${isAdmin ? `<button class="btn secondary" onclick="openGroupSettings('${g.id}')">⚙️</button>` : ''}
       </div>
       ${isMember ? `<div class="row mt-12" style="margin-top:8px;">
-        <button class="btn" style="background:#4caf50;" onclick="startGroupCall('voice')">📞 Voice Call</button>
-        <button class="btn" style="background:#9c27b0;" onclick="startGroupCall('video')">📹 Video Call</button>
-      </div>` : ''}
+        <button class="btn" style="background:${canCall ? '#4caf50' : 'rgba(255,255,255,0.2)'};" onclick="${canCall ? 'startGroupCall(\\'voice\\')' : 'toast(\\'❌ You are not allowed to call in this group\\')'}" ${canCall ? '' : 'disabled'}>📞 Voice Call</button>
+        <button class="btn" style="background:${canCall ? '#9c27b0' : 'rgba(255,255,255,0.2)'};" onclick="${canCall ? 'startGroupCall(\\'video\\')' : 'toast(\\'❌ You are not allowed to call in this group\\')'}" ${canCall ? '' : 'disabled'}>📹 Video Call</button>
+      </div>
+      <div style="margin-top:6px;font-size:10px;opacity:0.7;">${callPermText}</div>` : ''}
       <div style="margin-top:8px;font-size:11px;opacity:0.7;">📋 Invite Code: <b>${esc(g.inviteCode || '')}</b></div>
     </div>
     <div id="groupPosts"></div>
