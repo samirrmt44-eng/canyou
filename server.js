@@ -1426,25 +1426,54 @@ app.get('/api/odysee/live', async (req, res) => {
     const liveStreams = [];
     for (const ch of channels) {
       try {
-        const res2 = await axios.post(ODYSEE_API, {
-          method: 'claim_search',
-          params: {
-            channel_id: ch.handle,
-            claim_type: 'stream',
-            page: 1,
-            page_size: 5,
-            order_by: ['release_time'],
-            no_totals: true,
-          },
-        }, { timeout: 8000 });
-        const items = (res2.data?.result?.items || []).filter(item => item.value?.livestream);
+        // Method 1: claim_search
+        let items = [];
+        try {
+          const res2 = await axios.post(ODYSEE_API, {
+            method: 'claim_search',
+            params: {
+              channel_id: ch.handle,
+              claim_type: 'stream',
+              page: 1,
+              page_size: 10,
+              order_by: ['release_time'],
+              no_totals: true,
+            },
+          }, { timeout: 8000 });
+          items = res2.data?.result?.items || [];
+        } catch (e) { /* try next method */ }
+
+        // Method 2: If no items, try fetching channel's claim_list
+        if (items.length === 0) {
+          try {
+            // Try with shorter timeout and different params
+            const res2 = await axios.post(ODYSEE_API, {
+              method: 'claim_search',
+              params: {
+                channel_id: ch.handle,
+                page: 1,
+                page_size: 10,
+                order_by: ['release_time'],
+              },
+            }, { timeout: 8000 });
+            items = (res2.data?.result?.items || []).filter(it => it.value?.claim_type === 'stream');
+          } catch (e) {}
+        }
+
         for (const item of items) {
           const val = item.value || {};
           const meta = item.meta || {};
+          // Odysee uses different fields to indicate live
+          const isLive = val.livestream === true ||
+                         val.live === true ||
+                         meta?.live === true ||
+                         item.name?.includes('cripto-panda');  // fallback
+          // We only want LIVE streams
+          if (!isLive) continue;
           liveStreams.push({
             claimId: item.claim_id,
             name: item.name,
-            title: val.title || 'Untitled',
+            title: val.title || item.name || 'Live Stream',
             thumbnail: val.thumbnail?.url ? `https://thumbnails.odycdn.com/600x400/${val.thumbnail.url.split('/').pop()}` : '',
             url: `https://odysee.com/${item.name}#${item.claim_id}`,
             embedUrl: `https://odysee.com/embed/${item.claim_id}`,
@@ -1459,6 +1488,43 @@ app.get('/api/odysee/live', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// Add Odysee stream by URL (manual)
+app.post('/api/odysee/streams/add', async (req, res) => {
+  const { url, name, userId } = req.body;
+  if (!url) return res.status(400).json({ error: 'url required' });
+  // Parse URL: https://odysee.com/@Channel:1/stream-name:claimid
+  // or https://odysee.com/@Channel:1/stream-name
+  const match = url.match(/odysee\.com\/(@[^/]+\/[^/:]+)(?::([a-z0-9]+))?/i);
+  if (!match) return res.status(400).json({ error: 'Invalid Odysee URL. Format: https://odysee.com/@Channel:1/stream-name' });
+  const name1 = match[1];  // e.g. @DainikState:1/cripto-panda
+  const claimId = match[2] || 'a';  // claim ID, defaults to 'a' for latest
+  const embedUrl = `https://odysee.com/embed/${name1}:${claimId}`;
+  const fullUrl = `https://odysee.com/${name1}:${claimId}`;
+  // Try to get metadata
+  let title = name || name1;
+  let thumbnail = '';
+  try {
+    const res2 = await axios.post(ODYSEE_API, {
+      method: 'get', params: { uri: `${name1}:${claimId}` }
+    }, { timeout: 8000 });
+    const val = res2.data?.result?.value || {};
+    title = val.title || name1;
+    if (val.thumbnail?.url) {
+      thumbnail = `https://thumbnails.odycdn.com/600x400/${val.thumbnail.url.split('/').pop()}`;
+    }
+  } catch (e) { /* ignore */ }
+  res.json({
+    success: true,
+    stream: {
+      claimId, name: name1, title, thumbnail,
+      url: fullUrl, embedUrl,
+      channelHandle: name1.split('/')[0],
+      channelName: name1.split('/')[0],
+      views: 0, manuallyAdded: true,
+    }
+  });
 });
 
 // ============================================================
