@@ -59,6 +59,7 @@ async function connectDB() {
     liveStreamsCol = db.collection('liveStreams');
     liveChatCol = db.collection('liveChat');
     liveSignalsCol = db.collection('liveSignals');
+    odyseeChannelsCol = db.collection('odyseeChannels');
 
     // Indexes
     await linksCol.createIndex({ addedAt: -1 });
@@ -1327,6 +1328,137 @@ app.get('/api/calls/:callId/signals/:userId', async (req, res) => {
   // Mark as read
   await callSignalsCol.updateMany({ _id: { $in: signals.map(s => s._id) } }, { $set: { read: true } });
   res.json({ success: true, signals: signals.map(s => { const { _id, ...r } = s; return r; }) });
+});
+
+// ============================================================
+// ODYSEE LIVE STREAM INTEGRATION
+// ============================================================
+// Fetch live streams from an Odysee channel
+// Channel format: "@ChannelName:N" e.g. "@DainikState:1"
+const ODYSEE_API = 'https://api.na-backend.odysee.com/api/v1/proxy';
+let odyseeChannelsCol;
+
+async function connectDB_odysee() {
+  odyseeChannelsCol = db.collection('odyseeChannels');
+  await odyseeChannelsCol.createIndex({ handle: 1 }, { unique: true });
+}
+
+app.post('/api/odysee/channels', async (req, res) => {
+  const { handle, name, userId } = req.body;
+  if (!handle || !userId) return res.status(400).json({ error: 'handle and userId required' });
+  if (!odyseeChannelsCol) return res.status(503).json({ error: 'DB not ready' });
+  // Verify channel exists
+  try {
+    const res2 = await axios.post(ODYSEE_API, {
+      method: 'claim_search',
+      params: { channel_id: handle, page: 1, page_size: 1, no_totals: true },
+    }, { timeout: 10000 });
+    const items = res2.data?.result?.items || [];
+    const ch = await odyseeChannelsCol.findOne({ handle });
+    await odyseeChannelsCol.updateOne(
+      { handle },
+      { $set: { handle, name: name || handle, addedBy: userId, addedAt: Date.now(), claimCount: items.length > 0 } },
+      { upsert: true }
+    );
+    res.json({ success: true, channel: { handle, name: name || handle, claimCount: items.length > 0 } });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to verify channel: ' + e.message });
+  }
+});
+
+app.get('/api/odysee/channels', async (req, res) => {
+  if (!odyseeChannelsCol) return res.status(503).json({ error: 'DB not ready' });
+  const channels = await odyseeChannelsCol.find({}).sort({ addedAt: -1 }).toArray();
+  res.json({ success: true, channels: channels.map(c => { const { _id, ...r } = c; return r; }) });
+});
+
+app.delete('/api/odysee/channels/:handle', async (req, res) => {
+  const { userId } = req.body;
+  if (!odyseeChannelsCol) return res.status(503).json({ error: 'DB not ready' });
+  await odyseeChannelsCol.deleteOne({ handle: req.params.handle });
+  res.json({ success: true });
+});
+
+// Get live streams + recent streams from an Odysee channel
+app.get('/api/odysee/streams/:handle', async (req, res) => {
+  try {
+    // Get channel info + recent videos
+    const res2 = await axios.post(ODYSEE_API, {
+      method: 'claim_search',
+      params: {
+        channel_id: req.params.handle,
+        claim_type: 'stream',
+        page: 1,
+        page_size: 10,
+        order_by: ['release_time'],
+        no_totals: true,
+      },
+    }, { timeout: 10000 });
+    const items = (res2.data?.result?.items || []).map(item => {
+      const val = item.value || {};
+      const meta = item.meta || {};
+      return {
+        claimId: item.claim_id,
+        name: item.name,
+        title: val.title || 'Untitled',
+        description: val.description || '',
+        thumbnail: val.thumbnail?.url ? `https://thumbnails.odycdn.com/600x400/${val.thumbnail.url.split('/').pop()}` : '',
+        url: `https://odysee.com/${item.name}#${item.claim_id}`,
+        embedUrl: `https://odysee.com/embed/${item.claim_id}`,
+        duration: val.duration || 0,
+        releaseTime: meta.release_time || 0,
+        views: meta.views || 0,
+        isLive: val.livestream || false,  // Odysee sets this for live streams
+      };
+    });
+    res.json({ success: true, count: items.length, streams: items });
+  } catch (e) {
+    console.error('Odysee fetch error:', e.message);
+    res.status(500).json({ error: 'Failed to fetch Odysee streams: ' + e.message });
+  }
+});
+
+// Get all live streams across all added Odysee channels
+app.get('/api/odysee/live', async (req, res) => {
+  if (!odyseeChannelsCol) return res.status(503).json({ error: 'DB not ready' });
+  try {
+    const channels = await odyseeChannelsCol.find({}).toArray();
+    const liveStreams = [];
+    for (const ch of channels) {
+      try {
+        const res2 = await axios.post(ODYSEE_API, {
+          method: 'claim_search',
+          params: {
+            channel_id: ch.handle,
+            claim_type: 'stream',
+            page: 1,
+            page_size: 5,
+            order_by: ['release_time'],
+            no_totals: true,
+          },
+        }, { timeout: 8000 });
+        const items = (res2.data?.result?.items || []).filter(item => item.value?.livestream);
+        for (const item of items) {
+          const val = item.value || {};
+          const meta = item.meta || {};
+          liveStreams.push({
+            claimId: item.claim_id,
+            name: item.name,
+            title: val.title || 'Untitled',
+            thumbnail: val.thumbnail?.url ? `https://thumbnails.odycdn.com/600x400/${val.thumbnail.url.split('/').pop()}` : '',
+            url: `https://odysee.com/${item.name}#${item.claim_id}`,
+            embedUrl: `https://odysee.com/embed/${item.claim_id}`,
+            channelHandle: ch.handle,
+            channelName: ch.name,
+            views: meta.views || 0,
+          });
+        }
+      } catch (e) { console.error(`Odysee fetch ${ch.handle} failed:`, e.message); }
+    }
+    res.json({ success: true, count: liveStreams.length, streams: liveStreams });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ============================================================
