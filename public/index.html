@@ -2502,6 +2502,17 @@ function showLiveStreamView(stream, isStreamer) {
     v.srcObject = liveLocalStream;
     v.muted = true;  // Don't play own audio
     document.getElementById('live-overlay').style.display = 'flex';
+  } else if (isStreamer && !liveLocalStream) {
+    // Streamer doesn't have local stream - show error
+    const ph = document.getElementById('live-placeholder');
+    ph.innerHTML = `
+      <div class="emoji">📹</div>
+      <div style="margin-top:12px;font-weight:700;">Camera/Mic access required</div>
+      <div style="margin-top:4px;font-size:12px;opacity:0.7;">Live stream started but no media</div>
+      <button class="btn" style="margin-top:16px;width:auto;padding:10px 20px;" onclick="reAcquireLocalStream()">📹 Grant Camera/Mic Access</button>
+      <button class="btn danger" style="margin-top:8px;width:auto;padding:10px 20px;background:#ff3b30;" onclick="endLiveStream()">🛑 End Stream</button>
+    `;
+    toast('⚠️ Live stream started but no media. Click "Grant Access" button.');
   }
   // Load existing chat
   loadLiveChat();
@@ -2669,10 +2680,9 @@ function createLivePeerConnection(remoteUserId) {
 // Streamer: when new viewer joins, send them an offer
 async function setupStreamerForViewer(viewerUserId) {
   if (!liveLocalStream || !liveLocalStream.active) {
-    updateLiveDebug('⚠️ No active local stream — viewer will see retry button');
+    updateLiveDebug('⚠️ No active local stream — viewer waiting');
     updateLiveConnStatus('❌ Local stream not available');
-    showLiveRetry(true);
-    return;
+    return;  // Don't send offer if no local stream
   }
   updateLiveDebug(`Setting up peer for viewer ${viewerUserId.slice(0,6)}...`);
   const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
