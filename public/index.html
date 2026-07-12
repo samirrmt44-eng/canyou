@@ -2418,6 +2418,9 @@ async function declineCall() {
 }
 
 // === CALL BUTTON IN GROUP (initiate group call) ===
+function showCallDeniedToast() {
+  toast('❌ You are not allowed to call in this group');
+}
 async function startGroupCall(type) {
   if (!currentGroup) return;
   await startCall(type, null, currentGroup);
@@ -2459,8 +2462,8 @@ openGroup = async function(groupId) {
         ${isAdmin ? `<button class="btn secondary" onclick="openGroupSettings('${g.id}')">⚙️</button>` : ''}
       </div>
       ${isMember ? `<div class="row mt-12" style="margin-top:8px;">
-        <button class="btn" style="background:${canCall ? '#4caf50' : 'rgba(255,255,255,0.2)'};" onclick="${canCall ? 'startGroupCall(\\'voice\\')' : 'toast(\\'❌ You are not allowed to call in this group\\')'}" ${canCall ? '' : 'disabled'}>📞 Voice Call</button>
-        <button class="btn" style="background:${canCall ? '#9c27b0' : 'rgba(255,255,255,0.2)'};" onclick="${canCall ? 'startGroupCall(\\'video\\')' : 'toast(\\'❌ You are not allowed to call in this group\\')'}" ${canCall ? '' : 'disabled'}>📹 Video Call</button>
+        <button class="btn" style="background:${canCall ? '#4caf50' : 'rgba(255,255,255,0.2)'};" onclick="${canCall ? "startGroupCall('voice')" : "showCallDeniedToast()"}" ${canCall ? '' : 'disabled'}>📞 Voice Call</button>
+        <button class="btn" style="background:${canCall ? '#9c27b0' : 'rgba(255,255,255,0.2)'};" onclick="${canCall ? "startGroupCall('video')" : "showCallDeniedToast()"}" ${canCall ? '' : 'disabled'}>📹 Video Call</button>
       </div>
       <div style="margin-top:6px;font-size:10px;opacity:0.7;">${callPermText}</div>` : ''}
       <div style="margin-top:8px;font-size:11px;opacity:0.7;">📋 Invite Code: <b>${esc(g.inviteCode || '')}</b></div>
