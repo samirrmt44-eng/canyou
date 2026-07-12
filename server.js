@@ -945,11 +945,30 @@ app.post('/api/live/:streamId/end', async (req, res) => {
   if (!liveStreamsCol) return res.status(503).json({ error: 'DB not ready' });
   const stream = await liveStreamsCol.findOne({ streamId: req.params.streamId });
   if (!stream) return res.status(404).json({ error: 'Stream not found' });
-  if (stream.streamerId !== userId) return res.status(403).json({ error: 'Only streamer can end' });
+  // Allow streamer OR group admin/owner to end the stream
+  const group = await groupsCol.findOne({ id: stream.groupId });
+  const isStreamer = stream.streamerId === userId;
+  const isGroupAdmin = group && group.admins?.includes(userId);
+  if (!isStreamer && !isGroupAdmin) return res.status(403).json({ error: 'Only streamer or group admin can end' });
   await liveStreamsCol.updateOne({ streamId: stream.streamId }, { $set: { status: 'ended', endedAt: Date.now(), duration: Math.floor((Date.now() - stream.startedAt) / 1000) } });
   // Remove the live post
   await groupPostsCol.deleteOne({ id: 'gplive_' + stream.streamId });
   res.json({ success: true });
+});
+
+// Force-end any active stream in a group (used when stuck)
+app.post('/api/groups/:groupId/live/force-end', async (req, res) => {
+  const { userId } = req.body;
+  if (!liveStreamsCol) return res.status(503).json({ error: 'DB not ready' });
+  const group = await groupsCol.findOne({ id: req.params.groupId });
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (!group.admins?.includes(userId)) return res.status(403).json({ error: 'Only admin can force-end' });
+  const activeStreams = await liveStreamsCol.find({ groupId: group.id, status: 'live' }).toArray();
+  for (const s of activeStreams) {
+    await liveStreamsCol.updateOne({ streamId: s.streamId }, { $set: { status: 'ended', endedAt: Date.now(), duration: Math.floor((Date.now() - s.startedAt) / 1000), forceEnded: true } });
+    await groupPostsCol.deleteOne({ id: 'gplive_' + s.streamId });
+  }
+  res.json({ success: true, ended: activeStreams.length });
 });
 
 // Live chat - send message
