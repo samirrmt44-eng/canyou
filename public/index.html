@@ -2387,44 +2387,64 @@ function startCallTimer() {
 
 function startSignaling() {
   if (signalPollInterval) clearInterval(signalPollInterval);
-  signalPollInterval = setInterval(pollSignals, 2000);
+  // Poll every 800ms for fast signaling - needed for ICE candidates
+  signalPollInterval = setInterval(pollSignals, 800);
 }
 
 async function pollSignals() {
   if (!currentCall || !currentUser) return;
-  // Refresh call status
-  const callRes = await fetch(API + '/api/calls/' + currentCall.callId).then(r => r.json());
-  if (callRes.success) {
-    currentCall = callRes.call;
-    updateParticipants();
-    if (currentCall.status === 'ended') {
-      cleanupCall();
-      toast('Call ended');
-      return;
-    }
-    // Initialize peer connections for new participants
-    for (const p of currentCall.participants) {
-      if (p.userId !== currentUser.id && !peerConnections[p.userId]) {
-        // Existing participant: I'm the one who should create offer
-        if (currentCall.fromUserId === currentUser.id) {
-          createPeerConnection(p.userId, true);
-        } else {
-          createPeerConnection(p.userId, false);
+  try {
+    // Refresh call status and poll signals in parallel for speed
+    const [callRes, sigRes] = await Promise.all([
+      fetch(API + '/api/calls/' + currentCall.callId).then(r => r.json()),
+      fetch(API + '/api/calls/' + currentCall.callId + '/signals/' + currentUser.id).then(r => r.json()),
+    ]);
+    if (callRes.success) {
+      currentCall = callRes.call;
+      updateParticipants();
+      if (currentCall.status === 'ended') {
+        cleanupCall();
+        toast('Call ended');
+        return;
+      }
+      // Initialize peer connections for new participants
+      for (const p of currentCall.participants) {
+        if (p.userId !== currentUser.id && !peerConnections[p.userId]) {
+          // The user who already has media stream (joined earlier) should create offer
+          if (currentCall.fromUserId === currentUser.id) {
+            createPeerConnection(p.userId, true);
+          } else {
+            createPeerConnection(p.userId, false);
+          }
         }
       }
     }
-  }
-  // Poll signals
-  const sigRes = await fetch(API + '/api/calls/' + currentCall.callId + '/signals/' + currentUser.id).then(r => r.json());
-  if (sigRes.signals) {
-    for (const sig of sigRes.signals) {
-      await handleSignal(sig);
+    // Process all signals
+    if (sigRes.signals) {
+      for (const sig of sigRes.signals) {
+        await handleSignal(sig);
+      }
     }
+  } catch (e) {
+    console.warn('Poll error:', e);
   }
 }
 
 function createPeerConnection(remoteUserId, isInitiator) {
   const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  // Queue ICE candidates that arrive before remote description is set
+  const iceCandidateQueue = [];
+  let remoteDescSet = false;
+  pc.onsignalingstatechange = () => {
+    if (pc.signalingState === 'stable' || pc.remoteDescription) {
+      remoteDescSet = true;
+      // Flush queued candidates
+      while (iceCandidateQueue.length > 0) {
+        const candidate = iceCandidateQueue.shift();
+        pc.addIceCandidate(candidate).catch(() => {});
+      }
+    }
+  };
   peerConnections[remoteUserId] = pc;
   // Add local stream
   if (localStream) {
@@ -2436,8 +2456,16 @@ function createPeerConnection(remoteUserId, isInitiator) {
       sendSignal(remoteUserId, 'ice-candidate', e.candidate);
     }
   };
+  // Connection state - log for debugging
+  pc.onconnectionstatechange = () => {
+    console.log('Connection state:', pc.connectionState, 'with', remoteUserId);
+    if (pc.connectionState === 'connected') {
+      toast('✅ Call connected!');
+    }
+  };
   // Remote stream
   pc.ontrack = (e) => {
+    console.log('Got remote stream');
     const remote = document.getElementById('callRemote');
     remote.innerHTML = '';
     const v = document.createElement('video');
@@ -2453,8 +2481,10 @@ function createPeerConnection(remoteUserId, isInitiator) {
     pc.createOffer().then(offer => {
       pc.setLocalDescription(offer);
       sendSignal(remoteUserId, 'offer', offer);
-    });
+    }).catch(e => console.error('Offer error:', e));
   }
+  // Store queue reference
+  pc._iceQueue = iceCandidateQueue;
   return pc;
 }
 
@@ -2470,15 +2500,26 @@ async function handleSignal(sig) {
   let pc = peerConnections[sig.fromUserId];
   if (sig.type === 'offer') {
     if (!pc) pc = createPeerConnection(sig.fromUserId, false);
-    await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    sendSignal(sig.fromUserId, 'answer', answer);
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      sendSignal(sig.fromUserId, 'answer', answer);
+    } catch (e) {
+      console.error('Offer handling error:', e);
+    }
   } else if (sig.type === 'answer') {
-    if (pc) await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));
+    if (pc) {
+      try { await pc.setRemoteDescription(new RTCSessionDescription(sig.payload)); } catch (e) { console.error('Answer error:', e); }
+    }
   } else if (sig.type === 'ice-candidate') {
     if (pc) {
-      try { await pc.addIceCandidate(new RTCIceCandidate(sig.payload)); } catch (e) {}
+      // If remote description not set yet, queue it
+      if (!pc.remoteDescription) {
+        pc._iceQueue.push(new RTCIceCandidate(sig.payload));
+      } else {
+        try { await pc.addIceCandidate(new RTCIceCandidate(sig.payload)); } catch (e) { /* ignore */ }
+      }
     }
   }
 }
