@@ -821,6 +821,54 @@ app.get('/api/explore', async (req, res) => {
 });
 
 // ============================================================
+// WEBRTC TURN CREDENTIALS (Metered.ca)
+// ============================================================
+// In production, set METERED_API_KEY env var on Render
+// Get free API key from https://dashboard.metered.ca/
+async function getTurnCredentials() {
+  const apiKey = process.env.METERED_API_KEY;
+  if (!apiKey) {
+    // Fallback: return only STUN servers (works for ~80% of cases)
+    return {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        { urls: 'stun:stun.cloudflare.com:3478' },
+      ],
+      usingTurn: false,
+    };
+  }
+  try {
+    const response = await axios.get(
+      `https://dainikstate.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`,
+      { timeout: 5000 }
+    );
+    if (response.data && Array.isArray(response.data)) {
+      return { iceServers: response.data, usingTurn: true };
+    }
+  } catch (err) {
+    console.error('TURN credentials fetch failed:', err.message);
+  }
+  // Fallback
+  return {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+    ],
+    usingTurn: false,
+  };
+}
+
+app.get('/api/turn-credentials', async (req, res) => {
+  const creds = await getTurnCredentials();
+  res.json(creds);
+});
+
+// ============================================================
 // INVITE LINKS - WhatsApp-style group invite
 // ============================================================
 app.post('/api/invites', async (req, res) => {
