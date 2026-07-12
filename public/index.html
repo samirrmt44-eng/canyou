@@ -445,6 +445,164 @@
   /* === PAGES (hide/show via JS) === */
   .page { display: none; }
   .page.active { display: block; }
+
+  /* === CALL SCREEN === */
+  .call-screen {
+    position: fixed; inset: 0; background: #0a0e1a;
+    z-index: 300; display: none; flex-direction: column;
+    color: #fff;
+  }
+  .call-screen.show { display: flex; }
+  .call-header {
+    padding: 16px;
+    text-align: center;
+    background: linear-gradient(135deg, #1a1f3a, #0a0e1a);
+  }
+  .call-status { font-size: 12px; opacity: 0.7; }
+  .call-name { font-size: 22px; font-weight: 800; margin-top: 4px; }
+  .call-timer { font-size: 13px; opacity: 0.6; margin-top: 2px; }
+  .call-videos {
+    flex: 1; position: relative;
+    display: grid; gap: 4px; padding: 8px;
+    background: #000;
+  }
+  .call-remote {
+    grid-area: 1 / 1; width: 100%; height: 100%;
+    object-fit: cover; background: #000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .call-remote-avatar {
+    width: 120px; height: 120px; border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px; color: #fff; font-weight: 800;
+  }
+  .call-local {
+    position: absolute; top: 16px; right: 16px;
+    width: 100px; height: 140px; border-radius: 12px;
+    object-fit: cover; background: #1a1f3a;
+    border: 2px solid rgba(255,255,255,0.3);
+    z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .call-local video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  .call-controls {
+    padding: 24px 16px; display: flex; gap: 12px; justify-content: center;
+    background: linear-gradient(0deg, #0a0e1a, transparent);
+  }
+  .call-btn {
+    width: 60px; height: 60px; border-radius: 50%;
+    border: none; color: #fff; font-size: 24px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: transform 0.2s;
+  }
+  .call-btn:hover { transform: scale(1.1); }
+  .call-btn.mute, .call-btn.camera {
+    background: rgba(255,255,255,0.2);
+  }
+  .call-btn.mute.active, .call-btn.camera.active {
+    background: #ff3b30;
+  }
+  .call-btn.end {
+    background: #ff3b30;
+    width: 70px; height: 70px;
+    font-size: 28px;
+  }
+  .call-btn.accept {
+    background: #4caf50;
+    width: 70px; height: 70px;
+    font-size: 28px;
+  }
+  .call-participants {
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+    padding: 12px;
+  }
+  .call-participant {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    min-width: 70px;
+  }
+  .call-participant .avatar {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 800;
+    border: 2px solid rgba(255,255,255,0.3);
+  }
+  .call-participant .name { font-size: 11px; max-width: 70px; text-align: center;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* === INCOMING CALL MODAL === */
+  .incoming-call-modal {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    padding: 20px; z-index: 400;
+    display: none; align-items: center; gap: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: slideDown 0.3s ease;
+  }
+  @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+  .incoming-call-modal.show { display: flex; }
+  .incoming-call-modal .avatar {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #fff; font-weight: 800;
+  }
+  .incoming-call-modal .info { flex: 1; color: #fff; }
+  .incoming-call-modal .caller-name { font-weight: 800; font-size: 16px; }
+  .incoming-call-modal .call-type { font-size: 12px; opacity: 0.9; }
+  .incoming-call-modal .actions { display: flex; gap: 8px; }
+  .incoming-call-modal button {
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    color: #fff; font-size: 18px; cursor: pointer;
+  }
+  .incoming-call-modal .accept { background: #4caf50; }
+  .incoming-call-modal .decline { background: #ff3b30; }
+
+  /* === INVITE LANDING === */
+  .invite-landing {
+    text-align: center; padding: 40px 20px;
+  }
+  .invite-landing .group-icon {
+    width: 100px; height: 100px; border-radius: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px; margin: 0 auto 16px;
+  }
+  .invite-landing h1 { font-size: 24px; margin-bottom: 8px; }
+  .invite-landing .desc { opacity: 0.7; margin-bottom: 16px; }
+  .invite-landing .stats {
+    display: flex; gap: 16px; justify-content: center; margin: 16px 0;
+    font-size: 13px; opacity: 0.7;
+  }
+  .invite-landing .type-pill {
+    display: inline-block; padding: 4px 12px; border-radius: 12px;
+    background: rgba(255,255,255,0.1); font-size: 12px; margin-bottom: 16px;
+  }
+
+  /* === SHARE BUTTONS === */
+  .share-buttons {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;
+  }
+  .share-btn {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: #fff; padding: 12px; border-radius: 12px; font-size: 13px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .share-btn:hover { background: rgba(255,255,255,0.15); }
+  .share-btn.whatsapp { background: #25D366; }
+  .share-btn.copy { background: rgba(102, 126, 234, 0.4); }
+
+  /* === QR CODE === */
+  .qr-container {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 16px; background: #fff; border-radius: 12px; margin: 12px 0;
+  }
+  .qr-code { width: 200px; height: 200px; }
+  .qr-container .url {
+    color: #000; font-size: 11px; margin-top: 8px;
+    word-break: break-all; max-width: 200px; text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -520,6 +678,16 @@
     <div id="groupContent"></div>
   </div>
 
+  <!-- INVITE LANDING -->
+  <div class="page" id="page-invite">
+    <div id="inviteContent"></div>
+  </div>
+
+  <!-- CALL SCREEN -->
+  <div class="page" id="page-call">
+    <div id="callContent"></div>
+  </div>
+
 </div>
 
 <!-- BOTTOM NAV -->
@@ -589,6 +757,40 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- INCOMING CALL NOTIFICATION -->
+<div class="incoming-call-modal" id="incomingCallModal">
+  <div class="avatar" id="callerAvatar">📞</div>
+  <div class="info">
+    <div class="caller-name" id="callerName">Caller</div>
+    <div class="call-type" id="callerType">Incoming voice call</div>
+  </div>
+  <div class="actions">
+    <button class="decline" onclick="declineCall()">✕</button>
+    <button class="accept" onclick="acceptCall()">📞</button>
+  </div>
+</div>
+
+<!-- CALL SCREEN -->
+<div class="call-screen" id="callScreen">
+  <div class="call-header">
+    <div class="call-status" id="callStatus">Calling...</div>
+    <div class="call-name" id="callName">User</div>
+    <div class="call-timer" id="callTimer">00:00</div>
+  </div>
+  <div class="call-videos">
+    <div class="call-remote" id="callRemote">
+      <div class="call-remote-avatar" id="callRemoteAvatar">📞</div>
+    </div>
+    <video class="call-local hide" id="callLocalVideo" autoplay playsinline muted></video>
+  </div>
+  <div class="call-participants" id="callParticipants"></div>
+  <div class="call-controls">
+    <button class="call-btn mute" id="muteBtn" onclick="toggleMute()">🎤</button>
+    <button class="call-btn camera" id="cameraBtn" onclick="toggleCamera()">📹</button>
+    <button class="call-btn end" onclick="endCall()">📞</button>
+  </div>
+</div>
 
 <script>
 /* ====================================================
@@ -1495,7 +1697,546 @@ checkAuth();
 setInterval(() => {
   if (currentPage === 'home') loadHomeFeed();
   if (currentPage === 'notifications') loadNotifications();
-}, 30000);
+  if (currentUser) checkForIncomingCall();
+}, 5000);
+
+// Check for invite link in URL (e.g., dainikstate.com/i/ABC123)
+const pathParts = location.pathname.split('/');
+if (pathParts[1] === 'i' && pathParts[2]) {
+  setTimeout(() => handleInviteLink(pathParts[2].toUpperCase()), 1000);
+}
+
+async function handleInviteLink(code) {
+  try {
+    const res = await fetch(API + '/api/invites/' + code).then(r => r.json());
+    if (!res.success) { toast('Invalid invite link'); return; }
+    const { invite, group } = res;
+    nav('invite');
+    const content = document.getElementById('inviteContent');
+    content.innerHTML = `
+      <div class="invite-landing">
+        <div class="group-icon" style="background:${esc(group.color || '#667eea')};">${esc(group.icon || '💬')}</div>
+        <div class="type-pill">${group.type === 'public' ? '🌐 Public Group' : '🔒 Private Group'}</div>
+        <h1>${esc(group.name)}</h1>
+        <p class="desc">${esc(group.description || 'You\'ve been invited to join this group on DainikState')}</p>
+        <div class="stats">
+          <span>👥 ${group.memberCount} members</span>
+          <span>•</span>
+          <span>📅 ${timeAgo(invite.createdAt)}</span>
+        </div>
+        <div id="inviteAction"></div>
+        <div class="share-buttons">
+          <button class="share-btn" onclick="shareInviteLink('${code}')">↗ Share More</button>
+          <button class="share-btn" onclick="copyInviteLink('${code}')">📋 Copy Link</button>
+        </div>
+      </div>
+    `;
+    if (!currentUser) {
+      document.getElementById('inviteAction').innerHTML = `
+        <p style="margin: 16px 0; opacity: 0.7;">Please register to join</p>
+        <button class="btn" onclick="document.getElementById('authModal').classList.remove('hidden')">Register to Join</button>
+      `;
+    } else {
+      const isMember = await checkMembership(group.id);
+      if (isMember) {
+        document.getElementById('inviteAction').innerHTML = `
+          <p style="color:#4caf50;margin: 16px 0;">✅ You're already a member</p>
+          <button class="btn" onclick="openGroup('${group.id}')">Open Group</button>
+        `;
+      } else {
+        const actionText = group.type === 'public' ? 'Join Group' : 'Request to Join';
+        document.getElementById('inviteAction').innerHTML = `
+          <button class="btn" onclick="acceptInvite('${code}')">${actionText}</button>
+        `;
+      }
+    }
+  } catch (e) {
+    toast('Invalid invite link');
+  }
+}
+
+async function checkMembership(groupId) {
+  const r = await fetch(API + '/api/groups/' + groupId + '?userId=' + currentUser.id).then(r => r.json());
+  return r.group?.members?.includes(currentUser.id);
+}
+
+async function acceptInvite(code) {
+  if (!currentUser) return;
+  try {
+    const r = await fetch(API + '/api/invites/' + code).then(r => r.json());
+    if (!r.success) return;
+    const joinRes = await fetch(API + '/api/groups/' + r.group.id + '/join', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id }),
+    }).then(r => r.json());
+    if (joinRes.success) {
+      if (joinRes.pending) {
+        toast('⏳ Request sent to admin');
+      } else {
+        toast('✅ Joined!');
+        openGroup(r.group.id);
+      }
+    } else {
+      toast('❌ ' + (joinRes.error || 'Failed'));
+    }
+  } catch (e) { toast('Failed'); }
+}
+
+function shareInviteLink(code) {
+  const url = location.origin + '/i/' + code;
+  const text = `Join my group "${currentGroup ? '' : ''}" on DainikState! ${url}`;
+  if (navigator.share) {
+    navigator.share({ title: 'Join my group on DainikState', text, url });
+  } else {
+    const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(wa, '_blank');
+  }
+}
+
+function copyInviteLink(code) {
+  const url = location.origin + '/i/' + code;
+  navigator.clipboard?.writeText(url);
+  toast('📋 Link copied: ' + url);
+}
+
+// === INVITE CREATION (in group settings) ===
+async function openInviteCreator() {
+  if (!currentGroup) return;
+  showModal('Invite Link', `
+    <p style="opacity:0.7;font-size:13px;margin-bottom:12px;">Share this link to invite people. They'll auto-join (public) or send request (private).</p>
+    <div id="inviteLinkContainer"><div class="empty"><div class="text">Generating link...</div></div></div>
+    <div class="form-group mt-12">
+      <label>Expires in</label>
+      <select id="inviteExpiry">
+        <option value="0">Never</option>
+        <option value="3600">1 hour</option>
+        <option value="86400">1 day</option>
+        <option value="604800">1 week</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Max uses (0 = unlimited)</label>
+      <input type="number" id="inviteMaxUses" value="0" min="0" />
+    </div>
+    <button class="btn" onclick="createInviteLink()">Generate Link</button>
+  `);
+  loadExistingInvites();
+}
+
+async function loadExistingInvites() {
+  const container = document.getElementById('inviteLinkContainer');
+  if (!container) return;
+  try {
+    const res = await fetch(API + '/api/groups/' + currentGroup + '/invites').then(r => r.json());
+    if (!res.invites || res.invites.length === 0) {
+      container.innerHTML = '<div class="empty"><div class="text">No active invites</div></div>';
+      return;
+    }
+    container.innerHTML = res.invites.map(inv => `
+      <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:10px;margin-bottom:8px;">
+        <div style="font-size:12px;opacity:0.7;margin-bottom:4px;">Code: <b>${esc(inv.code)}</b> • Used ${inv.usedCount}${inv.maxUses > 0 ? '/' + inv.maxUses : ''} times</div>
+        <div style="font-size:11px;opacity:0.6;">${inv.expiresAt ? 'Expires ' + timeAgo(inv.expiresAt) : 'Never expires'}</div>
+        <div class="row mt-12" style="margin-top:8px;">
+          <button class="btn secondary" style="flex:1;padding:8px;font-size:12px;" onclick="copyInviteLink('${inv.code}')">📋 Copy</button>
+          <button class="btn secondary" style="flex:1;padding:8px;font-size:12px;" onclick="shareInviteLink('${inv.code}')">↗ Share</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) { container.innerHTML = '<div class="text">Failed to load</div>'; }
+}
+
+async function createInviteLink() {
+  const expiresIn = parseInt(document.getElementById('inviteExpiry').value);
+  const maxUses = parseInt(document.getElementById('inviteMaxUses').value) || 0;
+  const res = await fetch(API + '/api/invites', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ groupId: currentGroup, userId: currentUser.id, maxUses, expiresIn }),
+  }).then(r => r.json());
+  if (res.success) {
+    toast('✅ Link created: ' + res.invite.code);
+    loadExistingInvites();
+    copyInviteLink(res.invite.code);
+  } else {
+    toast('❌ ' + (res.error || 'Failed'));
+  }
+}
+
+// === VOICE/VIDEO CALLS (WebRTC) ===
+let currentCall = null;
+let localStream = null;
+let peerConnections = {};  // userId -> RTCPeerConnection
+let callTimerInterval = null;
+let signalPollInterval = null;
+
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+];
+
+async function startCall(type, targetUserId, groupId = null) {
+  if (!currentUser) { toast('Please register first'); return; }
+  // Request media
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: type === 'video',
+      audio: true,
+    });
+  } catch (e) {
+    toast('❌ Camera/Mic access denied');
+    return;
+  }
+  const res = await fetch(API + '/api/calls', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, fromUserId: currentUser.id, toUserId: targetUserId, groupId }),
+  }).then(r => r.json());
+  if (!res.success) { toast('Failed to start call'); return; }
+  currentCall = res.call;
+  showCallScreen(currentCall, type);
+  if (type === 'video' && localStream) {
+    const lv = document.getElementById('callLocalVideo');
+    lv.srcObject = localStream;
+    lv.classList.remove('hide');
+  }
+  startCallTimer();
+  startSignaling();
+}
+
+function showCallScreen(call, type) {
+  const screen = document.getElementById('callScreen');
+  screen.classList.add('show');
+  document.getElementById('callStatus').textContent = call.status === 'ringing' ? '📞 Calling...' : '🟢 Connected';
+  document.getElementById('callName').textContent = call.groupId ? 'Group Call' : (call.participants[0]?.name || 'User');
+  document.getElementById('callRemoteAvatar').textContent = call.groupId ? '👥' : '📞';
+  if (type === 'voice') {
+    document.getElementById('callRemote').style.background = 'radial-gradient(circle, #1a1f3a 0%, #0a0e1a 100%)';
+  }
+  updateParticipants();
+}
+
+function updateParticipants() {
+  if (!currentCall) return;
+  const div = document.getElementById('callParticipants');
+  div.innerHTML = currentCall.participants.map(p => `
+    <div class="call-participant">
+      <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : esc((p.name||'?')[0])}</div>
+      <div class="name">${esc(p.name)}${p.userId === currentUser.id ? ' (You)' : ''}</div>
+    </div>
+  `).join('');
+}
+
+function startCallTimer() {
+  let seconds = 0;
+  if (callTimerInterval) clearInterval(callTimerInterval);
+  document.getElementById('callTimer').textContent = '00:00';
+  callTimerInterval = setInterval(() => {
+    seconds++;
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    document.getElementById('callTimer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function startSignaling() {
+  if (signalPollInterval) clearInterval(signalPollInterval);
+  signalPollInterval = setInterval(pollSignals, 2000);
+}
+
+async function pollSignals() {
+  if (!currentCall || !currentUser) return;
+  // Refresh call status
+  const callRes = await fetch(API + '/api/calls/' + currentCall.callId).then(r => r.json());
+  if (callRes.success) {
+    currentCall = callRes.call;
+    updateParticipants();
+    if (currentCall.status === 'ended') {
+      cleanupCall();
+      toast('Call ended');
+      return;
+    }
+    // Initialize peer connections for new participants
+    for (const p of currentCall.participants) {
+      if (p.userId !== currentUser.id && !peerConnections[p.userId]) {
+        // Existing participant: I'm the one who should create offer
+        if (currentCall.fromUserId === currentUser.id) {
+          createPeerConnection(p.userId, true);
+        } else {
+          createPeerConnection(p.userId, false);
+        }
+      }
+    }
+  }
+  // Poll signals
+  const sigRes = await fetch(API + '/api/calls/' + currentCall.callId + '/signals/' + currentUser.id).then(r => r.json());
+  if (sigRes.signals) {
+    for (const sig of sigRes.signals) {
+      await handleSignal(sig);
+    }
+  }
+}
+
+function createPeerConnection(remoteUserId, isInitiator) {
+  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  peerConnections[remoteUserId] = pc;
+  // Add local stream
+  if (localStream) {
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  }
+  // ICE candidate
+  pc.onicecandidate = (e) => {
+    if (e.candidate) {
+      sendSignal(remoteUserId, 'ice-candidate', e.candidate);
+    }
+  };
+  // Remote stream
+  pc.ontrack = (e) => {
+    const remote = document.getElementById('callRemote');
+    remote.innerHTML = '';
+    const v = document.createElement('video');
+    v.srcObject = e.streams[0];
+    v.autoplay = true;
+    v.playsInline = true;
+    v.style.width = '100%';
+    v.style.height = '100%';
+    v.style.objectFit = 'cover';
+    remote.appendChild(v);
+  };
+  if (isInitiator) {
+    pc.createOffer().then(offer => {
+      pc.setLocalDescription(offer);
+      sendSignal(remoteUserId, 'offer', offer);
+    });
+  }
+  return pc;
+}
+
+async function sendSignal(toUserId, type, payload) {
+  if (!currentCall) return;
+  await fetch(API + '/api/calls/' + currentCall.callId + '/signal', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromUserId: currentUser.id, toUserId, type, payload }),
+  });
+}
+
+async function handleSignal(sig) {
+  let pc = peerConnections[sig.fromUserId];
+  if (sig.type === 'offer') {
+    if (!pc) pc = createPeerConnection(sig.fromUserId, false);
+    await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    sendSignal(sig.fromUserId, 'answer', answer);
+  } else if (sig.type === 'answer') {
+    if (pc) await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));
+  } else if (sig.type === 'ice-candidate') {
+    if (pc) {
+      try { await pc.addIceCandidate(new RTCIceCandidate(sig.payload)); } catch (e) {}
+    }
+  }
+}
+
+function toggleMute() {
+  if (!localStream) return;
+  const track = localStream.getAudioTracks()[0];
+  if (track) {
+    track.enabled = !track.enabled;
+    document.getElementById('muteBtn').classList.toggle('active', !track.enabled);
+  }
+}
+
+function toggleCamera() {
+  if (!localStream) return;
+  const track = localStream.getVideoTracks()[0];
+  if (track) {
+    track.enabled = !track.enabled;
+    document.getElementById('cameraBtn').classList.toggle('active', !track.enabled);
+  }
+}
+
+async function endCall() {
+  if (!currentCall) return;
+  await fetch(API + '/api/calls/' + currentCall.callId + '/end', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id }),
+  });
+  cleanupCall();
+}
+
+async function cleanupCall() {
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  Object.values(peerConnections).forEach(pc => pc.close());
+  peerConnections = {};
+  if (callTimerInterval) clearInterval(callTimerInterval);
+  if (signalPollInterval) clearInterval(signalPollInterval);
+  currentCall = null;
+  document.getElementById('callScreen').classList.remove('show');
+  document.getElementById('callLocalVideo').classList.add('hide');
+  document.getElementById('callLocalVideo').srcObject = null;
+  document.getElementById('callRemote').innerHTML = '<div class="call-remote-avatar">📞</div>';
+  document.getElementById('muteBtn').classList.remove('active');
+  document.getElementById('cameraBtn').classList.remove('active');
+}
+
+// === INCOMING CALL DETECTION ===
+async function checkForIncomingCall() {
+  if (!currentUser || currentCall) return;
+  try {
+    const res = await fetch(API + '/api/calls/active/' + currentUser.id).then(r => r.json());
+    if (res.calls && res.calls.length > 0) {
+      const ringing = res.calls.find(c => c.status === 'ringing' && c.toUserId === currentUser.id);
+      if (ringing) showIncomingCall(ringing);
+    }
+  } catch (e) {}
+}
+
+function showIncomingCall(call) {
+  const modal = document.getElementById('incomingCallModal');
+  document.getElementById('callerName').textContent = call.participants[0]?.name || 'Unknown';
+  document.getElementById('callerType').textContent = call.type === 'video' ? '📹 Incoming video call' : '📞 Incoming voice call';
+  modal.classList.add('show');
+  modal.dataset.callId = call.callId;
+  // Auto-hide after 30s if not answered
+  setTimeout(() => modal.classList.remove('show'), 30000);
+}
+
+async function acceptCall() {
+  const modal = document.getElementById('incomingCallModal');
+  const callId = modal.dataset.callId;
+  modal.classList.remove('show');
+  if (!callId) return;
+  // Get media first
+  try {
+    const callRes = await fetch(API + '/api/calls/' + callId).then(r => r.json());
+    const type = callRes.call?.type || 'voice';
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: type === 'video', audio: true,
+    });
+  } catch (e) { toast('Camera/Mic denied'); return; }
+  // Answer
+  await fetch(API + '/api/calls/' + callId + '/answer', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id }),
+  });
+  const res = await fetch(API + '/api/calls/' + callId).then(r => r.json());
+  currentCall = res.call;
+  showCallScreen(currentCall, currentCall.type);
+  if (currentCall.type === 'video' && localStream) {
+    const lv = document.getElementById('callLocalVideo');
+    lv.srcObject = localStream;
+    lv.classList.remove('hide');
+  }
+  startCallTimer();
+  startSignaling();
+}
+
+async function declineCall() {
+  const modal = document.getElementById('incomingCallModal');
+  const callId = modal.dataset.callId;
+  if (callId) {
+    await fetch(API + '/api/calls/' + callId + '/end', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id }),
+    });
+  }
+  modal.classList.remove('show');
+}
+
+// === CALL BUTTON IN GROUP (initiate group call) ===
+async function startGroupCall(type) {
+  if (!currentGroup) return;
+  await startCall(type, null, currentGroup);
+}
+
+// Add invite + call buttons to group view
+const oldOpenGroup = openGroup;
+openGroup = async function(groupId) {
+  currentGroup = groupId;
+  nav('group');
+  const res = await fetch(`${API}/api/groups/${groupId}`).then(r => r.json());
+  if (!res.success) { toast('Group not found'); return; }
+  const g = res.group;
+  const isMember = g.members?.includes(currentUser?.id);
+  const isAdmin = g.admins?.includes(currentUser?.id);
+  const isOwner = g.admin === currentUser?.id;
+  const content = document.getElementById('groupContent');
+  content.innerHTML = `
+    <div style="background:linear-gradient(135deg, ${esc(g.color || '#667eea')}, #764ba2);padding:24px 16px;border-radius:16px;margin-bottom:16px;color:#fff;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <div style="width:60px;height:60px;border-radius:16px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:32px;">${esc(g.icon || '💬')}</div>
+        <div style="flex:1;"><h2 style="font-size:20px;">${esc(g.name)}</h2>
+          <div style="font-size:12px;opacity:0.9;">${g.memberCount || 0} members • ${g.postCount || 0} posts</div></div>
+      </div>
+      <p style="font-size:13px;opacity:0.95;margin:8px 0;">${esc(g.description || '')}</p>
+      <div class="row">
+        ${isMember ? `<button class="btn secondary" onclick="leaveGroup('${g.id}')">Leave Group</button>` :
+                     `<button class="btn" onclick="joinGroup('${g.id}')">${g.type === 'private' ? 'Request to Join' : 'Join Group'}</button>`}
+        ${isAdmin ? `<button class="btn secondary" onclick="openInviteCreator()">🔗 Invite Link</button>` : ''}
+        ${isAdmin ? `<button class="btn secondary" onclick="openGroupSettings('${g.id}')">⚙️</button>` : ''}
+      </div>
+      ${isMember ? `<div class="row mt-12" style="margin-top:8px;">
+        <button class="btn" style="background:#4caf50;" onclick="startGroupCall('voice')">📞 Voice Call</button>
+        <button class="btn" style="background:#9c27b0;" onclick="startGroupCall('video')">📹 Video Call</button>
+      </div>` : ''}
+      <div style="margin-top:8px;font-size:11px;opacity:0.7;">📋 Invite Code: <b>${esc(g.inviteCode || '')}</b></div>
+    </div>
+    <div id="groupPosts"></div>
+  `;
+  if (isMember) loadGroupPosts(groupId);
+};
+
+// === NOTIFICATION BADGE WITH CALL ALERTS ===
+const oldLoadNotifications = loadNotifications;
+loadNotifications = async function() {
+  if (!currentUser) return;
+  const res = await fetch(`${API}/api/notifications?userId=${currentUser.id}`).then(r => r.json());
+  const list = document.getElementById('notifList');
+  if (!res.notifications || res.notifications.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="emoji">🔔</div><div class="text">कोई notification नहीं</div></div>';
+    document.getElementById('notifBadge').classList.add('hide');
+    return;
+  }
+  const unread = res.notifications.filter(n => !n.read).length;
+  if (unread > 0) {
+    document.getElementById('notifBadge').textContent = unread;
+    document.getElementById('notifBadge').classList.remove('hide');
+  } else {
+    document.getElementById('notifBadge').classList.add('hide');
+  }
+  list.innerHTML = res.notifications.map(n => {
+    let action = '';
+    if (n.type === 'incoming_call' && n.targetType === 'call') {
+      action = `<button class="btn" style="margin-top:8px;padding:6px 12px;font-size:12px;" onclick="acceptCallById('${n.targetId}')">📞 Answer</button>`;
+    }
+    return `
+      <div class="group-card" style="${n.read ? 'opacity:0.6;' : ''}">
+        <div class="group-icon" style="background:rgba(102,126,234,0.3);font-size:24px;">${n.type === 'incoming_call' ? '📞' : n.type === 'group_call' ? '📢' : '🔔'}</div>
+        <div class="group-info">
+          <div class="group-name">${esc(n.message || n.type)}</div>
+          <div class="group-meta">${timeAgo(n.createdAt)}</div>
+          ${action}
+        </div>
+      </div>
+    `;
+  }).join('');
+  // Mark all as read
+  fetch(API + '/api/notifications/read', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id }),
+  });
+};
+
+async function acceptCallById(callId) {
+  // Find the call and accept
+  const res = await fetch(API + '/api/calls/' + callId).then(r => r.json());
+  if (!res.success) { toast('Call not found'); return; }
+  const call = res.call;
+  // Show incoming modal
+  document.getElementById('incomingCallModal').classList.add('show');
+  document.getElementById('incomingCallModal').dataset.callId = callId;
+  document.getElementById('callerName').textContent = call.participants[0]?.name || 'Unknown';
+  document.getElementById('callerType').textContent = call.type === 'video' ? '📹 Incoming video call' : '📞 Incoming voice call';
+  nav('notifications');
+}
 </script>
 
 </body>
