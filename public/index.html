@@ -2494,15 +2494,14 @@ async function pollLiveSignals() {
   if (!liveStream || !currentUser) return;
   // If we're the streamer, also poll call status to update viewer count
   const isStreamer = liveStream.streamerId === currentUser.id;
-  // For viewer: get signals addressed to us
-  if (!isStreamer) {
-    const sigRes = await fetch(API + '/api/live/' + liveStream.streamId + '/signals/' + currentUser.id).then(r => r.json());
-    if (sigRes.signals) {
-      for (const sig of sigRes.signals) {
-        await handleLiveSignal(sig);
-      }
+  // BOTH streamer and viewer should poll signals addressed to them
+  const sigRes = await fetch(API + '/api/live/' + liveStream.streamId + '/signals/' + currentUser.id).then(r => r.json());
+  if (sigRes.signals) {
+    for (const sig of sigRes.signals) {
+      await handleLiveSignal(sig);
     }
-  } else {    // For streamer: poll viewer count periodically
+  }
+  if (isStreamer) {
     const res = await fetch(API + '/api/live/active?userId=' + currentUser.id).then(r => r.json());
     const s = (res.streams || []).find(x => x.streamId === liveStream.streamId);
     if (s) {
