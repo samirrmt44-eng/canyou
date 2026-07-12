@@ -1279,14 +1279,21 @@ async function loadOdyseeLiveSection() {
   const section = document.getElementById('odyseeLiveSection');
   if (!section) return;
   try {
+    // Check if we already have manually added streams - if so, just append auto-detected ones
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem('ds_odysee_manual_streams') || '[]'); } catch (e) {}
     const res = await fetch(API + '/api/odysee/live').then(r => r.json());
     if (!res.streams || res.streams.length === 0) {
-      section.classList.add('hide');
-      section.innerHTML = '';
+      // No auto-detected, but if we have manual, keep them visible
+      if (saved.length === 0) {
+        section.classList.add('hide');
+        section.innerHTML = '';
+      }
       return;
     }
     section.classList.remove('hide');
-    section.innerHTML = `
+    // Auto-detected streams
+    const autoHtml = `
       <h3 style="margin:8px 0 8px 0;font-size:14px;display:flex;align-items:center;gap:6px;">
         <span class="live-dot" style="background:#ff6600;"></span> ODYSEE LIVE NOW
         <span style="font-size:11px;opacity:0.6;margin-left:auto;">via Odysee</span>
@@ -1297,9 +1304,9 @@ async function loadOdyseeLiveSection() {
             <span class="live-dot"></span>
             <span style="flex:1;">🔴 ${esc(s.channelName || s.channelHandle)}</span>
             <span style="font-size:11px;opacity:0.9;">👁 ${s.views || 0}</span>
-            <a href="${esc(s.url)}" target="_blank" style="color:#fff;text-decoration:none;background:rgba(0,0,0,0.2);padding:4px 10px;border-radius:6px;font-size:11px;margin-left:6px;">Open on Odysee ↗</a>
+            <a href="${esc(s.url)}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;background:rgba(0,0,0,0.2);padding:4px 10px;border-radius:6px;font-size:11px;margin-left:6px;">Open on Odysee ↗</a>
           </div>
-          <iframe class="odysee-embed" src="${esc(s.embedUrl)}" allowfullscreen></iframe>
+          <iframe class="odysee-embed" src="${esc(s.embedUrl)}" allow="autoplay; fullscreen" allowfullscreen referrerpolicy="no-referrer"></iframe>
           <div class="odysee-info">
             <div class="title">${esc(s.title)}</div>
             <div class="channel">@${esc(s.channelHandle)}</div>
@@ -1307,6 +1314,38 @@ async function loadOdyseeLiveSection() {
         </div>
       `).join('')}
     `;
+    // If we have manual streams, keep them and append auto-detected
+    if (saved.length > 0) {
+      // Manually render the combined view
+      let manualHtml = `
+        <h3 style="margin:8px 0 8px 0;font-size:14px;display:flex;align-items:center;gap:6px;">
+          <span class="live-dot" style="background:#ff6600;"></span> ODYSEE LIVE NOW
+          <span style="font-size:11px;opacity:0.6;margin-left:auto;">${saved.length} manually added • <a href="#" onclick="event.preventDefault();clearManualOdyseeStreams();" style="color:#ff9999;">clear</a></span>
+        </h3>
+      `;
+      saved.forEach((stream, idx) => {
+        const correctEmbedUrl = `https://odysee.com/$/embed/${stream.name}:${stream.claimId || 'a'}`;
+        manualHtml += `
+          <div class="odysee-live-card" data-idx="${idx}">
+            <div class="odysee-live-header">
+              <span class="live-dot"></span>
+              <span style="flex:1;">🔴 ${esc(stream.channelName || stream.channelHandle || stream.name)}</span>
+              <a href="${esc(stream.url)}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;background:rgba(0,0,0,0.2);padding:4px 10px;border-radius:6px;font-size:11px;margin-left:6px;">Open on Odysee ↗</a>
+              <button onclick="removeManualOdyseeStream(${idx})" style="background:rgba(0,0,0,0.2);border:none;color:#fff;padding:4px 8px;border-radius:6px;font-size:11px;margin-left:4px;cursor:pointer;">✕</button>
+            </div>
+            <iframe class="odysee-embed" src="${esc(correctEmbedUrl)}" allow="autoplay; fullscreen" allowfullscreen referrerpolicy="no-referrer"></iframe>
+            <div class="odysee-info">
+              <div class="title">${esc(stream.title)}</div>
+              <div class="channel">@${esc(stream.channelHandle || stream.name.split('/')[0])}</div>
+            </div>
+          </div>
+        `;
+      });
+      // Append auto-detected below
+      section.innerHTML = manualHtml + autoHtml;
+    } else {
+      section.innerHTML = autoHtml;
+    }
   } catch (e) { console.error('Odysee live error:', e); }
 }
 
@@ -1343,36 +1382,104 @@ async function submitAddOdyseeStreamUrl() {
   }).then(r => r.json());
   if (res.success) {
     closeModal();
-    showOdyseeStreamDirect(res.stream);
-    toast('✅ Live stream added!');
+    // Override embedUrl with the correct format BEFORE saving
+    const stream = res.stream;
+    stream.embedUrl = `https://odysee.com/$/embed/${stream.name}:${stream.claimId || 'a'}`;
+    showOdyseeStreamDirect(stream);
+    toast('✅ Live stream added! Reload-safe ab (localStorage me save ho gaya).');
   } else {
     toast('❌ ' + (res.error || 'Failed'));
   }
 }
 
-// Show a single Odysee stream directly (manual added)
+// Show a single Odysee stream directly (manual added) - PERSISTED in localStorage
 function showOdyseeStreamDirect(stream) {
-  nav('home');
+  // Save to localStorage so it persists across reloads
+  try {
+    const saved = JSON.parse(localStorage.getItem('ds_odysee_manual_streams') || '[]');
+    // Avoid duplicates by claimId+name
+    const exists = saved.find(s => s.claimId === stream.claimId && s.name === stream.name);
+    if (!exists) {
+      saved.unshift(stream);
+      localStorage.setItem('ds_odysee_manual_streams', JSON.stringify(saved));
+    }
+  } catch (e) { console.warn('localStorage save failed:', e); }
+  renderManualOdyseeStreams();
+}
+
+// Render all manually added streams (from localStorage)
+function renderManualOdyseeStreams() {
+  let saved = [];
+  try {
+    saved = JSON.parse(localStorage.getItem('ds_odysee_manual_streams') || '[]');
+  } catch (e) { saved = []; }
+  if (!saved || saved.length === 0) return;
   const section = document.getElementById('odyseeLiveSection');
+  nav('home');
   section.classList.remove('hide');
-  section.innerHTML = `
+  // Header with clear-all button
+  let html = `
     <h3 style="margin:8px 0 8px 0;font-size:14px;display:flex;align-items:center;gap:6px;">
       <span class="live-dot" style="background:#ff6600;"></span> ODYSEE LIVE NOW
-      <span style="font-size:11px;opacity:0.6;margin-left:auto;">manually added</span>
+      <span style="font-size:11px;opacity:0.6;margin-left:auto;">${saved.length} manually added • <a href="#" onclick="event.preventDefault();clearManualOdyseeStreams();" style="color:#ff9999;">clear</a></span>
     </h3>
-    <div class="odysee-live-card">
-      <div class="odysee-live-header">
-        <span class="live-dot"></span>
-        <span style="flex:1;">🔴 ${esc(stream.channelName || stream.channelHandle)}</span>
-        <a href="${esc(stream.url)}" target="_blank" style="color:#fff;text-decoration:none;background:rgba(0,0,0,0.2);padding:4px 10px;border-radius:6px;font-size:11px;margin-left:6px;">Open on Odysee ↗</a>
-      </div>
-      <iframe class="odysee-embed" src="${esc(stream.embedUrl)}" allowfullscreen></iframe>
-      <div class="odysee-info">
-        <div class="title">${esc(stream.title)}</div>
-        <div class="channel">@${esc(stream.channelHandle)}</div>
-      </div>
-    </div>
   `;
+  saved.forEach((stream, idx) => {
+    // Build the correct embed URL - Odysee format: https://odysee.com/$/embed/<name>:<claimid>
+    // stream.name is like @DainikState:1/cripto-panda, stream.claimId is like 'a'
+    // Correct embed: https://odysee.com/$/embed/@DainikState:1/cripto-panda:a
+    const correctEmbedUrl = `https://odysee.com/$/embed/${stream.name}:${stream.claimId || 'a'}`;
+    html += `
+      <div class="odysee-live-card" data-idx="${idx}">
+        <div class="odysee-live-header">
+          <span class="live-dot"></span>
+          <span style="flex:1;">🔴 ${esc(stream.channelName || stream.channelHandle || stream.name)}</span>
+          <a href="${esc(stream.url)}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;background:rgba(0,0,0,0.2);padding:4px 10px;border-radius:6px;font-size:11px;margin-left:6px;">Open on Odysee ↗</a>
+          <button onclick="removeManualOdyseeStream(${idx})" style="background:rgba(0,0,0,0.2);border:none;color:#fff;padding:4px 8px;border-radius:6px;font-size:11px;margin-left:4px;cursor:pointer;">✕</button>
+        </div>
+        <iframe class="odysee-embed" src="${esc(correctEmbedUrl)}" allow="autoplay; fullscreen" allowfullscreen referrerpolicy="no-referrer"></iframe>
+        <div class="odysee-info">
+          <div class="title">${esc(stream.title)}</div>
+          <div class="channel">@${esc(stream.channelHandle || stream.name.split('/')[0])}</div>
+        </div>
+      </div>
+    `;
+  });
+  section.innerHTML = html;
+  // Also hide the auto-detected Odysee section if manual is shown (avoid duplicates)
+  // Actually, we'll let auto-detected one show below manual ones
+}
+
+function removeManualOdyseeStream(idx) {
+  if (!confirm('Remove this embedded stream?')) return;
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem('ds_odysee_manual_streams') || '[]'); } catch (e) {}
+  saved.splice(idx, 1);
+  localStorage.setItem('ds_odysee_manual_streams', JSON.stringify(saved));
+  if (saved.length === 0) {
+    document.getElementById('odyseeLiveSection').classList.add('hide');
+    document.getElementById('odyseeLiveSection').innerHTML = '';
+  } else {
+    renderManualOdyseeStreams();
+  }
+  toast('Removed');
+}
+
+function clearManualOdyseeStreams() {
+  if (!confirm('Remove all manually added Odysee streams?')) return;
+  localStorage.removeItem('ds_odysee_manual_streams');
+  document.getElementById('odyseeLiveSection').classList.add('hide');
+  document.getElementById('odyseeLiveSection').innerHTML = '';
+  // Re-fetch auto-detected ones
+  loadOdyseeLiveSection();
+  toast('Cleared');
+}
+
+// Auto-render manual streams on page load (before login, after - always)
+function loadManualOdyseeStreams() {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem('ds_odysee_manual_streams') || '[]'); } catch (e) { return; }
+  if (saved.length > 0) renderManualOdyseeStreams();
 }
 
 async function submitAddOdyseeChannel() {
@@ -3160,6 +3267,8 @@ function scanForNewMedia() {
 // === BOOT ===
 loadIceServers();
 checkAuth();
+// Load manually added Odysee streams (persisted in localStorage)
+loadManualOdyseeStreams();
 // Smart refresh - only reload if user has been on same page for >30 sec
 let lastRefreshTime = {};
 let pageVisible = !document.hidden;
