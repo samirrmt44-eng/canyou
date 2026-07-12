@@ -1,5 +1,5 @@
 // ============================================================
-// canyou - DainikState Channel + User Links + Multi-Source
+// DainikState - राज्य की आवाज़ + Multi-Source Auto-Sync
 // Auto-loads YouTube videos from DainikState channel
 // ============================================================
 
@@ -58,66 +58,18 @@ const DEFAULT_CHANNELS = [
     platform: 'youtube',
     channelId: 'UCIvx776Jt6gejhpiJ563VCQ',
     handle: '@DainikState',
-    name: 'DainikState YouTube',
+    name: 'DainikState',
     autoSync: true,
-    syncInterval: 30,
+    syncInterval: 60,  // minutes
   },
   {
     platform: 'odysee',
     channelId: '@DainikState:1',
-    name: 'DainikState Odysee',
+    name: 'DainikState (Odysee)',
     autoSync: true,
-    syncInterval: 30,
-  },
-  {
-    platform: 'rss',
-    channelId: 'dainikstate.com',
-    feedUrl: 'https://dainikstate.com/feed/',
-    name: 'DainikState News',
-    autoSync: true,
-    syncInterval: 30,
+    syncInterval: 60,
   },
 ];
-
-
-// RSS Feed Fetcher (for news sites like dainikstate.com)
-async function fetchRSSFeed(feedUrl) {
-  try {
-    const response = await axios.get(feedUrl, { timeout: 15000 });
-    const parser = new xml2js.Parser({ explicitArray: false });
-    const result = await parser.parseStringPromise(response.data);
-    if (!result.rss || !result.rss.channel || !result.rss.channel.item) return [];
-
-    const items = Array.isArray(result.rss.channel.item) ? result.rss.channel.item : [result.rss.channel.item];
-    return items.map(item => {
-      const title = typeof item.title === 'object' ? item.title._ : item.title;
-      const desc = item.description ? (typeof item.description === 'object' ? item.description._ : item.description) : '';
-      const link = typeof item.link === 'object' ? item.link._ : item.link;
-      const pubDate = item.pubDate ? new Date(item.pubDate).getTime() : Date.now();
-
-      // Extract first image from description
-      const imgMatch = desc.match(/<img[^>]+src=["']([^"']+)["']/i);
-      const thumbnail = imgMatch ? imgMatch[1] : `https://ui-avatars.com/api/?name=DainikState+News&size=600&background=b71c1c&color=fff&bold=true`;
-
-      // Clean description (remove HTML)
-      const cleanDesc = desc.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
-
-      return {
-        platform: 'news',
-        url: link,
-        videoId: link,
-        title: title,
-        description: cleanDesc,
-        thumbnail,
-        author: 'DainikState Desk',
-        publishedAt: pubDate,
-      };
-    });
-  } catch (err) {
-    console.error('RSS fetch failed:', err.message);
-    return [];
-  }
-}
 
 // ============================================================
 // YOUTUBE RSS FEED PARSER (No API key needed!)
@@ -194,8 +146,6 @@ async function syncChannel(channel) {
     videos = await fetchYouTubeRSS(channel.channelId);
   } else if (channel.platform === 'odysee') {
     videos = await fetchOdyseeVideos(channel.channelId);
-  } else if (channel.platform === 'rss' && channel.feedUrl) {
-    videos = await fetchRSSFeed(channel.feedUrl);
   }
 
   if (videos.length === 0) {
@@ -311,7 +261,7 @@ function rankComments(comments) {
 // ============================================================
 app.get('/api/health', (req, res) => res.json({
   status: 'ok',
-  message: 'canyou #1rank - DainikState Channel Edition',
+  message: 'DainikState - DainikState Channel Edition',
   database: db ? 'connected' : 'in-memory',
 }));
 
@@ -573,7 +523,7 @@ connectDB().then(async () => {
   }, 30 * 60 * 1000);
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🏆 canyou #1rank running on port ${PORT}`);
+    console.log(`🏆 DainikState running on port ${PORT}`);
     console.log(`📺 DainikState channel auto-syncing...`);
   });
 });
