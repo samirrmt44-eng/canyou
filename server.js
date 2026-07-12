@@ -1502,7 +1502,8 @@ app.post('/api/odysee/streams/add', async (req, res) => {
   if (!match) return res.status(400).json({ error: 'Invalid Odysee URL. Format: https://odysee.com/@Channel:1/stream-name' });
   const name1 = match[1];  // e.g. @DainikState:1/cripto-panda
   const claimId = match[2] || 'a';  // claim ID, defaults to 'a' for latest
-  const embedUrl = `https://odysee.com/embed/${name1}:${claimId}`;
+  // CORRECT Odysee embed URL format: https://odysee.com/$/embed/<name>:<claimid>
+  const embedUrl = `https://odysee.com/$/embed/${name1}:${claimId}`;
   const fullUrl = `https://odysee.com/${name1}:${claimId}`;
   // Try to get metadata
   let title = name || name1;
