@@ -857,18 +857,24 @@ function expandImage(src) {
 }
 
 // === NAVIGATION ===
+let lastNavPage = null;
 function nav(page, data) {
+  const isFirstVisit = lastNavPage !== page;
   currentPage = page;
+  lastNavPage = page;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + page)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelector(`.nav-item[data-nav="${page}"]`)?.classList.add('active');
-  if (page === 'home') loadHomeFeed();
-  else if (page === 'groups') loadGroups();
-  else if (page === 'explore') loadExplore();
-  else if (page === 'profile') showMyProfile();
-  else if (page === 'notifications') loadNotifications();
-  else if (page === 'group' && data) openGroup(data);
+  // Only load data on first visit or if explicitly needed
+  if (isFirstVisit || page === 'group' || page === 'home' && isFirstVisit) {
+    if (page === 'home') loadHomeFeed();
+    else if (page === 'groups') loadGroups();
+    else if (page === 'explore') loadExplore();
+    else if (page === 'profile') showMyProfile();
+    else if (page === 'notifications') loadNotifications();
+    else if (page === 'group' && data) openGroup(data);
+  }
   window.scrollTo(0, 0);
 }
 
@@ -894,6 +900,8 @@ async function checkAuth() {
         currentUser = data.user;
         applyUserChip();
         document.getElementById('authModal').classList.add('hidden');
+        // Mark pages as unvisited so nav loads them
+        lastNavPage = null;
         loadHomeFeed();
         loadNotifications();
         return;
@@ -942,9 +950,16 @@ function applyUserChip() {
 }
 
 // === HOME FEED (mix of group posts + auto-imported videos) ===
+let isLoadingFeed = false;
+let lastFeedData = null;
 async function loadHomeFeed() {
+  if (isLoadingFeed) return;  // Prevent overlapping loads
+  isLoadingFeed = true;
   const container = document.getElementById('homeFeed');
-  container.innerHTML = '<div class="empty"><div class="emoji">⏳</div><div class="text">Loading...</div></div>';
+  const isFirstLoad = !container.querySelector('.post');
+  if (isFirstLoad) {
+    container.innerHTML = '<div class="empty"><div class="emoji">⏳</div><div class="text">Loading...</div></div>';
+  }
   try {
     // Load user's groups posts
     const userGroups = await fetch(`${API}/api/groups?userId=${currentUser?.id || ''}`).then(r => r.json());
@@ -967,23 +982,42 @@ async function loadHomeFeed() {
     }));
     allPosts = allPosts.concat(autoPosts);
     allPosts.sort((a, b) => b.createdAt - a.createdAt);
-    // Load stories
-    loadStories();
+    // Only load stories on first load
+    if (isFirstLoad) loadStories();
     if (allPosts.length === 0) {
       container.innerHTML = '<div class="empty"><div class="emoji">👋</div><div class="text">अभी कोई पोस्ट नहीं है।<br>कोई ग्रुप join करें या खुद का बनाएं!</div></div>';
+      lastFeedData = [];
       return;
     }
+    // Smart render: only re-render if data actually changed
+    const newDataStr = JSON.stringify(allPosts.map(p => ({ id: p.id, c: p.commentCount, r: p.reactionCount, t: p.createdAt })));
+    if (!isFirstLoad && lastFeedData === newDataStr) {
+      // No changes - skip render
+      return;
+    }
+    lastFeedData = newDataStr;
     container.innerHTML = allPosts.map(p => renderPost(p)).join('');
   } catch (e) {
-    container.innerHTML = '<div class="empty"><div class="emoji">❌</div><div class="text">Failed to load feed</div></div>';
+    if (isFirstLoad) {
+      container.innerHTML = '<div class="empty"><div class="emoji">❌</div><div class="text">Failed to load feed</div></div>';
+    }
     console.error(e);
+  } finally {
+    isLoadingFeed = false;
   }
 }
 
 // === STORIES ===
-async function loadStories() {
+let lastStoriesData = null;
+let storiesLoaded = false;
+async function loadStories(force = false) {
+  // Only load stories once per session unless forced
+  if (storiesLoaded && !force) return;
   try {
     const res = await fetch(`${API}/api/stories?userId=${currentUser?.id || ''}`).then(r => r.json());
+    const data = JSON.stringify(res.groups || []);
+    if (data === lastStoriesData) return;  // No change
+    lastStoriesData = data;
     const strip = document.getElementById('storiesStrip');
     strip.innerHTML = `<div class="story-item" onclick="openStoryComposer()"><div class="story-circle empty"><div class="inner"><div class="emoji">➕</div></div></div><div class="story-name">Your Story</div></div>`;
     (res.groups || []).forEach(g => {
@@ -1000,6 +1034,7 @@ async function loadStories() {
           <div class="story-name">${esc(g.user?.name || 'User')}</div>
         </div>`;
     });
+    storiesLoaded = true;
   } catch (e) { console.error(e); }
 }
 
@@ -1653,52 +1688,105 @@ async function showMyProfile() {
         </div>
       </div>
     `).join('')}
-    <button class="btn secondary mt-12" onclick="localStorage.removeItem('canyou_session');location.reload();">🚪 Logout</button>
+    <button class="btn secondary mt-12" onclick="localStorage.removeItem('canyou_session');if(refreshInterval)clearInterval(refreshInterval);location.reload();">🚪 Logout</button>
   `;
   document.getElementById('profileContent').innerHTML = html;
 }
 
 // === NOTIFICATIONS ===
+let lastNotificationsData = null;
+let lastNotificationsFetch = 0;
 async function loadNotifications() {
   if (!currentUser) return;
-  const res = await fetch(`${API}/api/notifications?userId=${currentUser.id}`).then(r => r.json());
-  const list = document.getElementById('notifList');
-  if (!res.notifications || res.notifications.length === 0) {
-    list.innerHTML = '<div class="empty"><div class="emoji">🔔</div><div class="text">कोई notification नहीं</div></div>';
-    document.getElementById('notifBadge').classList.add('hide');
-    return;
-  }
-  const unread = res.notifications.filter(n => !n.read).length;
-  if (unread > 0) {
-    document.getElementById('notifBadge').textContent = unread;
-    document.getElementById('notifBadge').classList.remove('hide');
-  } else {
-    document.getElementById('notifBadge').classList.add('hide');
-  }
-  list.innerHTML = res.notifications.map(n => `
-    <div class="group-card" style="${n.read ? 'opacity:0.6;' : ''}">
-      <div class="group-icon" style="background:rgba(102,126,234,0.3);font-size:24px;">🔔</div>
-      <div class="group-info">
-        <div class="group-name">${esc(n.message || n.type)}</div>
-        <div class="group-meta">${timeAgo(n.createdAt)}</div>
-      </div>
-    </div>
-  `).join('');
-  // Mark all as read
-  fetch(API + '/api/notifications/read', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId: currentUser.id }),
-  });
+  const now = Date.now();
+  if (now - lastNotificationsFetch < 5000 && lastNotificationsData !== null) return;
+  lastNotificationsFetch = now;
+  try {
+    const res = await fetch(`${API}/api/notifications?userId=${currentUser.id}`).then(r => r.json());
+    const newDataStr = JSON.stringify(res.notifications?.map(n => ({ id: n.id, read: n.read, msg: n.message })) || []);
+    const list = document.getElementById('notifList');
+    if (newDataStr === lastNotificationsData && list.innerHTML && !list.innerHTML.includes('empty')) {
+      return;
+    }
+    lastNotificationsData = newDataStr;
+    if (!res.notifications || res.notifications.length === 0) {
+      list.innerHTML = '<div class="empty"><div class="emoji">🔔</div><div class="text">कोई notification नहीं</div></div>';
+      document.getElementById('notifBadge').classList.add('hide');
+      return;
+    }
+    const unread = res.notifications.filter(n => !n.read).length;
+    if (unread > 0) {
+      document.getElementById('notifBadge').textContent = unread;
+      document.getElementById('notifBadge').classList.remove('hide');
+    } else {
+      document.getElementById('notifBadge').classList.add('hide');
+    }
+    list.innerHTML = res.notifications.map(n => {
+      let action = '';
+      if (n.type === 'incoming_call' && n.targetType === 'call') {
+        action = `<button class="btn" style="margin-top:8px;padding:6px 12px;font-size:12px;" onclick="acceptCallById('${n.targetId}')">📞 Answer</button>`;
+      }
+      return `
+        <div class="group-card" style="${n.read ? 'opacity:0.6;' : ''}">
+          <div class="group-icon" style="background:rgba(102,126,234,0.3);font-size:24px;">${n.type === 'incoming_call' ? '📞' : n.type === 'group_call' ? '📢' : '🔔'}</div>
+          <div class="group-info">
+            <div class="group-name">${esc(n.message || n.type)}</div>
+            <div class="group-meta">${timeAgo(n.createdAt)}</div>
+            ${action}
+          </div>
+        </div>
+      `;
+    }).join('');
+    fetch(API + '/api/notifications/read', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id }),
+    });
+  } catch (e) { console.error('Notif error:', e); }
 }
 
 // === BOOT ===
 checkAuth();
-// Refresh feed every 30 seconds
-setInterval(() => {
-  if (currentPage === 'home') loadHomeFeed();
-  if (currentPage === 'notifications') loadNotifications();
-  if (currentUser) checkForIncomingCall();
-}, 5000);
+// Smart refresh - only reload if user has been on same page for >30 sec
+let lastRefreshTime = {};
+let pageVisible = !document.hidden;
+let refreshInterval = null;
+
+function smartRefresh() {
+  if (!pageVisible) return;  // Don't refresh when tab is hidden
+  const now = Date.now();
+  // Home feed - only every 60 seconds
+  if (currentPage === 'home' && (!lastRefreshTime.home || now - lastRefreshTime.home > 60000)) {
+    lastRefreshTime.home = now;
+    // Only update if there are no active media (videos, iframes) playing
+    const hasPlayingMedia = document.querySelector('video[autoplay], iframe[src*="youtube"]');
+    if (!hasPlayingMedia) loadHomeFeed();
+  }
+  // Notifications - every 30 sec
+  if (currentPage === 'notifications' && (!lastRefreshTime.notif || now - lastRefreshTime.notif > 30000)) {
+    lastRefreshTime.notif = now;
+    loadNotifications();
+  }
+  // Incoming call check - every 10 sec
+  if (currentUser && !currentCall) {
+    checkForIncomingCall();
+  }
+}
+refreshInterval = setInterval(smartRefresh, 15000);
+
+// Pause refresh when tab is hidden
+document.addEventListener('visibilitychange', () => {
+  pageVisible = !document.hidden;
+  if (pageVisible) {
+    // Refresh on visible if it's been a while
+    if (currentPage === 'home') {
+      lastRefreshTime.home = 0;  // Force refresh
+      smartRefresh();
+    } else if (currentPage === 'notifications') {
+      lastRefreshTime.notif = 0;
+      smartRefresh();
+    }
+  }
+});
 
 // Check for invite link in URL (e.g., dainikstate.com/i/ABC123)
 const pathParts = location.pathname.split('/');
@@ -2078,8 +2166,13 @@ async function cleanupCall() {
 }
 
 // === INCOMING CALL DETECTION ===
+let lastCallCheck = 0;
 async function checkForIncomingCall() {
   if (!currentUser || currentCall) return;
+  // Throttle: only check every 10 seconds
+  const now = Date.now();
+  if (now - lastCallCheck < 10000) return;
+  lastCallCheck = now;
   try {
     const res = await fetch(API + '/api/calls/active/' + currentUser.id).then(r => r.json());
     if (res.calls && res.calls.length > 0) {
