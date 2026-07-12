@@ -620,6 +620,7 @@
       </div>
     </div>
     <div class="header-actions">
+      <button class="header-btn" onclick="openUserSearch()" title="Find People">🔍</button>
       <button class="header-btn" onclick="nav('notifications')" title="Notifications">
         🔔 <span class="badge hide" id="notifBadge">0</span>
       </button>
@@ -660,10 +661,20 @@
 
   <!-- EXPLORE / DISCOVER -->
   <div class="page" id="page-explore">
-    <h2 style="margin-bottom:12px;">🔥 Trending Groups</h2>
+    <button class="btn mb-12" onclick="openUserSearch()">🔍 Find People to Call</button>
+    <div class="filter-bar" style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;">
+      <button class="action-btn active" data-explore-tab="groups" onclick="setExploreTab('groups')" style="border-radius:20px;background:rgba(102,126,234,0.3);">🔥 Trending Groups</button>
+      <button class="action-btn" data-explore-tab="users" onclick="setExploreTab('users')" style="border-radius:20px;background:rgba(255,255,255,0.05);">👥 People</button>
+      <button class="action-btn" data-explore-tab="online" onclick="setExploreTab('online')" style="border-radius:20px;background:rgba(255,255,255,0.05);">🟢 Online</button>
+    </div>
     <div id="exploreGroups"></div>
-    <h2 style="margin:16px 0 12px;">👥 Popular Users</h2>
-    <div id="exploreUsers"></div>
+    <div id="exploreUsers" class="hide"></div>
+    <div id="exploreOnline" class="hide"></div>
+  </div>
+
+  <!-- USER PROFILE VIEW (other user's profile) -->
+  <div class="page" id="page-user-profile">
+    <div id="userProfileContent"></div>
   </div>
 
   <!-- PROFILE -->
@@ -877,6 +888,7 @@ function nav(page, data) {
     else if (page === 'profile') showMyProfile();
     else if (page === 'notifications') loadNotifications();
     else if (page === 'group' && data) openGroup(data);
+    else if (page === 'user-profile' && data) viewUserProfile(data);
   }
   window.scrollTo(0, 0);
 }
@@ -1736,7 +1748,30 @@ async function toggleCaller(groupId, userId, currentlyAllowed) {
 }
 
 // === EXPLORE ===
+let currentExploreTab = 'groups';
+function setExploreTab(tab) {
+  currentExploreTab = tab;
+  document.querySelectorAll('[data-explore-tab]').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = 'rgba(255,255,255,0.05)';
+  });
+  document.querySelector(`[data-explore-tab="${tab}"]`)?.classList.add('active');
+  document.querySelector(`[data-explore-tab="${tab}"]`).style.background = 'rgba(102,126,234,0.3)';
+  // Show/hide sections
+  document.getElementById('exploreGroups').classList.toggle('hide', tab !== 'groups');
+  document.getElementById('exploreUsers').classList.toggle('hide', tab !== 'users');
+  document.getElementById('exploreOnline').classList.toggle('hide', tab !== 'online');
+  // Load relevant data
+  if (tab === 'groups') loadExploreGroups();
+  else if (tab === 'users') loadExploreUsers();
+  else if (tab === 'online') loadOnlineUsers();
+}
+
 async function loadExplore() {
+  loadExploreGroups();
+}
+
+async function loadExploreGroups() {
   const res = await fetch(API + '/api/explore').then(r => r.json());
   document.getElementById('exploreGroups').innerHTML = (res.trendingGroups || []).map(g => `
     <div class="group-card" onclick="openGroup('${g.id}')">
@@ -1748,15 +1783,104 @@ async function loadExplore() {
       </div>
     </div>
   `).join('') || '<div class="empty"><div class="text">No groups yet</div></div>';
-  document.getElementById('exploreUsers').innerHTML = (res.popularUsers || []).map(u => `
-    <div class="group-card">
-      <div class="avatar" style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ff6b6b);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#fff;">${u.avatar ? `<img src="${esc(u.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : esc(u.name[0])}</div>
+}
+
+async function loadExploreUsers() {
+  const res = await fetch(API + '/api/users?limit=30').then(r => r.json());
+  document.getElementById('exploreUsers').innerHTML = (res.users || []).map(u => renderUserCard(u)).join('') ||
+    '<div class="empty"><div class="text">No users yet</div></div>';
+}
+
+async function loadOnlineUsers() {
+  // Use users endpoint with sort by recent
+  const res = await fetch(API + '/api/users?limit=30').then(r => r.json());
+  // Filter users active in last 5 minutes
+  const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+  const onlineUsers = (res.users || []).filter(u => (u.lastSeen || 0) > fiveMinAgo);
+  document.getElementById('exploreOnline').innerHTML = onlineUsers.length > 0
+    ? onlineUsers.map(u => renderUserCard(u, true)).join('')
+    : '<div class="empty"><div class="emoji">💤</div><div class="text">Abhi koi online nahi hai.<br>Aap pehle aayein, doosre bhi aayenge!</div></div>';
+}
+
+function renderUserCard(u, showOnline = false) {
+  const isMe = u.id === currentUser?.id;
+  const initial = (u.name || '?')[0].toUpperCase();
+  const avatar = u.avatar
+    ? `<img src="${esc(u.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`
+    : initial;
+  const onlineDot = showOnline ? '<span style="position:absolute;bottom:2px;right:2px;width:12px;height:12px;background:#4caf50;border-radius:50%;border:2px solid #0a0e1a;"></span>' : '';
+  return `
+    <div class="group-card" onclick="${isMe ? 'showMyProfile()' : `viewUserProfile('${u.id}')`}" style="position:relative;">
+      <div style="position:relative;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ff6b6b);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#fff;flex-shrink:0;">
+        ${avatar}
+        ${onlineDot}
+      </div>
       <div class="group-info">
-        <div class="group-name">${esc(u.name)} <span class="pill gold">⭐ ${(u.reputation || 1).toFixed(1)}</span></div>
-        <div class="group-desc">📍 ${esc(u.location)}</div>
+        <div class="group-name">${esc(u.name)} ${isMe ? '(You)' : ''} <span class="pill gold">⭐ ${(u.reputation || 1).toFixed(1)}</span></div>
+        <div class="group-desc">📍 ${esc(u.location || 'Unknown')}</div>
+        <div class="group-meta">💬 ${u.commentsPosted || 0} comments • 👥 ${u.groupsJoined || 0} groups</div>
       </div>
     </div>
-  `).join('') || '<div class="empty"><div class="text">No users yet</div></div>';
+  `;
+}
+
+async function viewUserProfile(userId) {
+  if (userId === currentUser?.id) { showMyProfile(); return; }
+  nav('user-profile');
+  const res = await fetch(API + '/api/users/' + userId).then(r => r.json());
+  if (!res.success) { toast('User not found'); return; }
+  const u = res.user;
+  // Check common groups
+  const myGroups = await fetch(API + '/api/groups?userId=' + currentUser.id + '&memberOnly=true').then(r => r.json());
+  const theirGroups = await fetch(API + '/api/groups?userId=' + userId + '&memberOnly=true').then(r => r.json());
+  const commonGroups = (myGroups.groups || []).filter(g => (theirGroups.groups || []).find(g2 => g2.id === g.id));
+  const isOnline = (u.lastSeen || 0) > Date.now() - 5 * 60 * 1000;
+  const initial = (u.name || '?')[0].toUpperCase();
+  const avatar = u.avatar
+    ? `<img src="${esc(u.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`
+    : initial;
+  const html = `
+    <div style="background:linear-gradient(135deg, #667eea, #764ba2);padding:32px 16px;border-radius:16px;margin-bottom:16px;color:#fff;text-align:center;">
+      <div style="position:relative;width:100px;height:100px;border-radius:50%;background:#fff;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:40px;color:#764ba2;font-weight:900;">
+        ${avatar}
+        ${isOnline ? '<span style="position:absolute;bottom:4px;right:4px;width:24px;height:24px;background:#4caf50;border-radius:50%;border:4px solid #1a1f3a;"></span>' : ''}
+      </div>
+      <h2 style="font-size:24px;">${esc(u.name)}</h2>
+      <div style="font-size:13px;opacity:0.9;margin-top:4px;">📍 ${esc(u.location || 'Unknown')}</div>
+      ${u.bio ? `<div style="font-size:13px;margin-top:8px;opacity:0.9;font-style:italic;">"${esc(u.bio)}"</div>` : ''}
+      <div style="font-size:14px;margin-top:12px;">⭐ ${(u.reputation || 1).toFixed(1)} reputation</div>
+      <div style="font-size:11px;opacity:0.7;margin-top:4px;">${isOnline ? '🟢 Online now' : '⏱ Last seen ' + timeAgo(u.lastSeen)}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div class="card" style="text-align:center;background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;">
+        <div style="font-size:18px;font-weight:800;color:#ffd700;">${u.commentsPosted || 0}</div>
+        <div style="font-size:11px;opacity:0.7;">Comments</div>
+      </div>
+      <div class="card" style="text-align:center;background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;">
+        <div style="font-size:18px;font-weight:800;color:#ffd700;">${u.groupsJoined || 0}</div>
+        <div style="font-size:11px;opacity:0.7;">Groups</div>
+      </div>
+    </div>
+    <h3 style="margin-bottom:8px;">📞 Call ${esc(u.name)}</h3>
+    <div class="row" style="gap:8px;margin-bottom:16px;">
+      <button class="btn" style="background:#4caf50;" onclick="startCall('voice', '${u.id}')">📞 Voice Call</button>
+      <button class="btn" style="background:#9c27b0;" onclick="startCall('video', '${u.id}')">📹 Video Call</button>
+    </div>
+    ${commonGroups.length > 0 ? `
+      <h3 style="margin-bottom:8px;">👥 Common Groups (${commonGroups.length})</h3>
+      ${commonGroups.slice(0, 5).map(g => `
+        <div class="group-card" onclick="openGroup('${g.id}')">
+          <div class="group-icon" style="background:${esc(g.color || '#667eea')};">${esc(g.icon || '💬')}</div>
+          <div class="group-info">
+            <div class="group-name">${esc(g.name)}</div>
+            <div class="group-meta">${g.memberCount || 0} members</div>
+          </div>
+        </div>
+      `).join('')}
+    ` : ''}
+    <button class="btn secondary mt-12" onclick="toast('📨 Message sent to ${esc(u.name)}!')">📨 Send Message</button>
+  `;
+  document.getElementById('userProfileContent').innerHTML = html;
 }
 
 // === PROFILE ===
@@ -1850,6 +1974,46 @@ async function loadNotifications() {
       body: JSON.stringify({ userId: currentUser.id }),
     });
   } catch (e) { console.error('Notif error:', e); }
+}
+
+// === USER SEARCH ===
+async function searchUsers(query) {
+  if (!query || query.length < 2) return [];
+  const res = await fetch(API + '/api/users?search=' + encodeURIComponent(query)).then(r => r.json());
+  return res.users || [];
+}
+
+function openUserSearch() {
+  showModal('🔍 Find People', `
+    <div class="form-group">
+      <label>Search by name or location</label>
+      <input type="text" id="userSearchInput" placeholder="Type a name..." oninput="doUserSearch(this.value)" autofocus />
+    </div>
+    <div id="userSearchResults" style="max-height: 50vh; overflow-y: auto;">
+      <div class="empty"><div class="text">Type to search</div></div>
+    </div>
+  `);
+  setTimeout(() => document.getElementById('userSearchInput')?.focus(), 100);
+}
+
+let userSearchTimeout = null;
+async function doUserSearch(query) {
+  clearTimeout(userSearchTimeout);
+  userSearchTimeout = setTimeout(async () => {
+    const container = document.getElementById('userSearchResults');
+    if (!container) return;
+    if (!query || query.length < 2) {
+      container.innerHTML = '<div class="empty"><div class="text">Type at least 2 characters</div></div>';
+      return;
+    }
+    container.innerHTML = '<div class="empty"><div class="text">Searching...</div></div>';
+    const users = await searchUsers(query);
+    if (users.length === 0) {
+      container.innerHTML = '<div class="empty"><div class="emoji">🔍</div><div class="text">No users found</div></div>';
+      return;
+    }
+    container.innerHTML = users.slice(0, 20).map(u => renderUserCard(u)).join('');
+  }, 300);
 }
 
 // === BOOT ===
@@ -2147,21 +2311,29 @@ const ICE_SERVERS = [
 
 async function startCall(type, targetUserId, groupId = null) {
   if (!currentUser) { toast('Please register first'); return; }
-  // Request media
+  if (currentCall) { toast('❌ You are already in a call'); return; }
+  // Request media FIRST - if denied, don't start call
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
       video: type === 'video',
       audio: true,
     });
   } catch (e) {
-    toast('❌ Camera/Mic access denied');
+    console.error('Media error:', e);
+    toast('❌ Camera/Mic access denied - call not started');
     return;
   }
+  // Now create the call on backend
   const res = await fetch(API + '/api/calls', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ type, fromUserId: currentUser.id, toUserId: targetUserId, groupId }),
   }).then(r => r.json());
-  if (!res.success) { toast('Failed to start call'); return; }
+  if (!res.success) {
+    // Release media if backend fails
+    if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+    toast('❌ ' + (res.error || 'Failed to start call'));
+    return;
+  }
   currentCall = res.call;
   showCallScreen(currentCall, type);
   if (type === 'video' && localStream) {
@@ -2171,6 +2343,11 @@ async function startCall(type, targetUserId, groupId = null) {
   }
   startCallTimer();
   startSignaling();
+  if (targetUserId) {
+    toast('📞 Calling...');
+  } else if (groupId) {
+    toast('📞 Group call started');
+  }
 }
 
 function showCallScreen(call, type) {
