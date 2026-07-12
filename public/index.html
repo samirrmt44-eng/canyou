@@ -2017,6 +2017,7 @@ async function doUserSearch(query) {
 }
 
 // === BOOT ===
+loadIceServers();
 checkAuth();
 // Smart refresh - only reload if user has been on same page for >30 sec
 let lastRefreshTime = {};
@@ -2303,18 +2304,35 @@ let peerConnections = {};  // userId -> RTCPeerConnection
 let callTimerInterval = null;
 let signalPollInterval = null;
 
-const ICE_SERVERS = [
-  // Google STUN servers (free, works on most networks)
+// ICE servers - loaded dynamically from backend (TURN + STUN)
+// Falls back to Google STUN servers if API fails
+let ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
   { urls: 'stun:stun3.l.google.com:19302' },
   { urls: 'stun:stun4.l.google.com:19302' },
-  // Cloudflare STUN (faster for some regions)
   { urls: 'stun:stun.cloudflare.com:3478' },
-  // Twilio STUN
-  { urls: 'stun:global.stun.twilio.com:3478' },
 ];
+let usingTurn = false;
+
+// Load TURN credentials from server on startup
+async function loadIceServers() {
+  try {
+    const res = await fetch(API + '/api/turn-credentials').then(r => r.json());
+    if (res && res.iceServers && Array.isArray(res.iceServers)) {
+      ICE_SERVERS = res.iceServers;
+      usingTurn = res.usingTurn || false;
+      if (usingTurn) {
+        console.log('✅ TURN servers loaded - works behind NAT/firewall');
+      } else {
+        console.log('ℹ️ Using STUN-only (TURN not configured)');
+      }
+    }
+  } catch (e) {
+    console.warn('Using default STUN servers');
+  }
+}
 
 async function startCall(type, targetUserId, groupId = null) {
   if (!currentUser) { toast('Please register first'); return; }
@@ -2362,7 +2380,10 @@ async function startCall(type, targetUserId, groupId = null) {
 function showCallScreen(call, type) {
   const screen = document.getElementById('callScreen');
   screen.classList.add('show');
-  document.getElementById('callStatus').textContent = call.status === 'ringing' ? '📞 Calling...' : '🟢 Connected';
+  const statusText = call.status === 'ringing'
+    ? (usingTurn ? '📞 Calling... (TURN)' : '📞 Calling...')
+    : '🟢 Connected';
+  document.getElementById('callStatus').textContent = statusText;
   document.getElementById('callName').textContent = call.groupId ? 'Group Call' : (call.participants[0]?.name || 'User');
   document.getElementById('callRemoteAvatar').textContent = call.groupId ? '👥' : '📞';
   if (type === 'voice') {
