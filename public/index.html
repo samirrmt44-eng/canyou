@@ -1312,23 +1312,67 @@ async function loadOdyseeLiveSection() {
 
 function openAddOdyseeChannel() {
   if (!currentUser) { toast('Please register first'); return; }
-  showModal('📺 Add Odysee Channel', `
-    <p style="opacity:0.7;font-size:13px;margin-bottom:12px;">Add an Odysee channel to embed their live streams on your homepage.</p>
+  showModal('📺 Add Odysee Live Stream', `
+    <p style="opacity:0.7;font-size:13px;margin-bottom:12px;">Add an Odysee live stream to embed on your homepage.</p>
     <div class="form-group">
-      <label>Odysee Channel Handle</label>
+      <label>Method 1: Paste Odysee Live URL (RECOMMENDED)</label>
+      <input id="odyseeStreamUrl" placeholder="https://odysee.com/@DainikState:1/cripto-panda:a" />
+      <button class="btn odysee-add-btn" style="margin-top:8px;" onclick="submitAddOdyseeStreamUrl()">+ Add This Stream</button>
+    </div>
+    <div style="text-align:center;margin:12px 0;opacity:0.5;font-size:11px;">— OR —</div>
+    <div class="form-group">
+      <label>Method 2: Add Channel (auto-detect live)</label>
       <input id="odyseeHandle" placeholder="@ChannelName:1" value="@DainikState:1" />
+      <input id="odyseeName" placeholder="Display name (optional)" style="margin-top:6px;" />
+      <button class="btn secondary" style="margin-top:8px;" onclick="submitAddOdyseeChannel()">+ Add Channel</button>
     </div>
-    <div class="form-group">
-      <label>Display Name (optional)</label>
-      <input id="odyseeName" placeholder="DainikState Live" />
-    </div>
-    <p style="font-size:11px;opacity:0.6;margin-bottom:12px;">
-      💡 The handle format is @Name:N (e.g., @DainikState:1). The channel must exist on Odysee.
+    <p style="font-size:11px;opacity:0.6;margin-top:12px;">
+      💡 Method 1 is more reliable - paste the live URL directly from Odysee.
     </p>
-    <button class="btn odysee-add-btn" onclick="submitAddOdyseeChannel()">+ Add Channel</button>
     <div id="odyseeChannelsList" style="margin-top:16px;"></div>
   `);
   loadOdyseeChannelsList();
+}
+
+async function submitAddOdyseeStreamUrl() {
+  const url = document.getElementById('odyseeStreamUrl').value.trim();
+  if (!url) { toast('URL required'); return; }
+  const res = await fetch(API + '/api/odysee/streams/add', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, userId: currentUser.id }),
+  }).then(r => r.json());
+  if (res.success) {
+    closeModal();
+    showOdyseeStreamDirect(res.stream);
+    toast('✅ Live stream added!');
+  } else {
+    toast('❌ ' + (res.error || 'Failed'));
+  }
+}
+
+// Show a single Odysee stream directly (manual added)
+function showOdyseeStreamDirect(stream) {
+  nav('home');
+  const section = document.getElementById('odyseeLiveSection');
+  section.classList.remove('hide');
+  section.innerHTML = `
+    <h3 style="margin:8px 0 8px 0;font-size:14px;display:flex;align-items:center;gap:6px;">
+      <span class="live-dot" style="background:#ff6600;"></span> ODYSEE LIVE NOW
+      <span style="font-size:11px;opacity:0.6;margin-left:auto;">manually added</span>
+    </h3>
+    <div class="odysee-live-card">
+      <div class="odysee-live-header">
+        <span class="live-dot"></span>
+        <span style="flex:1;">🔴 ${esc(stream.channelName || stream.channelHandle)}</span>
+        <a href="${esc(stream.url)}" target="_blank" style="color:#fff;text-decoration:none;background:rgba(0,0,0,0.2);padding:4px 10px;border-radius:6px;font-size:11px;margin-left:6px;">Open on Odysee ↗</a>
+      </div>
+      <iframe class="odysee-embed" src="${esc(stream.embedUrl)}" allowfullscreen></iframe>
+      <div class="odysee-info">
+        <div class="title">${esc(stream.title)}</div>
+        <div class="channel">@${esc(stream.channelHandle)}</div>
+      </div>
+    </div>
+  `;
 }
 
 async function submitAddOdyseeChannel() {
