@@ -1022,6 +1022,38 @@ function showModal(title, bodyHtml) {
 }
 function closeModal() { document.getElementById('genericModal').classList.remove('show'); }
 
+// === ONBOARDING (first time guide) ===
+function showOnboarding() {
+  showModal('👋 DainikState में आपका स्वागत है!', `
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:60px;">🚀</div>
+      <h2 style="font-size:18px;margin:8px 0;">5 मिनट में शुरू करें</h2>
+    </div>
+    <div style="font-size:14px;line-height:1.7;">
+      <p style="margin-bottom:12px;"><b>1️⃣ Group बनाएं:</b><br>
+        👥 <b>Groups</b> tab → <b>+ Create New Group</b><br>
+        Public (कोई भी join) या Private (admin approval)
+      </p>
+      <p style="margin-bottom:12px;"><b>2️⃣ Members जोड़ें:</b><br>
+        Group में <b>🔗 Invite Link</b> click → link copy → WhatsApp पर भेजें<br>
+        Public group: <b>link click</b> पर auto-join<br>
+        Private group: <b>admin approval</b> से join
+      </p>
+      <p style="margin-bottom:12px;"><b>3️⃣ Live Stream करें:</b><br>
+        Group में <b>🔴 Go Live</b> button click<br>
+        Title दें, type चुनें:<br>
+        • <b>📹 Camera</b> - अपना face दिखाएं<br>
+        • <b>🖥️ Screen Share</b> - अपनी PC screen (HTML bot, PPT) दिखाएं<br>
+        • <b>📹+🖥️ Both</b> - दोनों साथ में
+      </p>
+      <p style="margin-bottom:12px;"><b>4️⃣ Members देखेंगे:</b><br>
+        Notification आएगा → Click → Live video + chat
+      </p>
+    </div>
+    <button class="btn mt-12" onclick="closeModal();nav('groups');">Get Started →</button>
+  `);
+}
+
 // === AUTH ===
 async function checkAuth() {
   sessionId = localStorage.getItem('canyou_session');
@@ -1075,6 +1107,11 @@ async function registerUser() {
       toast(`🎉 स्वागत है ${name}!`);
       loadHomeFeed();
       loadNotifications();
+      // First-time onboarding hint
+      if (!localStorage.getItem('ds_onboarded')) {
+        setTimeout(showOnboarding, 1500);
+        localStorage.setItem('ds_onboarded', '1');
+      }
     }
   } catch (e) { toast('Registration failed'); }
 }
@@ -2157,30 +2194,77 @@ async function startGoLive(groupId) {
       <textarea id="liveDesc" placeholder="What will you discuss?"></textarea>
     </div>
     <div class="form-group">
-      <label>Type</label>
-      <select id="liveType">
-        <option value="video">📹 Video + Audio (Camera)</option>
-        <option value="audio">🎤 Audio Only</option>
+      <label>📺 What do you want to broadcast?</label>
+      <select id="liveType" onchange="updateLiveTypeHint()">
+        <option value="camera">📹 Camera (अपना face दिखाएं)</option>
+        <option value="screen">🖥️ Screen Share (अपनी screen दिखाएं - HTML bot, PPT, charts, etc.)</option>
+        <option value="both">📹 + 🖥️ Camera + Screen (दोनों साथ में)</option>
+        <option value="audio">🎤 Audio Only (सिर्फ आवाज़)</option>
       </select>
+      <p style="font-size:11px;opacity:0.6;margin-top:4px;" id="liveTypeHint">
+        📹 Camera: आप अपने webcam से live दिखेंगे
+      </p>
     </div>
-    <p style="font-size:11px;opacity:0.6;margin-bottom:12px;">All group members will get a notification. Camera/mic permission required.</p>
+    <p style="font-size:11px;opacity:0.6;margin-bottom:12px;">
+      💡 Screen share से आप अपने PC की screen, कोई specific window (जैसे Chrome में चल रहा HTML bot), या PowerPoint दिखा सकते हैं
+    </p>
     <button class="btn go-live-btn" onclick="confirmGoLive('${groupId}')">🔴 Start Live Stream</button>
   `);
+}
+
+function updateLiveTypeHint() {
+  const v = document.getElementById('liveType').value;
+  const hint = document.getElementById('liveTypeHint');
+  if (!hint) return;
+  if (v === 'camera') hint.textContent = '📹 Camera: आप अपने webcam से live दिखेंगे';
+  else if (v === 'screen') hint.textContent = '🖥️ Screen: आप अपनी पूरी screen या किसी specific window (जैसे HTML bot) को live share करेंगे। Browser आपको window/app select करने देगा।';
+  else if (v === 'both') hint.textContent = '📹 + 🖥️ दोनों: Camera + Screen share simultaneously (advanced users)';
+  else if (v === 'audio') hint.textContent = '🎤 Audio Only: सिर्फ आवाज़, video नहीं';
 }
 
 async function confirmGoLive(groupId) {
   const title = document.getElementById('liveTitle').value.trim() || currentUser.name + ' is live!';
   const description = document.getElementById('liveDesc').value.trim();
   const type = document.getElementById('liveType').value;
-  // Get media FIRST
+
+  // Get media based on type
   try {
-    liveLocalStream = await navigator.mediaDevices.getUserMedia({
-      video: type === 'video', audio: true,
-    });
+    if (type === 'screen') {
+      // Screen share - get display media
+      liveLocalStream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: 'always', displaySurface: 'browser' },
+        audio: true  // Try to capture tab audio
+      });
+      toast('🖥️ Screen sharing started!');
+    } else if (type === 'both') {
+      // Camera + Screen simultaneously
+      const [cameraStream, screenStream] = await Promise.all([
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true }),
+        navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'always' }, audio: true })
+      ]);
+      // Combine: take video from screen, audio from camera (better audio quality)
+      const combinedStream = new MediaStream();
+      screenStream.getVideoTracks().forEach(t => combinedStream.addTrack(t));
+      cameraStream.getAudioTracks().forEach(t => combinedStream.addTrack(t));
+      liveLocalStream = combinedStream;
+    } else if (type === 'audio') {
+      liveLocalStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+    } else {
+      // camera (default)
+      liveLocalStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    }
   } catch (e) {
-    toast('❌ Camera/Mic access denied');
+    console.error('Media error:', e);
+    if (e.name === 'NotAllowedError') {
+      toast('❌ Permission denied - click again and allow');
+    } else if (e.name === 'NotFoundError') {
+      toast('❌ No camera/mic/screen found');
+    } else {
+      toast('❌ Error: ' + e.message);
+    }
     return;
   }
+
   // Now start the stream on backend
   const res = await fetch(API + '/api/groups/' + groupId + '/live/start', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -2227,6 +2311,9 @@ function showLiveStreamView(stream, isStreamer) {
   const avatar = stream.streamerAvatar
     ? `<img src="${esc(stream.streamerAvatar)}" />`
     : initial;
+  const typeLabel = stream.type === 'screen' ? '🖥️ Screen Share' :
+                    stream.type === 'both' ? '📹+🖥️ Camera+Screen' :
+                    stream.type === 'audio' ? '🎤 Audio Only' : '📹 Camera';
   content.innerHTML = `
     <div class="live-stream-card">
       <div class="live-stream-header">
@@ -2236,6 +2323,7 @@ function showLiveStreamView(stream, isStreamer) {
           <div>
             <div class="name">${esc(stream.streamerName)}</div>
             <div class="viewers">👁 <span id="liveViewerCount">${stream.viewerCount || 0}</span> watching • ${esc(stream.title)}</div>
+            <div style="font-size:10px;opacity:0.7;">${typeLabel}</div>
           </div>
         </div>
         ${isStreamer ? '<button class="btn danger" style="width:auto;padding:8px 16px;font-size:12px;" onclick="endLiveStream()">🛑 End Stream</button>' : '<button class="btn secondary" style="width:auto;padding:8px 16px;font-size:12px;" onclick="leaveLiveStream()">✕ Leave</button>'}
