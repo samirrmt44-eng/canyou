@@ -26,6 +26,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const MONGO_URI = process.env.MONGODB_URI;
 let db, linksCol, commentsCol, usersCol, votesCol, channelsCol;
 let groupsCol, groupPostsCol, storiesCol, reactionsCol, notificationsCol;
+let callsCol, callSignalsCol, invitesCol;
 
 async function connectDB() {
   try {
@@ -43,6 +44,9 @@ async function connectDB() {
     storiesCol = db.collection('stories');
     reactionsCol = db.collection('reactions');
     notificationsCol = db.collection('notifications');
+    callsCol = db.collection('calls');
+    callSignalsCol = db.collection('callSignals');
+    invitesCol = db.collection('invites');
 
     // Indexes
     await linksCol.createIndex({ addedAt: -1 });
@@ -58,6 +62,11 @@ async function connectDB() {
     await storiesCol.createIndex({ expiresAt: 1 });
     await reactionsCol.createIndex({ targetType: 1, targetId: 1 });
     await notificationsCol.createIndex({ userId: 1, createdAt: -1 });
+    await callsCol.createIndex({ callId: 1 }, { unique: true });
+    await callsCol.createIndex({ 'participants.userId': 1 });
+    await callSignalsCol.createIndex({ callId: 1, createdAt: 1 });
+    await invitesCol.createIndex({ code: 1 }, { unique: true });
+    await invitesCol.createIndex({ groupId: 1 });
 
     console.log('✅ MongoDB connected!');
   } catch (err) {
@@ -798,6 +807,207 @@ app.get('/api/explore', async (req, res) => {
     topPosts: topPosts.map(p => { const { _id, ...r } = p; return r; }),
     popularUsers: popularUsers.map(u => { const { _id, sessionId, ...r } = u; return r; }),
   });
+});
+
+// ============================================================
+// INVITE LINKS - WhatsApp-style group invite
+// ============================================================
+app.post('/api/invites', async (req, res) => {
+  const { groupId, userId, maxUses, expiresIn } = req.body;
+  if (!groupId || !userId) return res.status(400).json({ error: 'groupId and userId required' });
+  if (!groupsCol) return res.status(503).json({ error: 'DB not ready' });
+  const group = await groupsCol.findOne({ id: groupId });
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (!group.admins?.includes(userId)) return res.status(403).json({ error: 'Only admin can create invites' });
+  const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+  const invite = {
+    _id: code, code, groupId, createdBy: userId,
+    maxUses: maxUses || 0,  // 0 = unlimited
+    usedCount: 0, usedBy: [],
+    expiresAt: expiresIn ? Date.now() + expiresIn * 1000 : 0,  // 0 = never
+    createdAt: Date.now(),
+  };
+  await invitesCol.insertOne(invite);
+  res.json({ success: true, invite, url: `${req.protocol}://${req.get('host')}/i/${code}` });
+});
+
+app.get('/api/invites/:code', async (req, res) => {
+  if (!invitesCol) return res.status(503).json({ error: 'DB not ready' });
+  const invite = await invitesCol.findOne({ code: req.params.code });
+  if (!invite) return res.status(404).json({ error: 'Invite not found' });
+  if (invite.expiresAt && invite.expiresAt < Date.now()) return res.status(410).json({ error: 'Invite expired' });
+  if (invite.maxUses > 0 && invite.usedCount >= invite.maxUses) return res.status(410).json({ error: 'Invite max uses reached' });
+  const group = await groupsCol.findOne({ id: invite.groupId });
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  res.json({ success: true, invite, group: { id: group.id, name: group.name, icon: group.icon, color: group.color, description: group.description, type: group.type, memberCount: group.memberCount } });
+});
+
+app.get('/api/groups/:groupId/invites', async (req, res) => {
+  if (!invitesCol) return res.status(503).json({ error: 'DB not ready' });
+  const invites = await invitesCol.find({ groupId: req.params.groupId }).sort({ createdAt: -1 }).toArray();
+  res.json({ success: true, invites: invites.map(i => { const { _id, ...r } = i; return r; }) });
+});
+
+app.delete('/api/invites/:code', async (req, res) => {
+  const { userId } = req.body;
+  const invite = await invitesCol.findOne({ code: req.params.code });
+  if (!invite) return res.status(404).json({ error: 'Invite not found' });
+  if (invite.createdBy !== userId) return res.status(403).json({ error: 'Only creator can delete' });
+  await invitesCol.deleteOne({ code: req.params.code });
+  res.json({ success: true });
+});
+
+// Public landing page for invites (handled by SPA fallback below, but data via API)
+app.get('/i/:code', async (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ============================================================
+// CALLS (Voice/Video - WebRTC signaling)
+// ============================================================
+
+// Start or join a call
+app.post('/api/calls', async (req, res) => {
+  const { type, fromUserId, toUserId, groupId } = req.body;
+  if (!fromUserId || !type) return res.status(400).json({ error: 'type and fromUserId required' });
+  if (!callsCol) return res.status(503).json({ error: 'DB not ready' });
+
+  const user = await usersCol.findOne({ id: fromUserId });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  const callId = 'call_' + crypto.randomBytes(8).toString('hex');
+  const call = {
+    _id: callId, callId, type,  // 'voice' | 'video'
+    groupId: groupId || null, toUserId: toUserId || null,
+    fromUserId, status: 'ringing',  // 'ringing' | 'active' | 'ended'
+    participants: [{ userId: fromUserId, name: user.name, avatar: user.avatar, joinedAt: Date.now() }],
+    createdAt: Date.now(), startedAt: null, endedAt: null, duration: 0,
+  };
+  await callsCol.insertOne(call);
+
+  // Notify other party
+  if (toUserId) {
+    const notifId = 'n_' + crypto.randomBytes(8).toString('hex');
+    await notificationsCol.insertOne({
+      _id: notifId,
+      id: notifId, userId: toUserId,
+      type: 'incoming_call', from: fromUserId, targetType: 'call', targetId: callId,
+      message: `📞 ${user.name} is calling you (${type})`,
+      read: false, createdAt: Date.now(),
+    });
+  } else if (groupId) {
+    // Group call: notify all group members
+    const group = await groupsCol.findOne({ id: groupId });
+    if (group) {
+      for (const memberId of group.members) {
+        if (memberId === fromUserId) continue;
+        await notificationsCol.insertOne({
+          _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+          id: undefined, userId: memberId,
+          type: 'group_call', from: fromUserId, targetType: 'call', targetId: callId,
+          message: `📞 ${user.name} started a ${type} call in ${group.name}`,
+          read: false, createdAt: Date.now(),
+        });
+      }
+    }
+  }
+  res.json({ success: true, call });
+});
+
+app.get('/api/calls/:callId', async (req, res) => {
+  if (!callsCol) return res.status(503).json({ error: 'DB not ready' });
+  const call = await callsCol.findOne({ callId: req.params.callId });
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  const { _id, ...result } = call;
+  res.json({ success: true, call: result });
+});
+
+app.post('/api/calls/:callId/answer', async (req, res) => {
+  const { userId } = req.body;
+  if (!callsCol) return res.status(503).json({ error: 'DB not ready' });
+  const call = await callsCol.findOne({ callId: req.params.callId });
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  const user = await usersCol.findOne({ id: userId });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (call.participants.find(p => p.userId === userId)) return res.json({ success: true, message: 'Already in call' });
+  const participants = [...call.participants, { userId, name: user.name, avatar: user.avatar, joinedAt: Date.now() }];
+  await callsCol.updateOne({ callId: call.callId }, { $set: { status: 'active', startedAt: call.startedAt || Date.now(), participants } });
+  // Notify other participants
+  call.participants.forEach(p => {
+    notificationsCol.insertOne({
+      _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+      id: undefined, userId: p.userId,
+      type: 'call_joined', from: userId, targetType: 'call', targetId: call.callId,
+      message: `${user.name} joined the call`,
+      read: false, createdAt: Date.now(),
+    });
+  });
+  res.json({ success: true });
+});
+
+app.post('/api/calls/:callId/leave', async (req, res) => {
+  const { userId } = req.body;
+  if (!callsCol) return res.status(503).json({ error: 'DB not ready' });
+  const call = await callsCol.findOne({ callId: req.params.callId });
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  const participants = call.participants.filter(p => p.userId !== userId);
+  if (participants.length === 0) {
+    await callsCol.updateOne({ callId: call.callId }, { $set: { status: 'ended', endedAt: Date.now(), duration: call.startedAt ? Math.floor((Date.now() - call.startedAt) / 1000) : 0, participants } });
+  } else {
+    await callsCol.updateOne({ callId: call.callId }, { $set: { participants } });
+  }
+  res.json({ success: true });
+});
+
+app.post('/api/calls/:callId/end', async (req, res) => {
+  const { userId } = req.body;
+  const call = await callsCol.findOne({ callId: req.params.callId });
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  if (call.fromUserId !== userId && !call.participants.find(p => p.userId === userId)) return res.status(403).json({ error: 'Not in call' });
+  await callsCol.updateOne({ callId: call.callId }, { $set: { status: 'ended', endedAt: Date.now(), duration: call.startedAt ? Math.floor((Date.now() - call.startedAt) / 1000) : 0 } });
+  res.json({ success: true });
+});
+
+app.get('/api/calls/active/:userId', async (req, res) => {
+  if (!callsCol) return res.status(503).json({ error: 'DB not ready' });
+  const calls = await callsCol.find({
+    $or: [{ 'participants.userId': req.params.userId }, { toUserId: req.params.userId, status: 'ringing' }],
+    status: { $in: ['ringing', 'active'] },
+  }).sort({ createdAt: -1 }).limit(5).toArray();
+  res.json({ success: true, calls: calls.map(c => { const { _id, ...r } = c; return r; }) });
+});
+
+app.get('/api/calls/history/:userId', async (req, res) => {
+  if (!callsCol) return res.status(503).json({ error: 'DB not ready' });
+  const calls = await callsCol.find({
+    $or: [{ fromUserId: req.params.userId }, { toUserId: req.params.userId }, { 'participants.userId': req.params.userId }],
+    status: 'ended',
+  }).sort({ endedAt: -1 }).limit(30).toArray();
+  res.json({ success: true, calls: calls.map(c => { const { _id, ...r } = c; return r; }) });
+});
+
+// WebRTC signaling (offer/answer/ice-candidate relay)
+app.post('/api/calls/:callId/signal', async (req, res) => {
+  const { fromUserId, toUserId, type, payload } = req.body;
+  if (!fromUserId || !toUserId || !type) return res.status(400).json({ error: 'Missing fields' });
+  if (!callSignalsCol) return res.status(503).json({ error: 'DB not ready' });
+  const signal = {
+    _id: 'sig_' + crypto.randomBytes(8).toString('hex'),
+    callId: req.params.callId, fromUserId, toUserId, type, payload,
+    createdAt: Date.now(), read: false,
+  };
+  await callSignalsCol.insertOne(signal);
+  res.json({ success: true });
+});
+
+app.get('/api/calls/:callId/signals/:userId', async (req, res) => {
+  if (!callSignalsCol) return res.status(503).json({ error: 'DB not ready' });
+  const signals = await callSignalsCol.find({
+    callId: req.params.callId, toUserId: req.params.userId, read: false,
+  }).sort({ createdAt: 1 }).limit(50).toArray();
+  // Mark as read
+  await callSignalsCol.updateMany({ _id: { $in: signals.map(s => s._id) } }, { $set: { read: true } });
+  res.json({ success: true, signals: signals.map(s => { const { _id, ...r } = s; return r; }) });
 });
 
 // ============================================================
