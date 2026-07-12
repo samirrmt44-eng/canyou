@@ -449,6 +449,106 @@
   .page { display: none; }
   .page.active { display: block; }
 
+  /* === LIVE STREAMING === */
+  .live-banner {
+    background: linear-gradient(90deg, #ff0000, #cc0000);
+    color: #fff; padding: 8px 16px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700;
+    border-radius: 12px; margin-bottom: 12px;
+    cursor: pointer;
+  }
+  .live-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #fff; animation: pulse-dot 1s infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+  .live-stream-card {
+    background: #000; border-radius: 16px; overflow: hidden;
+    margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1);
+    position: relative;
+  }
+  .live-stream-header {
+    background: rgba(0,0,0,0.7); padding: 12px;
+    display: flex; align-items: center; gap: 8px; color: #fff;
+  }
+  .live-stream-header .live-pill {
+    background: #ff0000; color: #fff;
+    padding: 3px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .live-stream-header .streamer-info {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+  }
+  .live-stream-header .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700, #ff6b6b);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #fff; font-size: 12px;
+  }
+  .live-stream-header .avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .live-stream-header .name { font-weight: 700; font-size: 14px; }
+  .live-stream-header .viewers { font-size: 11px; opacity: 0.8; }
+
+  .live-stream-video {
+    width: 100%; aspect-ratio: 16/9;
+    background: #000; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .live-stream-video video { width: 100%; height: 100%; object-fit: contain; }
+  .live-stream-video .live-overlay {
+    position: absolute; top: 8px; left: 8px;
+    background: rgba(255,0,0,0.9); color: #fff;
+    padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; font-weight: 800;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .live-stream-video .placeholder {
+    color: #fff; text-align: center; opacity: 0.6;
+  }
+  .live-stream-video .placeholder .emoji { font-size: 60px; }
+
+  .live-chat {
+    background: rgba(255,255,255,0.05);
+    padding: 8px 12px;
+    max-height: 200px; overflow-y: auto;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .live-chat-msg {
+    display: flex; gap: 8px; margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .live-chat-msg .name { font-weight: 700; color: #ffd700; }
+  .live-chat-msg .text { word-wrap: break-word; }
+  .live-chat-input {
+    display: flex; gap: 6px; padding: 8px 12px;
+    background: rgba(0,0,0,0.3);
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .live-chat-input input {
+    flex: 1; background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; padding: 8px 12px; border-radius: 18px;
+    font-size: 13px;
+  }
+  .live-chat-input button {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none; color: #fff;
+    padding: 8px 16px; border-radius: 18px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+
+  .go-live-btn {
+    background: linear-gradient(135deg, #ff0000, #cc0000) !important;
+    color: #fff !important;
+    font-weight: 800 !important;
+  }
+  .go-live-btn:hover { transform: scale(1.02); }
+
   /* === VIDEO PAUSE INDICATOR === */
   .video-paused-overlay {
     position: absolute; inset: 0;
@@ -691,6 +791,11 @@
   <!-- USER PROFILE VIEW (other user's profile) -->
   <div class="page" id="page-user-profile">
     <div id="userProfileContent"></div>
+  </div>
+
+  <!-- LIVE STREAM VIEWER -->
+  <div class="page" id="page-live">
+    <div id="liveStreamContent"></div>
   </div>
 
   <!-- PROFILE -->
@@ -1152,6 +1257,16 @@ function renderPost(p) {
     media = `<div class="post-media"><img src="${esc(p.mediaUrl)}" loading="lazy" /></div>`;
   } else if (p.type === 'voice' && p.voiceUrl) {
     media = `<div style="padding:12px 14px;"><audio controls src="${esc(p.voiceUrl)}" style="width:100%;"></audio></div>`;
+  } else if (p.type === 'live' && p.liveStreamId) {
+    // Live stream post - clickable to join
+    media = `<div class="post-media" style="background:linear-gradient(135deg,#1a0000,#000);cursor:pointer;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;" onclick="joinLiveStream('${p.liveStreamId}')">
+      <div style="text-align:center;color:#fff;">
+        <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,0,0,0.9);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:32px;box-shadow:0 4px 20px rgba(255,0,0,0.5);">🔴</div>
+        <div style="font-size:18px;font-weight:800;">LIVE NOW</div>
+        <div style="font-size:12px;opacity:0.7;margin-top:4px;">Click to watch</div>
+      </div>
+      <div style="position:absolute;top:8px;left:8px;background:rgba(255,0,0,0.9);padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800;color:#fff;">🔴 LIVE</div>
+    </div>`;
   } else if (ytId) {
     media = `<div class="post-media" id="${mediaId}">
       <div class="play-overlay" onclick="playMediaInline('${mediaId}','${ytId}','youtube')">
@@ -1611,13 +1726,39 @@ async function openGroup(groupId) {
       <div class="row">
         ${isMember ? `<button class="btn secondary" onclick="leaveGroup('${g.id}')">Leave Group</button>` :
                      `<button class="btn" onclick="joinGroup('${g.id}')">${g.type === 'private' ? 'Request to Join' : 'Join Group'}</button>`}
+        ${isAdmin ? `<button class="btn go-live-btn" onclick="startGoLive('${g.id}')">🔴 Go Live</button>` : ''}
         ${isAdmin ? `<button class="btn secondary" onclick="openGroupSettings('${g.id}')">⚙️ Settings</button>` : ''}
       </div>
+      <div id="activeLiveBanner"></div>
       <div style="margin-top:8px;font-size:11px;opacity:0.7;">📋 Invite Code: <b>${esc(g.inviteCode || '')}</b></div>
     </div>
     <div id="groupPosts"></div>
   `;
-  if (isMember) loadGroupPosts(groupId);
+  if (isMember) {
+    loadGroupPosts(groupId);
+    checkActiveLive(g.id);
+  }
+}
+
+async function checkActiveLive(groupId) {
+  try {
+    const res = await fetch(API + '/api/groups/' + groupId + '/live/active').then(r => r.json());
+    const banner = document.getElementById('activeLiveBanner');
+    if (res.streams && res.streams.length > 0) {
+      const stream = res.streams[0];
+      banner.innerHTML = `
+        <div class="live-banner" onclick="joinLiveStream('${stream.streamId}')">
+          <span class="live-dot"></span>
+          <span>🔴 LIVE NOW</span>
+          <span style="flex:1;opacity:0.9;">${esc(stream.title)}</span>
+          <span>👁 ${stream.viewerCount || 0} watching</span>
+          <span style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:6px;">Join →</span>
+        </div>
+      `;
+    } else {
+      banner.innerHTML = '';
+    }
+  } catch (e) {}
 }
 
 async function loadGroupPosts(groupId) {
@@ -1993,6 +2134,357 @@ async function loadNotifications() {
       body: JSON.stringify({ userId: currentUser.id }),
     });
   } catch (e) { console.error('Notif error:', e); }
+}
+
+// === LIVE STREAMING (WebRTC) ===
+let liveStream = null;
+let liveLocalStream = null;
+let livePeerConnections = {};
+let liveSignalPoll = null;
+let liveChatPoll = null;
+
+async function startGoLive(groupId) {
+  if (!currentUser) return;
+  // Get title and description
+  showModal('🔴 Go Live', `
+    <p style="opacity:0.7;font-size:13px;margin-bottom:12px;">Start a live broadcast for your group members.</p>
+    <div class="form-group">
+      <label>Stream Title</label>
+      <input id="liveTitle" placeholder="e.g., Market Analysis Live" maxlength="100" />
+    </div>
+    <div class="form-group">
+      <label>Description (optional)</label>
+      <textarea id="liveDesc" placeholder="What will you discuss?"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Type</label>
+      <select id="liveType">
+        <option value="video">📹 Video + Audio (Camera)</option>
+        <option value="audio">🎤 Audio Only</option>
+      </select>
+    </div>
+    <p style="font-size:11px;opacity:0.6;margin-bottom:12px;">All group members will get a notification. Camera/mic permission required.</p>
+    <button class="btn go-live-btn" onclick="confirmGoLive('${groupId}')">🔴 Start Live Stream</button>
+  `);
+}
+
+async function confirmGoLive(groupId) {
+  const title = document.getElementById('liveTitle').value.trim() || currentUser.name + ' is live!';
+  const description = document.getElementById('liveDesc').value.trim();
+  const type = document.getElementById('liveType').value;
+  // Get media FIRST
+  try {
+    liveLocalStream = await navigator.mediaDevices.getUserMedia({
+      video: type === 'video', audio: true,
+    });
+  } catch (e) {
+    toast('❌ Camera/Mic access denied');
+    return;
+  }
+  // Now start the stream on backend
+  const res = await fetch(API + '/api/groups/' + groupId + '/live/start', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id, title, description, type }),
+  }).then(r => r.json());
+  if (!res.success) {
+    if (liveLocalStream) { liveLocalStream.getTracks().forEach(t => t.stop()); liveLocalStream = null; }
+    toast('❌ ' + (res.error || 'Failed'));
+    return;
+  }
+  liveStream = res.stream;
+  closeModal();
+  toast('🔴 You are LIVE!');
+  // Open the live stream view as streamer
+  showLiveStreamView(liveStream, true);
+  startLiveSignaling();
+  startLiveChatPolling();
+}
+
+async function joinLiveStream(streamId) {
+  if (!currentUser) { toast('Please register first'); return; }
+  // Get stream info
+  const res = await fetch(API + '/api/live/' + streamId).then(r => r.json()).catch(() => null);
+  // We don't have a single get endpoint, so query active streams
+  const allRes = await fetch(API + '/api/live/active?userId=' + currentUser.id).then(r => r.json());
+  const stream = (allRes.streams || []).find(s => s.streamId === streamId);
+  if (!stream) { toast('Stream not found or ended'); return; }
+  // Track viewer
+  await fetch(API + '/api/live/' + streamId + '/join', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id }),
+  });
+  liveStream = stream;
+  nav('live');
+  showLiveStreamView(stream, false);
+  startLiveSignaling();
+  startLiveChatPolling();
+}
+
+function showLiveStreamView(stream, isStreamer) {
+  const content = document.getElementById('liveStreamContent');
+  const streamId = stream.streamId;
+  const initial = (stream.streamerName || '?')[0].toUpperCase();
+  const avatar = stream.streamerAvatar
+    ? `<img src="${esc(stream.streamerAvatar)}" />`
+    : initial;
+  content.innerHTML = `
+    <div class="live-stream-card">
+      <div class="live-stream-header">
+        <div class="live-pill"><span class="live-dot"></span> LIVE</div>
+        <div class="streamer-info">
+          <div class="avatar">${avatar}</div>
+          <div>
+            <div class="name">${esc(stream.streamerName)}</div>
+            <div class="viewers">👁 <span id="liveViewerCount">${stream.viewerCount || 0}</span> watching • ${esc(stream.title)}</div>
+          </div>
+        </div>
+        ${isStreamer ? '<button class="btn danger" style="width:auto;padding:8px 16px;font-size:12px;" onclick="endLiveStream()">🛑 End Stream</button>' : '<button class="btn secondary" style="width:auto;padding:8px 16px;font-size:12px;" onclick="leaveLiveStream()">✕ Leave</button>'}
+      </div>
+      <div class="live-stream-video" id="live-video-area">
+        <video id="live-remote-video" autoplay playsinline controls style="display:none;"></video>
+        <div class="placeholder" id="live-placeholder">
+          <div class="emoji">📡</div>
+          <div style="margin-top:12px;">Connecting to ${esc(stream.streamerName)}...</div>
+        </div>
+        <div class="live-overlay" id="live-overlay" style="display:none;">🔴 LIVE</div>
+      </div>
+      <div class="live-chat" id="live-chat">
+        <div style="text-align:center;opacity:0.5;font-size:12px;padding:20px;">Live chat loading...</div>
+      </div>
+      ${!isStreamer ? `
+      <div class="live-chat-input">
+        <input type="text" id="liveChatInput" placeholder="Send a message..." maxlength="200" onkeypress="if(event.key==='Enter')sendLiveChat()" />
+        <button onclick="sendLiveChat()">Send</button>
+      </div>` : ''}
+    </div>
+  `;
+  // If streamer, show their own video
+  if (isStreamer && liveLocalStream) {
+    document.getElementById('live-placeholder').style.display = 'none';
+    const v = document.getElementById('live-remote-video');
+    v.style.display = 'block';
+    v.srcObject = liveLocalStream;
+    v.muted = true;  // Don't play own audio
+    document.getElementById('live-overlay').style.display = 'flex';
+  }
+  // Load existing chat
+  loadLiveChat();
+}
+
+function startLiveSignaling() {
+  if (liveSignalPoll) clearInterval(liveSignalPoll);
+  liveSignalPoll = setInterval(pollLiveSignals, 1000);
+  // Also check for new viewers every 3 sec (for streamer)
+  if (liveStream && liveStream.streamerId === currentUser.id) {
+    setInterval(streamerCheckViewers, 3000);
+  }
+}
+
+async function pollLiveSignals() {
+  if (!liveStream || !currentUser) return;
+  // If we're the streamer, also poll call status to update viewer count
+  const isStreamer = liveStream.streamerId === currentUser.id;
+  // For viewer: get signals addressed to us
+  if (!isStreamer) {
+    const sigRes = await fetch(API + '/api/live/' + liveStream.streamId + '/signals/' + currentUser.id).then(r => r.json());
+    if (sigRes.signals) {
+      for (const sig of sigRes.signals) {
+        await handleLiveSignal(sig);
+      }
+    }
+  } else {
+    // For streamer: poll viewer count periodically
+    const res = await fetch(API + '/api/live/active?userId=' + currentUser.id).then(r => r.json());
+    const s = (res.streams || []).find(x => x.streamId === liveStream.streamId);
+    if (s) {
+      const viewerSpan = document.getElementById('liveViewerCount');
+      if (viewerSpan) viewerSpan.textContent = s.viewerCount || 0;
+      liveStream = s;
+    }
+    // Also send our media to any new viewers
+    // (Handled by viewer join event - the viewer will request offer)
+  }
+  // Re-poll stream status (check if ended)
+  const allRes = await fetch(API + '/api/live/active?userId=' + currentUser.id).then(r => r.json());
+  const stillLive = (allRes.streams || []).find(s => s.streamId === liveStream.streamId);
+  if (!stillLive && !isStreamer) {
+    toast('📺 Stream ended');
+    leaveLiveStream();
+  }
+}
+
+async function handleLiveSignal(sig) {
+  // For viewer: receive offer from streamer and send back answer
+  if (sig.type === 'offer') {
+    let pc = livePeerConnections[sig.fromUserId];
+    if (!pc) pc = createLivePeerConnection(sig.fromUserId);
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      sendLiveSignal(sig.fromUserId, 'answer', answer);
+    } catch (e) { console.error('Live offer error:', e); }
+  } else if (sig.type === 'answer') {
+    const pc = livePeerConnections[sig.fromUserId];
+    if (pc) {
+      try { await pc.setRemoteDescription(new RTCSessionDescription(sig.payload)); } catch (e) { console.error('Live answer error:', e); }
+    }
+  } else if (sig.type === 'ice-candidate') {
+    const pc = livePeerConnections[sig.fromUserId];
+    if (pc) {
+      try { await pc.addIceCandidate(new RTCIceCandidate(sig.payload)); } catch (e) { /* ignore */ }
+    }
+  }
+}
+
+function sendLiveSignal(toUserId, type, payload) {
+  if (!liveStream) return;
+  fetch(API + '/api/live/' + liveStream.streamId + '/signal', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromUserId: currentUser.id, toUserId, type, payload }),
+  });
+}
+
+function createLivePeerConnection(remoteUserId) {
+  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  livePeerConnections[remoteUserId] = pc;
+  // Streamer: add local stream
+  if (liveLocalStream) {
+    liveLocalStream.getTracks().forEach(track => pc.addTrack(track, liveLocalStream));
+  }
+  // Add transceivers for viewer
+  try { pc.addTransceiver('audio', { direction: 'sendrecv' }); } catch (e) {}
+  try { pc.addTransceiver('video', { direction: 'sendrecv' }); } catch (e) {}
+  pc.onicecandidate = (e) => {
+    if (e.candidate) sendLiveSignal(remoteUserId, 'ice-candidate', e.candidate);
+  };
+  pc.ontrack = (e) => {
+    // For viewer: receive streamer's video/audio
+    const v = document.getElementById('live-remote-video');
+    const ph = document.getElementById('live-placeholder');
+    const ov = document.getElementById('live-overlay');
+    if (v) {
+      v.style.display = 'block';
+      v.srcObject = e.streams[0];
+      if (ph) ph.style.display = 'none';
+      if (ov) ov.style.display = 'flex';
+    }
+    // For audio
+    if (e.streams[0].getAudioTracks().length > 0 && e.streams[0].getVideoTracks().length === 0) {
+      const audio = document.createElement('audio');
+      audio.srcObject = e.streams[0];
+      audio.autoplay = true;
+      document.body.appendChild(audio);
+    }
+    toast('🔴 Connected to live stream');
+  };
+  // If we're the streamer, wait for viewer's "ready" signal
+  // For now: when new viewer joins, server triggers via signaling
+  return pc;
+}
+
+// Streamer: when new viewer joins, send them an offer
+async function setupStreamerForViewer(viewerUserId) {
+  if (!liveLocalStream) return;
+  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  livePeerConnections[viewerUserId] = pc;
+  liveLocalStream.getTracks().forEach(track => pc.addTrack(track, liveLocalStream));
+  try { pc.addTransceiver('audio', { direction: 'sendrecv' }); } catch (e) {}
+  try { pc.addTransceiver('video', { direction: 'sendrecv' }); } catch (e) {}
+  pc.onicecandidate = (e) => {
+    if (e.candidate) sendLiveSignal(viewerUserId, 'ice-candidate', e.candidate);
+  };
+  try {
+    const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+    await pc.setLocalDescription(offer);
+    sendLiveSignal(viewerUserId, 'offer', offer);
+  } catch (e) { console.error('Streamer offer error:', e); }
+}
+
+// Polling - detect new viewers and send them offers
+async function streamerCheckViewers() {
+  if (!liveStream || liveStream.streamerId !== currentUser.id) return;
+  const res = await fetch(API + '/api/live/active?userId=' + currentUser.id).then(r => r.json());
+  const s = (res.streams || []).find(x => x.streamId === liveStream.streamId);
+  if (!s) return;
+  // For each viewer not yet connected, send offer
+  for (const viewerId of (s.viewers || [])) {
+    if (viewerId === currentUser.id) continue;
+    if (!livePeerConnections[viewerId]) {
+      setupStreamerForViewer(viewerId);
+    }
+  }
+}
+
+async function endLiveStream() {
+  if (!liveStream) return;
+  await fetch(API + '/api/live/' + liveStream.streamId + '/end', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id }),
+  });
+  cleanupLiveStream();
+  toast('🛑 Stream ended');
+  nav('home');
+}
+
+async function leaveLiveStream() {
+  if (!liveStream) return;
+  await fetch(API + '/api/live/' + liveStream.streamId + '/leave', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id }),
+  });
+  cleanupLiveStream();
+  toast('Left live stream');
+  nav('home');
+}
+
+function cleanupLiveStream() {
+  if (liveLocalStream) { liveLocalStream.getTracks().forEach(t => t.stop()); liveLocalStream = null; }
+  Object.values(livePeerConnections).forEach(pc => pc.close());
+  livePeerConnections = {};
+  if (liveSignalPoll) clearInterval(liveSignalPoll);
+  if (liveChatPoll) clearInterval(liveChatPoll);
+  liveStream = null;
+  // Remove any audio elements we added
+  document.querySelectorAll('audio').forEach(a => {
+    if (a.srcObject && !a.controls) a.remove();
+  });
+}
+
+// Live chat
+let lastLiveChatCount = 0;
+function startLiveChatPolling() {
+  if (liveChatPoll) clearInterval(liveChatPoll);
+  liveChatPoll = setInterval(loadLiveChat, 3000);
+}
+
+async function loadLiveChat() {
+  if (!liveStream) return;
+  const res = await fetch(API + '/api/live/' + liveStream.streamId + '/chat').then(r => r.json());
+  const container = document.getElementById('live-chat');
+  if (!container) return;
+  if (res.count === lastLiveChatCount) return;
+  lastLiveChatCount = res.count;
+  container.innerHTML = (res.messages || []).map(m => `
+    <div class="live-chat-msg">
+      <span class="name">${esc(m.userName)}:</span>
+      <span class="text">${esc(m.text)}</span>
+    </div>
+  `).join('') || '<div style="text-align:center;opacity:0.5;font-size:12px;padding:12px;">No messages yet</div>';
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendLiveChat() {
+  if (!liveStream || !currentUser) return;
+  const input = document.getElementById('liveChatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  await fetch(API + '/api/live/' + liveStream.streamId + '/chat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id, text }),
+  });
+  input.value = '';
+  loadLiveChat();
 }
 
 // === USER SEARCH ===
