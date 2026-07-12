@@ -2248,11 +2248,43 @@ function retryLiveConnection() {
   if (liveStream.streamerId === currentUser.id) {
     // Streamer: re-send offers to all viewers
     streamerCheckViewers();
+    // If stream is missing, re-acquire
+    if (!liveLocalStream || !liveLocalStream.active) {
+      reAcquireLocalStream();
+    }
   } else {
     // Viewer: force a signal poll
     pollLiveSignals();
   }
   toast('🔄 Retrying connection...');
+}
+
+async function reAcquireLocalStream() {
+  if (!liveStream) return;
+  updateLiveDebug('Re-acquiring local stream...');
+  toast('📹 Please grant camera/mic/screen permission again');
+  const type = liveStream.type || 'camera';
+  try {
+    if (type === 'screen') {
+      liveLocalStream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'always' }, audio: true });
+    } else if (type === 'audio') {
+      liveLocalStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+    } else {
+      liveLocalStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    }
+    // Show in local video
+    const v = document.getElementById('live-remote-video');
+    if (v) {
+      v.srcObject = liveLocalStream;
+      v.muted = true;
+    }
+    updateLiveDebug('✅ Local stream re-acquired');
+    // Re-setup peer connections for all viewers
+    streamerCheckViewers();
+  } catch (e) {
+    updateLiveDebug('❌ Failed to acquire stream: ' + e.message);
+    toast('❌ Permission denied - cannot continue stream');
+  }
 }
 
 function updateLiveConnStatus(msg) {
@@ -2378,8 +2410,15 @@ async function confirmGoLive(groupId) {
     body: JSON.stringify({ userId: currentUser.id, title, description, type }),
   }).then(r => r.json());
   if (!res.success) {
+    // Don't release local stream — user might want to retry
+    // Only release on explicit end
+    const errorMsg = res.error || 'Failed';
+    if (errorMsg.includes('already active')) {
+      toast('❌ Group me pehle se ek live stream hai. End karein pehle!');
+    } else {
+      toast('❌ ' + errorMsg);
+    }
     if (liveLocalStream) { liveLocalStream.getTracks().forEach(t => t.stop()); liveLocalStream = null; }
-    toast('❌ ' + (res.error || 'Failed'));
     return;
   }
   liveStream = res.stream;
@@ -2623,8 +2662,10 @@ function createLivePeerConnection(remoteUserId) {
 
 // Streamer: when new viewer joins, send them an offer
 async function setupStreamerForViewer(viewerUserId) {
-  if (!liveLocalStream) {
-    updateLiveDebug('⚠️ No local stream');
+  if (!liveLocalStream || !liveLocalStream.active) {
+    updateLiveDebug('⚠️ No active local stream — viewer will see retry button');
+    updateLiveConnStatus('❌ Local stream not available');
+    showLiveRetry(true);
     return;
   }
   updateLiveDebug(`Setting up peer for viewer ${viewerUserId.slice(0,6)}...`);
