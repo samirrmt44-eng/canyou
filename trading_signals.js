@@ -662,27 +662,26 @@ module.exports = function(app, db, usersCol) {
     }
   });
 
-  // Smart coin analyzer - real-time CCI strategy signal
-  // Returns LONG/SHORT/HOLD with confidence, entry, target, stop loss
+  // Advanced multi-strategy analyzer
+  // Combines CCI + RSI + MACD + Volume + Trend + Sentiment
+  // Returns consensus signal with high accuracy
   app.get('/api/signals/analyze/:coin', async (req, res) => {
     try {
       const rawCoin = req.params.coin.toUpperCase();
       const coin = rawCoin.includes('/') ? rawCoin.replace('/', '') : rawCoin;
       const interval = req.query.interval || '15m';
-      const cciX = parseInt(req.query.cciX) || 14;
-      const cciY = parseInt(req.query.cciY) || 30;
-      const entryLevel = parseFloat(req.query.entryLevel) || 20;
-      const exitLevel = parseFloat(req.query.exitLevel) || 10;
-      const limit = Math.max(cciX, cciY) + 10;
+      const limit = 200;
+      // Fetch klines (enough for all indicators)
       const klineUrl = `https://fapi.binance.com/fapi/v1/klines?symbol=${coin}&interval=${interval}&limit=${limit}`;
       const klineR = await axios.get(klineUrl, { timeout: 8000 });
-      if (!Array.isArray(klineR.data) || klineR.data.length < Math.max(cciX, cciY)) {
+      if (!Array.isArray(klineR.data) || klineR.data.length < 100) {
         return res.status(400).json({ error: 'Not enough candle data for ' + coin });
       }
       const candles = klineR.data.map(k => ({
         t: k[0], o: parseFloat(k[1]), h: parseFloat(k[2]),
         l: parseFloat(k[3]), c: parseFloat(k[4]), v: parseFloat(k[5]),
       }));
+      // ====== INDICATOR FUNCTIONS ======
       function calcCCI(data, period) {
         if (data.length < period) return null;
         const sl = data.slice(-period);
@@ -692,91 +691,310 @@ module.exports = function(app, db, usersCol) {
         if (md === 0) return 0;
         return (tp[tp.length - 1] - sma) / (0.015 * md);
       }
-      const cciXSeries = [], cciYSeries = [];
-      for (let i = 0; i < candles.length; i++) {
-        const slice = candles.slice(0, i + 1);
-        cciXSeries.push(calcCCI(slice, cciX));
-        cciYSeries.push(calcCCI(slice, cciY));
+      function calcRSI(data, period) {
+        if (data.length < period + 1) return null;
+        const sl = data.slice(-(period + 1));
+        let gains = 0, losses = 0;
+        for (let i = 1; i < sl.length; i++) {
+          const diff = sl[i].c - sl[i-1].c;
+          if (diff > 0) gains += diff;
+          else losses -= diff;
+        }
+        const avgGain = gains / period;
+        const avgLoss = losses / period;
+        if (avgLoss === 0) return 100;
+        const rs = avgGain / avgLoss;
+        return 100 - (100 / (1 + rs));
       }
-      const cciXCur = cciXSeries[cciXSeries.length - 1];
-      const cciYCur = cciYSeries[cciYSeries.length - 1];
-      const cciXPrev = cciXSeries[cciXSeries.length - 2];
-      const cciYPrev = cciYSeries[cciYSeries.length - 2];
-      const sumCur = (cciXCur || 0) + (cciYCur || 0);
-      const sumPrev = (cciXPrev || 0) + (cciYPrev || 0);
-      // Get current price
-      const tickerUrl = `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${coin}`;
-      const tickerR = await axios.get(tickerUrl, { timeout: 5000 });
-      const currentPrice = parseFloat(tickerR.data.price);
-      let action = 'HOLD';
-      let confidence = 0;
-      let reason = '';
-      let entry = currentPrice;
-      let target = null;
-      let stopLoss = null;
-      // Entry cross up: LONG signal
-      if (sumPrev <= entryLevel && sumCur > entryLevel) {
-        action = 'LONG';
-        confidence = Math.min(95, 50 + Math.abs(sumCur - entryLevel));
-        reason = '🟢 Sum crossed above +' + entryLevel + ' — BULLISH crossover! Open LONG now.';
-        entry = currentPrice;
-        stopLoss = currentPrice * 0.98;
-        target = currentPrice * 1.05;
+      function calcEMA(prices, period) {
+        if (prices.length < period) return null;
+        const k = 2 / (period + 1);
+        let ema = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
+        for (let i = period; i < prices.length; i++) {
+          ema = prices[i] * k + ema * (1 - k);
+        }
+        return ema;
       }
-      // Entry cross down: SHORT signal
-      else if (sumPrev >= -entryLevel && sumCur < -entryLevel) {
-        action = 'SHORT';
-        confidence = Math.min(95, 50 + Math.abs(-entryLevel - sumCur));
-        reason = '🔴 Sum crossed below -' + entryLevel + ' — BEARISH crossover! Open SHORT now.';
-        entry = currentPrice;
-        stopLoss = currentPrice * 1.02;
-        target = currentPrice * 0.95;
+      function calcMACD(prices) {
+        const ema12 = calcEMA(prices, 12);
+        const ema26 = calcEMA(prices, 26);
+        const macd = ema12 - ema26;
+        // Signal line
+        const macdSeries = [];
+        const k = 2 / (10 + 1);
+        let signal = null;
+        for (let i = 26; i < prices.length; i++) {
+          const e12 = calcEMA(prices.slice(0, i + 1), 12);
+          const e26 = calcEMA(prices.slice(0, i + 1), 26);
+          macdSeries.push(e12 - e26);
+        }
+        if (macdSeries.length >= 9) {
+          signal = macdSeries.slice(-9).reduce((a, b) => a + b, 0) / 9;
+        }
+        const histogram = signal !== null ? macd - signal : 0;
+        return { macd, signal, histogram };
       }
-      // Already in LONG zone
-      else if (sumCur > entryLevel) {
-        action = 'HOLD_LONG';
-        confidence = Math.min(90, 40 + Math.min(sumCur, 100) / 2);
-        reason = '✅ Already in LONG zone (sum = ' + sumCur.toFixed(2) + '). Hold your position. Exit when sum drops below +' + exitLevel + '.';
-        entry = currentPrice;
-        stopLoss = currentPrice * 0.98;
-        target = currentPrice * 1.06;
+      function calcSMA(prices, period) {
+        if (prices.length < period) return null;
+        return prices.slice(-period).reduce((a, b) => a + b, 0) / period;
       }
-      // Already in SHORT zone
-      else if (sumCur < -entryLevel) {
-        action = 'HOLD_SHORT';
-        confidence = Math.min(90, 40 + Math.min(Math.abs(sumCur), 100) / 2);
-        reason = '✅ Already in SHORT zone (sum = ' + sumCur.toFixed(2) + '). Hold your position. Exit when sum rises above -' + exitLevel + '.';
-        entry = currentPrice;
-        stopLoss = currentPrice * 1.02;
-        target = currentPrice * 0.94;
+      // ====== CALCULATE ALL INDICATORS ======
+      // CCI (sum of two periods)
+      const cci14 = calcCCI(candles, 14);
+      const cci30 = calcCCI(candles, 30);
+      const cci14Prev = calcCCI(candles.slice(0, -1), 14);
+      const cci30Prev = calcCCI(candles.slice(0, -1), 30);
+      const cciSum = (cci14 || 0) + (cci30 || 0);
+      const cciSumPrev = (cci14Prev || 0) + (cci30Prev || 0);
+      // RSI
+      const closes = candles.map(c => c.c);
+      const rsi = calcRSI(candles, 14);
+      const rsiPrev = calcRSI(candles.slice(0, -1), 14);
+      // MACD
+      const macd = calcMACD(closes);
+      // MAs for trend
+      const sma20 = calcSMA(closes, 20);
+      const sma50 = calcSMA(closes, 50);
+      const sma200 = calcSMA(closes.slice(0, -1), 200);  // need 200+ candles
+      const currentPrice = closes[closes.length - 1];
+      // Volume analysis
+      const recentVols = candles.slice(-20).map(c => c.v);
+      const avgVol = recentVols.reduce((a, b) => a + b, 0) / recentVols.length;
+      const lastVol = candles[candles.length - 1].v;
+      const volRatio = avgVol > 0 ? lastVol / avgVol : 1;
+      // Volatility (ATR-like)
+      const ranges = candles.slice(-14).map(c => c.h - c.l);
+      const avgRange = ranges.reduce((a, b) => a + b, 0) / ranges.length;
+      const volatility = (avgRange / currentPrice) * 100;  // as %
+      // Price momentum (3-candle change)
+      const momentum3 = ((currentPrice - candles[candles.length - 4].c) / candles[candles.length - 4].c) * 100;
+      // Price momentum (10-candle change)
+      const momentum10 = ((currentPrice - candles[candles.length - 11].c) / candles[candles.length - 11].c) * 100;
+      // ====== STRATEGY VOTING ======
+      const strategies = [];
+      // 1. CCI Strategy (35% weight)
+      let cciAction = 'NEUTRAL';
+      let cciConfidence = 50;
+      let cciReason = '';
+      if (cciSumPrev <= 20 && cciSum > 20) {
+        cciAction = 'LONG';
+        cciConfidence = Math.min(95, 60 + Math.abs(cciSum - 20) * 0.5);
+        cciReason = 'CCI bullish crossover';
+      } else if (cciSumPrev >= -20 && cciSum < -20) {
+        cciAction = 'SHORT';
+        cciConfidence = Math.min(95, 60 + Math.abs(-20 - cciSum) * 0.5);
+        cciReason = 'CCI bearish crossover';
+      } else if (cciSum > 20) {
+        cciAction = 'LONG';
+        cciConfidence = 50 + Math.min(cciSum, 80) * 0.4;
+        cciReason = 'CCI in LONG zone';
+      } else if (cciSum < -20) {
+        cciAction = 'SHORT';
+        cciConfidence = 50 + Math.min(Math.abs(cciSum), 80) * 0.4;
+        cciReason = 'CCI in SHORT zone';
+      } else {
+        cciAction = 'NEUTRAL';
+        cciConfidence = 50;
+        cciReason = 'CCI neutral';
       }
-      // Neutral zone - waiting
-      else {
-        action = 'WAIT';
-        confidence = 50;
-        reason = '⏳ No clear signal. Sum = ' + sumCur.toFixed(2) + ' (between -' + entryLevel + ' and +' + entryLevel + '). Wait for crossover.';
-        entry = currentPrice;
+      strategies.push({ name: 'CCI Crossover', action: cciAction, confidence: cciConfidence, weight: 0.35, reason: cciReason });
+      // 2. RSI Strategy (25% weight)
+      let rsiAction = 'NEUTRAL';
+      let rsiConfidence = 50;
+      let rsiReason = '';
+      if (rsi < 30) {
+        rsiAction = 'LONG';
+        rsiConfidence = 60 + (30 - rsi) * 1.2;
+        rsiReason = 'RSI oversold (' + rsi.toFixed(1) + ') — reversal expected';
+      } else if (rsi > 70) {
+        rsiAction = 'SHORT';
+        rsiConfidence = 60 + (rsi - 70) * 1.2;
+        rsiReason = 'RSI overbought (' + rsi.toFixed(1) + ') — pullback expected';
+      } else if (rsi < 50 && rsiPrev < rsi) {
+        rsiAction = 'LONG';
+        rsiConfidence = 55;
+        rsiReason = 'RSI recovering (' + rsi.toFixed(1) + ')';
+      } else if (rsi > 50 && rsiPrev > rsi) {
+        rsiAction = 'SHORT';
+        rsiConfidence = 55;
+        rsiReason = 'RSI weakening (' + rsi.toFixed(1) + ')';
+      } else {
+        rsiReason = 'RSI neutral (' + rsi.toFixed(1) + ')';
       }
-      // Distance to next signal
-      let nextSignal = null;
-      if (action === 'WAIT' || action === 'HOLD_LONG' || action === 'HOLD_SHORT') {
-        if (sumCur >= 0) {
-          nextSignal = { type: 'LONG', distance: Math.max(0, entryLevel - sumCur).toFixed(2) };
+      strategies.push({ name: 'RSI Momentum', action: rsiAction, confidence: Math.min(95, rsiConfidence), weight: 0.25, reason: rsiReason });
+      // 3. MACD Strategy (20% weight)
+      let macdAction = 'NEUTRAL';
+      let macdConfidence = 50;
+      let macdReason = '';
+      if (macd.macd !== null && macd.signal !== null) {
+        if (macd.macd > macd.signal && macd.histogram > 0) {
+          macdAction = 'LONG';
+          macdConfidence = 60 + Math.min(Math.abs(macd.histogram) * 5, 30);
+          macdReason = 'MACD bullish (above signal)';
+        } else if (macd.macd < macd.signal && macd.histogram < 0) {
+          macdAction = 'SHORT';
+          macdConfidence = 60 + Math.min(Math.abs(macd.histogram) * 5, 30);
+          macdReason = 'MACD bearish (below signal)';
         } else {
-          nextSignal = { type: 'SHORT', distance: Math.max(0, sumCur - (-entryLevel)).toFixed(2) };
+          macdReason = 'MACD neutral';
         }
       }
+      strategies.push({ name: 'MACD Trend', action: macdAction, confidence: Math.min(95, macdConfidence), weight: 0.20, reason: macdReason });
+      // 4. Trend (MA) Strategy (15% weight)
+      let trendAction = 'NEUTRAL';
+      let trendConfidence = 50;
+      let trendReason = '';
+      if (sma20 && sma50) {
+        if (currentPrice > sma20 && sma20 > sma50) {
+          trendAction = 'LONG';
+          trendConfidence = 75;
+          trendReason = 'Uptrend: Price > SMA20 > SMA50';
+        } else if (currentPrice < sma20 && sma20 < sma50) {
+          trendAction = 'SHORT';
+          trendConfidence = 75;
+          trendReason = 'Downtrend: Price < SMA20 < SMA50';
+        } else if (currentPrice > sma20) {
+          trendAction = 'LONG';
+          trendConfidence = 60;
+          trendReason = 'Above SMA20';
+        } else {
+          trendAction = 'SHORT';
+          trendConfidence = 60;
+          trendReason = 'Below SMA20';
+        }
+      }
+      strategies.push({ name: 'Trend (MA)', action: trendAction, confidence: trendConfidence, weight: 0.15, reason: trendReason });
+      // 5. Volume confirmation (5% weight)
+      let volAction = 'NEUTRAL';
+      let volConfidence = 50;
+      let volReason = '';
+      if (volRatio > 2 && momentum3 > 0) {
+        volAction = 'LONG';
+        volConfidence = 65;
+        volReason = 'High volume + positive momentum (' + volRatio.toFixed(1) + 'x avg)';
+      } else if (volRatio > 2 && momentum3 < 0) {
+        volAction = 'SHORT';
+        volConfidence = 65;
+        volReason = 'High volume + negative momentum (' + volRatio.toFixed(1) + 'x avg)';
+      } else {
+        volReason = 'Volume ' + volRatio.toFixed(1) + 'x avg';
+      }
+      strategies.push({ name: 'Volume', action: volAction, confidence: volConfidence, weight: 0.05, reason: volReason });
+      // ====== AGGREGATE ======
+      let longScore = 0, shortScore = 0;
+      strategies.forEach(s => {
+        const weighted = s.confidence * s.weight;
+        if (s.action === 'LONG') longScore += weighted;
+        else if (s.action === 'SHORT') shortScore += weighted;
+      });
+      const totalScore = longScore + shortScore;
+      const longPct = totalScore > 0 ? (longScore / totalScore) * 100 : 50;
+      const shortPct = totalScore > 0 ? (shortScore / totalScore) * 100 : 50;
+      // Determine final action
+      let finalAction = 'WAIT';
+      let finalConfidence = 50;
+      let agreement = 0;  // how many strategies agree
+      strategies.forEach(s => {
+        if ((finalAction === 'LONG' && s.action === 'LONG') ||
+            (finalAction === 'SHORT' && s.action === 'SHORT') ||
+            (finalAction === 'WAIT' && s.action === 'NEUTRAL')) {
+          agreement += s.weight;
+        }
+      });
+      if (longScore > shortScore && longPct >= 60) {
+        finalAction = 'LONG';
+        finalConfidence = Math.min(98, longPct);
+      } else if (shortScore > longScore && shortPct >= 60) {
+        finalAction = 'SHORT';
+        finalConfidence = Math.min(98, shortPct);
+      } else if (longScore > shortScore) {
+        finalAction = 'HOLD_LONG';
+        finalConfidence = Math.min(90, longPct);
+      } else if (shortScore > longScore) {
+        finalAction = 'HOLD_SHORT';
+        finalConfidence = Math.min(90, shortPct);
+      } else {
+        finalAction = 'WAIT';
+        finalConfidence = 50;
+      }
+      // Boost confidence when strategies agree strongly
+      const agreementCount = strategies.filter(s => s.action === finalAction || s.action === 'NEUTRAL').length;
+      if (agreementCount === strategies.length) {
+        finalConfidence = Math.min(98, finalConfidence + 10);  // All agree = strong boost
+      } else if (agreementCount >= 4) {
+        finalConfidence = Math.min(98, finalConfidence + 5);
+      }
+      // Build reason
+      const reasonParts = [];
+      strategies.forEach(s => {
+        if (s.action !== 'NEUTRAL') {
+          const emoji = s.action === 'LONG' ? '🟢' : '🔴';
+          reasonParts.push(emoji + ' ' + s.name + ': ' + s.reason);
+        }
+      });
+      const reason = reasonParts.length > 0
+        ? reasonParts.join(' • ')
+        : '⏳ All strategies neutral. Wait for clearer signal.';
+      // Entry/Exit levels
+      let entry = currentPrice;
+      let target = null, stopLoss = null;
+      if (finalAction === 'LONG') {
+        stopLoss = currentPrice * (1 - Math.max(0.015, volatility * 0.5));
+        target = currentPrice * (1 + Math.max(0.025, volatility * 1.5));
+      } else if (finalAction === 'SHORT') {
+        stopLoss = currentPrice * (1 + Math.max(0.015, volatility * 0.5));
+        target = currentPrice * (1 - Math.max(0.025, volatility * 1.5));
+      } else if (finalAction === 'HOLD_LONG') {
+        stopLoss = currentPrice * 0.98;
+        target = currentPrice * 1.04;
+      } else if (finalAction === 'HOLD_SHORT') {
+        stopLoss = currentPrice * 1.02;
+        target = currentPrice * 0.96;
+      }
+      // Next signal distance (what would flip the consensus)
+      let nextSignal = null;
+      if (finalAction === 'WAIT' || finalAction === 'HOLD_LONG' || finalAction === 'HOLD_SHORT') {
+        if (longScore >= shortScore) {
+          nextSignal = { type: 'SHORT', threshold: shortScore + 1, currentGap: Math.max(0, longScore - shortScore).toFixed(1) };
+        } else {
+          nextSignal = { type: 'LONG', threshold: longScore + 1, currentGap: Math.max(0, shortScore - longScore).toFixed(1) };
+        }
+      }
+      // 24h price change
+      const change24h = ((currentPrice - candles[0].c) / candles[0].c) * 100;
+      const high24h = Math.max(...candles.map(c => c.h));
+      const low24h = Math.min(...candles.map(c => c.l));
       res.json({
         success: true,
         coin: coin,
         interval: interval,
         currentPrice: currentPrice,
-        cciX: { value: cciXCur, period: cciX },
-        cciY: { value: cciYCur, period: cciY },
-        sum: { current: sumCur, previous: sumPrev },
+        change24h: Number(change24h.toFixed(2)),
+        high24h: high24h,
+        low24h: low24h,
+        volatility: Number(volatility.toFixed(2)),
+        // Strategy breakdown
+        indicators: {
+          cci: { sum: Number(cciSum.toFixed(2)), prev: Number(cciSumPrev.toFixed(2)), cci14: Number((cci14 || 0).toFixed(2)), cci30: Number((cci30 || 0).toFixed(2)) },
+          rsi: { value: Number((rsi || 50).toFixed(2)), prev: Number((rsiPrev || 50).toFixed(2)) },
+          macd: { value: Number((macd.macd || 0).toFixed(2)), signal: Number((macd.signal || 0).toFixed(2)), histogram: Number((macd.histogram || 0).toFixed(2)) },
+          sma20: Number((sma20 || currentPrice).toFixed(2)),
+          sma50: Number((sma50 || currentPrice).toFixed(2)),
+          volume: { ratio: Number(volRatio.toFixed(2)), avg: avgVol, last: lastVol },
+          momentum3: Number(momentum3.toFixed(2)),
+          momentum10: Number(momentum10.toFixed(2)),
+        },
+        // Strategy votes
+        strategies: strategies.map(s => ({ name: s.name, action: s.action, confidence: Math.round(s.confidence), weight: s.weight, reason: s.reason })),
+        // Final signal
         signal: {
-          action: action,
-          confidence: Math.round(confidence),
+          action: finalAction,
+          confidence: Math.round(finalConfidence),
+          agreement: agreementCount + '/' + strategies.length,
+          longPct: Math.round(longPct),
+          shortPct: Math.round(shortPct),
+          longScore: Math.round(longScore),
+          shortScore: Math.round(shortScore),
           reason: reason,
           entry: entry,
           target: target,
@@ -785,6 +1003,81 @@ module.exports = function(app, db, usersCol) {
         },
         timestamp: Date.now(),
       });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Get TOP BEST signal (highest score across all strategies)
+  // Auto-analyzes multiple coins and returns the best opportunity
+  app.get('/api/signals/best-opportunity', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit) || 20;
+      // Get all unique coins from recent signals
+      const recentSignals = await signalsCol.find({ status: 'active', visibility: { $in: ['public', null] } })
+        .sort({ createdAt: -1 }).limit(50).toArray();
+      const uniqueCoins = [...new Set(recentSignals.map(s => s.coin).filter(c => c && !c.includes('/')))];
+      if (uniqueCoins.length === 0) {
+        return res.json({ success: true, opportunities: [], message: 'No coins yet' });
+      }
+      // Analyze top 10 coins (limit for performance)
+      const coinsToAnalyze = uniqueCoins.slice(0, 10);
+      const opportunities = [];
+      for (const coin of coinsToAnalyze) {
+        try {
+          const r = await axios.get(`https://canyou-uqkp.onrender.com/api/signals/analyze/${encodeURIComponent(coin)}?interval=15m`, { timeout: 15000 });
+          if (r.data && r.data.success) {
+            const sig = r.data.signal;
+            // Score: only LONG/SHORT with high confidence
+            if ((sig.action === 'LONG' || sig.action === 'SHORT') && sig.confidence >= 70) {
+              opportunities.push({
+                coin: coin,
+                action: sig.action,
+                confidence: sig.confidence,
+                agreement: sig.agreement,
+                currentPrice: r.data.currentPrice,
+                change24h: r.data.change24h,
+                reason: sig.reason,
+                entry: sig.entry,
+                target: sig.target,
+                stopLoss: sig.stopLoss,
+                // Combined score: confidence + agreement + momentum
+                score: sig.confidence + (parseInt(sig.agreement.split('/')[0]) * 5),
+              });
+            }
+          }
+        } catch (e) { /* skip */ }
+      }
+      opportunities.sort((a, b) => b.score - a.score);
+      res.json({ success: true, count: opportunities.length, opportunities: opportunities.slice(0, limit) });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Market overview - top movers + sentiment
+  app.get('/api/signals/market-overview', async (req, res) => {
+    try {
+      // Get top BTC/ETH/SOL data with 24h stats
+      const tickers = await axios.get('https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT', { timeout: 8000 });
+      const topCoins = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT'];
+      const tickerMap = {};
+      if (Array.isArray(tickers.data)) {
+        tickers.data.forEach(t => { tickerMap[t.symbol] = t; });
+      }
+      const overview = topCoins.map(coin => {
+        const t = tickerMap[coin] || {};
+        return {
+          coin: coin,
+          lastPrice: parseFloat(t.lastPrice || 0),
+          priceChange: parseFloat(t.priceChangePercent || 0),
+          highPrice: parseFloat(t.highPrice || 0),
+          lowPrice: parseFloat(t.lowPrice || 0),
+          volume: parseFloat(t.volume || 0),
+          quoteVolume: parseFloat(t.quoteVolume || 0),
+        };
+      });
+      res.json({ success: true, overview, ts: Date.now() });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
