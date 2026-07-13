@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Erikso - School Transport | DainikState</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #fff;
+    overflow-x: hidden;
+  }
+  .app-container {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    background: #0a0e1a;
+  }
+  .header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    padding: 20px 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-top {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: linear-gradient(135deg, #ffd700, #ff6b6b);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .logo-text h1 {
+    font-size: 22px; font-weight: 900;
+    background: linear-gradient(90deg, #fff, #ffd700);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .logo-text .tagline {
+    font-size: 11px; opacity: 0.9;
+  }
+  .user-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .role-selector {
+    display: flex; gap: 8px; margin-top: 16px;
+    background: rgba(0,0,0,0.2); border-radius: 12px; padding: 4px;
+  }
+  .role-btn {
+    flex: 1; padding: 10px; background: transparent;
+    border: none; color: rgba(255,255,255,0.7);
+    font-size: 13px; font-weight: 600;
+    border-radius: 8px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .role-btn.active {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(255,107,107,0.4);
+  }
+  .content {
+    padding: 20px 16px;
+  }
+  .hero-card {
+    background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,107,107,0.1));
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 16px; padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .hero-emoji { font-size: 60px; margin-bottom: 12px; }
+  .hero-title {
+    font-size: 24px; font-weight: 900;
+    background: linear-gradient(90deg, #ffd700, #ff6b6b);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .hero-sub {
+    font-size: 13px; opacity: 0.8;
+    line-height: 1.5;
+  }
+  .section {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 16px; font-weight: 800;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .form-group { margin-bottom: 14px; }
+  .form-group label {
+    display: block; font-size: 12px;
+    color: #a4b8ff; margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 10px;
+    font-size: 14px;
+  }
+  .form-group input:focus {
+    outline: none; border-color: #667eea;
+  }
+  .form-group select option { background: #0a0e1a; }
+  .form-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .btn-primary {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    border: none; color: #fff; font-size: 16px;
+    font-weight: 800; border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255,107,107,0.4);
+    transition: transform 0.2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); }
+  .btn-primary:disabled {
+    background: #444; cursor: not-allowed;
+    box-shadow: none; transform: none;
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+  .driver-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .driver-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700, #ff6b6b);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 800; color: #fff;
+    flex-shrink: 0;
+  }
+  .driver-info { flex: 1; min-width: 0; }
+  .driver-name { font-weight: 700; font-size: 15px; margin-bottom: 2px; }
+  .driver-meta { font-size: 12px; opacity: 0.7; }
+  .driver-rating {
+    background: rgba(255,215,0,0.2); color: #ffd700;
+    padding: 4px 8px; border-radius: 6px;
+    font-size: 12px; font-weight: 700;
+  }
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+    border: 1px solid rgba(102,126,234,0.3);
+    border-radius: 12px;
+    padding: 12px; text-align: center;
+  }
+  .stat-value {
+    font-size: 20px; font-weight: 900;
+    color: #ffd700;
+  }
+  .stat-label {
+    font-size: 11px; opacity: 0.7;
+    margin-top: 2px;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px; font-weight: 700;
+    margin-left: 6px;
+  }
+  .status-online { background: rgba(76,175,80,0.2); color: #4caf50; }
+  .status-offline { background: rgba(255,255,255,0.1); color: #888; }
+  .status-pending { background: rgba(255,152,0,0.2); color: #ff9800; }
+  .status-accepted { background: rgba(33,150,243,0.2); color: #2196f3; }
+  .status-active { background: rgba(76,175,80,0.2); color: #4caf50; }
+  .status-completed { background: rgba(156,39,176,0.2); color: #9c27b0; }
+  .live-map {
+    background: #000;
+    height: 280px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1a3a5c 0%, #0a1f3a 100%);
+  }
+  .map-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+  .map-marker {
+    position: absolute;
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    animation: bounce 1.5s infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .map-marker.pickup { background: linear-gradient(135deg, #4caf50, #2e7d32); top: 30%; left: 20%; }
+  .map-marker.drop { background: linear-gradient(135deg, #ff9800, #f57c00); top: 60%; right: 20%; }
+  .map-line {
+    position: absolute;
+    height: 3px;
+    background: linear-gradient(90deg, #4caf50, #ff9800);
+    top: 47%; left: 32%;
+    width: 45%;
+    transform: rotate(25deg);
+    transform-origin: left center;
+    border-radius: 2px;
+    animation: flow 2s linear infinite;
+  }
+  @keyframes flow {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 0%; }
+  }
+  .map-eta {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(76,175,80,0.9); color: #fff;
+    padding: 6px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+  }
+  .sos-button {
+    position: fixed; bottom: 20px; right: 20px;
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff3b30, #c00);
+    color: #fff; border: 3px solid #fff;
+    font-size: 14px; font-weight: 900;
+    box-shadow: 0 4px 16px rgba(255,59,48,0.5);
+    cursor: pointer;
+    z-index: 200;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .toast {
+    position: fixed; bottom: 100px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9); color: #fff;
+    padding: 12px 20px; border-radius: 24px;
+    font-size: 14px; z-index: 300;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .toast.show { opacity: 1; }
+  .empty {
+    text-align: center; padding: 40px 20px;
+    color: rgba(255,255,255,0.5);
+  }
+  .empty-emoji { font-size: 50px; margin-bottom: 8px; }
+  .fare-card {
+    background: linear-gradient(135deg, rgba(76,175,80,0.1), rgba(255,215,0,0.1));
+    border: 1px solid rgba(76,175,80,0.3);
+    border-radius: 12px; padding: 16px;
+    margin: 12px 0;
+  }
+  .fare-amount {
+    font-size: 32px; font-weight: 900;
+    color: #4caf50;
+    text-align: center;
+  }
+  .fare-detail {
+    font-size: 12px; opacity: 0.7;
+    text-align: center; margin-top: 4px;
+  }
+  .booking-list {
+    margin-top: 8px;
+  }
+  .booking-item {
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid #667eea;
+  }
+  .empty-state {
+    text-align: center; padding: 40px 16px;
+    color: rgba(255,255,255,0.5);
+  }
+  .loading {
+    text-align: center; padding: 20px;
+    color: rgba(255,255,255,0.5);
+  }
+</style>
+</head>
+<body>
+<div class="app-container">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">
+        <div class="logo-icon">🚐</div>
+        <div class="logo-text">
+          <h1>Erikso</h1>
+          <div class="tagline">School Transport • Like Ola/Uber</div>
+        </div>
+      </div>
+      <button class="user-btn" onclick="showUserMenu()">👤</button>
+    </div>
+    <!-- Role Selector -->
+    <div class="role-selector">
+      <button class="role-btn active" data-role="parent" onclick="switchRole('parent')">👨‍👩‍👧 Parent</button>
+      <button class="role-btn" data-role="driver" onclick="switchRole('driver')">🚐 Driver</button>
+      <button class="role-btn" data-role="school" onclick="switchRole('school')">🏫 School</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="appContent">
+    <!-- Loaded dynamically based on role -->
+  </div>
+
+  <!-- SOS Button (only for parent/driver) -->
+  <button class="sos-button" id="sosButton" style="display:none;" onclick="triggerSOS()">🆘<br>SOS</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://canyou-uqkp.onrender.com';
+let currentUser = null;
+let currentRole = 'parent';
+let currentDriver = null;
+let bookingPollInterval = null;
+let locationUpdateInterval = null;
+let watchId = null;
+
+function toast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function showUserMenu() {
+  if (currentUser) {
+    if (confirm(`Logged in as: ${currentUser.name}\nLogout?`)) {
+      localStorage.removeItem('erikso_user');
+      localStorage.removeItem('erikso_driver');
+      currentUser = null;
+      currentDriver = null;
+      location.reload();
+    }
+  } else {
+    showLoginModal();
+  }
+}
+
+function showLoginModal() {
+  const html = `
+    <h2 style="margin-bottom:16px;text-align:center;">Login to Erikso</h2>
+    <div class="form-group">
+      <label>Your Name</label>
+      <input id="loginName" placeholder="Enter your name" maxlength="30" />
+    </div>
+    <div class="form-group">
+      <label>Phone (for verification)</label>
+      <input id="loginPhone" type="tel" placeholder="9876543210" maxlength="10" />
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Login / Register</button>
+  `;
+  document.getElementById('appContent').innerHTML = html;
+}
+
+async function doLogin() {
+  const name = document.getElementById('loginName').value.trim();
+  const phone = document.getElementById('loginPhone').value.trim();
+  if (!name || !phone) { toast('Name aur phone dono zaruri hain'); return; }
+  try {
+    const res = await fetch(API + '/api/auth/register', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, country: 'India', location: 'India' })
+    }).then(r => r.json());
+    if (res.success) {
+      currentUser = res.user;
+      localStorage.setItem('erikso_user', JSON.stringify(res.user));
+      localStorage.setItem('erikso_session', res.sessionId);
+      toast('✅ Welcome ' + name + '!');
+      renderRole();
+    } else {
+      toast('❌ ' + (res.error || 'Login failed'));
+    }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+function switchRole(role) {
+  currentRole = role;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-role="${role}"]`)?.classList.add('active');
+  renderRole();
+  // Show SOS for parent & driver
+  document.getElementById('sosButton').style.display = (role === 'parent' || role === 'driver') ? 'block' : 'none';
+}
+
+function renderRole() {
+  if (!currentUser) {
+    showLoginModal();
+    return;
+  }
+  if (currentRole === 'parent') renderParent();
+  else if (currentRole === 'driver') renderDriver();
+  else if (currentRole === 'school') renderSchool();
+}
+
+// ===================
+// PARENT INTERFACE
+// ===================
+async function renderParent() {
+  const html = `
+    <div class="hero-card">
+      <div class="hero-emoji">👨‍👩‍👧🚐</div>
+      <div class="hero-title">Book School Van</div>
+      <div class="hero-sub">Safe, reliable, GPS-tracked school transport for your child</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📍 Quick Booking</div>
+      <div class="form-group">
+        <label>Student Name</label>
+        <input id="studentName" placeholder="Rahul Kumar" />
+      </div>
+      <div class="form-group">
+        <label>School Name</label>
+        <input id="schoolName" placeholder="DPS Ranchi" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Vehicle Type</label>
+          <select id="vehicleType">
+            <option value="van">🚐 Van (12 seats)</option>
+            <option value="auto">🛺 Auto (4 seats)</option>
+            <option value="cab">🚕 Cab (4 seats)</option>
+            <option value="bus">🚌 Bus (30+ seats)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Service</label>
+          <select id="rideType">
+            <option value="daily">📅 Daily (Monthly)</option>
+            <option value="one-time">1️⃣ One-time</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Pickup Address</label>
+        <input id="pickupAddress" placeholder="House No, Street, Area" />
+      </div>
+      <div class="form-group">
+        <label>School Address</label>
+        <input id="dropAddress" placeholder="School address" />
+      </div>
+      <div class="form-group">
+        <label>Pickup Time</label>
+        <input id="pickupTime" type="time" value="07:00" />
+      </div>
+      <div class="fare-card">
+        <div class="fare-amount">₹1,500/mo</div>
+        <div class="fare-detail">Estimated fare (5km radius)</div>
+      </div>
+      <button class="btn-primary" onclick="findDrivers()">🔍 Find Drivers</button>
+    </div>
+
+    <div class="section" id="availableDriversSection" style="display:none;">
+      <div class="section-title">🚐 Available Drivers</div>
+      <div id="availableDrivers"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📋 My Bookings</div>
+      <div id="myBookings"><div class="loading">Loading...</div></div>
+    </div>
+  `;
+  document.getElementById('appContent').innerHTML = html;
+  loadMyBookings();
+}
+
+async function findDrivers() {
+  const html = `<div class="loading">🔍 Finding drivers near you...</div>`;
+  document.getElementById('availableDrivers').innerHTML = html;
+  document.getElementById('availableDriversSection').style.display = 'block';
+  try {
+    const res = await fetch(API + '/api/erikso/drivers?online=true').then(r => r.json());
+    const drivers = res.drivers || [];
+    if (drivers.length === 0) {
+      document.getElementById('availableDrivers').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-emoji">😔</div>
+          <div>No drivers online right now</div>
+          <div style="font-size:11px;margin-top:4px;">Try again in a few minutes</div>
+        </div>
+      `;
+      return;
+    }
+    document.getElementById('availableDrivers').innerHTML = drivers.map(d => `
+      <div class="driver-card" onclick="bookDriver('${d.id}')">
+        <div class="driver-avatar">${(d.name || 'D')[0].toUpperCase()}</div>
+        <div class="driver-info">
+          <div class="driver-name">${escapeHtml(d.name)}</div>
+          <div class="driver-meta">${escapeHtml(d.vehicleType || 'van')} • ${escapeHtml(d.vehicleNumber)}</div>
+          <div class="driver-meta">${escapeHtml(d.schoolName || 'All schools')}</div>
+        </div>
+        <div class="driver-rating">⭐ ${(d.rating || 0).toFixed(1)}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    document.getElementById('availableDrivers').innerHTML = '<div class="empty-state">Error loading drivers</div>';
+  }
+}
+
+async function bookDriver(driverId) {
+  if (!confirm('Book this driver for monthly service?')) return;
+  const booking = {
+    parentId: currentUser.id,
+    studentId: null,
+    driverId,
+    vehicleType: document.getElementById('vehicleType').value,
+    pickupAddress: document.getElementById('pickupAddress').value || 'Home',
+    dropAddress: document.getElementById('dropAddress').value || document.getElementById('schoolName').value,
+    pickupTime: document.getElementById('pickupTime').value,
+    rideType: document.getElementById('rideType').value,
+    planType: 'both',
+  };
+  try {
+    const res = await fetch(API + '/api/erikso/book', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(booking)
+    }).then(r => r.json());
+    if (res.success) {
+      toast('✅ Booking sent! Driver will accept soon.');
+      loadMyBookings();
+    } else {
+      toast('❌ ' + (res.error || 'Failed'));
+    }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+async function loadMyBookings() {
+  const container = document.getElementById('myBookings');
+  if (!container) return;
+  try {
+    const res = await fetch(API + '/api/erikso/bookings/parent/' + currentUser.id).then(r => r.json());
+    const bookings = res.bookings || [];
+    if (bookings.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-emoji">📋</div><div>No bookings yet</div></div>';
+      return;
+    }
+    container.innerHTML = bookings.slice(0, 5).map(b => `
+      <div class="booking-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;">${escapeHtml(b.vehicleType || 'van')} - ${escapeHtml(b.pickupAddress?.slice(0,30) || '')}</div>
+            <div style="font-size:12px;opacity:0.7;margin-top:2px;">₹${b.fare}/month</div>
+          </div>
+          <span class="status-badge status-${b.status}">${b.status}</span>
+        </div>
+        ${b.status === 'accepted' ? `<button class="btn-secondary" style="margin-top:8px;width:100%;" onclick="startTrip('${b.id}', '${b.driverId}', 'pickup')">🚐 Start Trip</button>` : ''}
+        ${b.status === 'active' ? `<button class="btn-secondary" style="margin-top:8px;width:100%;" onclick="rateDriver('${b.driverId}')">⭐ Rate Driver</button>` : ''}
+      </div>
+    `).join('');
+  } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
+}
+
+async function startTrip(bookingId, driverId, type) {
+  try {
+    const res = await fetch(API + '/api/erikso/trip/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId, driverId, type })
+    }).then(r => r.json());
+    if (res.success) {
+      toast('🚐 Trip started! Driver is on the way.');
+      loadMyBookings();
+      showLiveMap();
+    }
+  } catch (e) { toast('❌ Error'); }
+}
+
+function showLiveMap() {
+  const html = `
+    <div class="section">
+      <div class="section-title">🗺️ Live Trip Tracking</div>
+      <div class="live-map">
+        <div class="map-grid"></div>
+        <div class="map-marker pickup">🏠</div>
+        <div class="map-marker drop">🏫</div>
+        <div class="map-line"></div>
+        <div class="map-eta">ETA 12 min</div>
+        <div style="position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.7);padding:6px 12px;border-radius:20px;font-size:11px;">
+          📍 Driver location (live)
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:8px;">
+        <div style="font-size:18px;font-weight:900;color:#4caf50;">Trip in Progress</div>
+        <div style="font-size:12px;opacity:0.7;margin-top:4px;">Driver will reach in ~12 minutes</div>
+      </div>
+    </div>
+  `;
+  // Insert at top of content
+  const content = document.getElementById('appContent');
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  content.insertBefore(div.firstChild, content.firstChild);
+}
+
+function rateDriver(driverId) {
+  const rating = prompt('Rate the driver (1-5 stars):');
+  if (!rating) return;
+  const r = parseInt(rating);
+  if (r < 1 || r > 5) { toast('Invalid rating'); return; }
+  fetch(API + '/api/erikso/driver/' + driverId + '/rate', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ parentId: currentUser.id, rating: r })
+  }).then(r => r.json()).then(d => {
+    if (d.success) {
+      toast('⭐ Thanks for rating!');
+      loadMyBookings();
+    }
+  });
+}
+
+function triggerSOS() {
+  if (!currentUser) return;
+  if (!confirm('🆘 Send EMERGENCY alert? This will notify driver and emergency contacts.')) return;
+  fetch(API + '/api/erikso/sos', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId: currentUser.id,
+      driverId: currentDriver?.id,
+      message: 'Emergency alert triggered from app',
+    })
+  }).then(r => r.json()).then(d => {
+    if (d.success) toast('🚨 SOS sent! Help is on the way.');
+    else toast('❌ Failed to send SOS');
+  });
+}
+
+// ===================
+// DRIVER INTERFACE
+// ===================
+async function renderDriver() {
+  // Check if driver is already registered
+  try {
+    const res = await fetch(API + '/api/erikso/driver/user/' + currentUser.id).then(r => r.json());
+    if (res.success && res.driver) {
+      currentDriver = res.driver;
+      renderDriverDashboard();
+      return;
+    }
+  } catch (e) {}
+
+  // Show registration form
+  const html = `
+    <div class="hero-card">
+      <div class="hero-emoji">🚐💼</div>
+      <div class="hero-title">Drive with Erikso</div>
+      <div class="hero-sub">Earn ₹20,000-₹40,000/month. Flexible hours, daily payouts</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📝 Driver Registration</div>
+      <div class="form-group">
+        <label>Your Name</label>
+        <input id="drvName" value="${escapeHtml(currentUser.name)}" />
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input id="drvPhone" value="${escapeHtml(currentUser.phone || '')}" />
+      </div>
+      <div class="form-group">
+        <label>License Number</label>
+        <input id="drvLicense" placeholder="DL-0420230123456" />
+      </div>
+      <div class="form-group">
+        <label>Vehicle Number</label>
+        <input id="drvVehicle" placeholder="JH01AB1234" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Vehicle Type</label>
+          <select id="drvType">
+            <option value="van">🚐 Van</option>
+            <option value="auto">🛺 Auto</option>
+            <option value="cab">🚕 Cab</option>
+            <option value="bus">🚌 Bus</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Capacity (seats)</label>
+          <input id="drvCapacity" type="number" value="12" min="1" max="50" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>School You Serve</label>
+        <input id="drvSchool" placeholder="DPS Ranchi" />
+      </div>
+      <div class="form-group">
+        <label>Route / Area</label>
+        <input id="drvRoute" placeholder="Ranchi - Kanke Road" />
+      </div>
+      <button class="btn-primary" onclick="registerDriver()">🚐 Register as Driver</button>
+    </div>
+  `;
+  document.getElementById('appContent').innerHTML = html;
+}
+
+async function registerDriver() {
+  const data = {
+    userId: currentUser.id,
+    name: document.getElementById('drvName').value.trim(),
+    phone: document.getElementById('drvPhone').value.trim(),
+    licenseNumber: document.getElementById('drvLicense').value.trim(),
+    vehicleNumber: document.getElementById('drvVehicle').value.trim(),
+    vehicleType: document.getElementById('drvType').value,
+    capacity: parseInt(document.getElementById('drvCapacity').value) || 12,
+    schoolName: document.getElementById('drvSchool').value.trim(),
+    route: document.getElementById('drvRoute').value.trim(),
+  };
+  if (!data.name || !data.phone || !data.licenseNumber || !data.vehicleNumber) {
+    toast('Please fill all required fields');
+    return;
+  }
+  try {
+    const res = await fetch(API + '/api/erikso/driver/register', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(r => r.json());
+    if (res.success) {
+      currentDriver = res.driver;
+      localStorage.setItem('erikso_driver', JSON.stringify(res.driver));
+      toast('✅ Driver registered! You can go online now.');
+      renderDriverDashboard();
+    } else {
+      toast('❌ ' + (res.error || 'Failed'));
+    }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+function renderDriverDashboard() {
+  const isOnline = currentDriver?.online || false;
+  const html = `
+    <div class="hero-card">
+      <div class="hero-emoji">${isOnline ? '🟢' : '⚫'}</div>
+      <div class="hero-title">${isOnline ? 'You are ONLINE' : 'You are OFFLINE'}</div>
+      <div class="hero-sub">${isOnline ? 'Parents can book you now' : 'Go online to accept bookings'}</div>
+      <button class="btn-primary" style="margin-top:12px;" onclick="toggleOnline()">
+        ${isOnline ? '⚫ Go Offline' : '🟢 Go Online'}
+      </button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">⭐ ${(currentDriver.rating || 0).toFixed(1)}</div>
+        <div class="stat-label">Rating</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${currentDriver.totalRides || 0}</div>
+        <div class="stat-label">Total Trips</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📋 Booking Requests</div>
+      <div id="driverBookings"><div class="loading">Loading...</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">✅ Completed Trips</div>
+      <div id="driverTrips"><div class="loading">Loading...</div></div>
+    </div>
+  `;
+  document.getElementById('appContent').innerHTML = html;
+  loadDriverBookings();
+  loadDriverTrips();
+  if (isOnline) startLocationSharing();
+  else stopLocationSharing();
+}
+
+async function toggleOnline() {
+  if (!currentDriver) return;
+  const newStatus = !currentDriver.online;
+  try {
+    await fetch(API + '/api/erikso/driver/' + currentDriver.id + '/status', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ online: newStatus })
+    });
+    currentDriver.online = newStatus;
+    localStorage.setItem('erikso_driver', JSON.stringify(currentDriver));
+    toast(newStatus ? '🟢 You are now ONLINE' : '⚫ You are now OFFLINE');
+    renderDriverDashboard();
+  } catch (e) { toast('❌ Error'); }
+}
+
+function startLocationSharing() {
+  if (!navigator.geolocation) { toast('GPS not available'); return; }
+  if (watchId) return;
+  watchId = navigator.geolocation.watchPosition(pos => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    if (currentDriver) {
+      fetch(API + '/api/erikso/driver/' + currentDriver.id + '/location', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lng, heading: pos.coords.heading, speed: pos.coords.speed })
+      }).catch(() => {});
+    }
+  }, err => console.warn('GPS error:', err), { enableHighAccuracy: true, maximumAge: 30000 });
+  toast('📍 Location sharing started');
+}
+
+function stopLocationSharing() {
+  if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+}
+
+async function loadDriverBookings() {
+  if (!currentDriver) return;
+  const container = document.getElementById('driverBookings');
+  try {
+    const res = await fetch(API + '/api/erikso/bookings/driver/' + currentDriver.id).then(r => r.json());
+    const bookings = res.bookings || [];
+    const pending = bookings.filter(b => b.status === 'pending' || b.status === 'accepted');
+    if (pending.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-emoji">📭</div><div>No new requests</div></div>';
+      return;
+    }
+    container.innerHTML = pending.map(b => `
+      <div class="booking-item">
+        <div style="display:flex;justify-content:space-between;align-items:start;">
+          <div>
+            <div style="font-weight:700;">${escapeHtml(b.pickupAddress?.slice(0,40) || '')}</div>
+            <div style="font-size:12px;opacity:0.7;">→ ${escapeHtml(b.dropAddress?.slice(0,40) || '')}</div>
+            <div style="font-size:13px;color:#4caf50;font-weight:700;margin-top:4px;">₹${b.fare}/month</div>
+          </div>
+          <span class="status-badge status-${b.status}">${b.status}</span>
+        </div>
+        ${b.status === 'pending' ? `
+        <div class="row" style="display:flex;gap:6px;margin-top:8px;">
+          <button class="btn-secondary" style="flex:1;background:rgba(76,175,80,0.2);color:#4caf50;" onclick="updateBooking('${b.id}', 'accepted')">✅ Accept</button>
+          <button class="btn-secondary" style="flex:1;background:rgba(255,59,48,0.2);color:#ff3b30;" onclick="updateBooking('${b.id}', 'declined')">❌ Decline</button>
+        </div>
+        ` : `
+        <button class="btn-primary" style="margin-top:8px;font-size:13px;padding:10px;" onclick="startTrip('${b.id}', 'pickup')">🚐 Start Pickup Trip</button>
+        `}
+      </div>
+    `).join('');
+  } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
+}
+
+async function updateBooking(bookingId, status) {
+  try {
+    const res = await fetch(API + '/api/erikso/booking/' + bookingId + '/status', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driverId: currentDriver.id, status })
+    }).then(r => r.json());
+    if (res.success) {
+      toast('✅ ' + status);
+      loadDriverBookings();
+    }
+  } catch (e) { toast('❌ Error'); }
+}
+
+async function startTrip(bookingId, type) {
+  try {
+    const res = await fetch(API + '/api/erikso/trip/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId, driverId: currentDriver.id, type })
+    }).then(r => r.json());
+    if (res.success) {
+      toast('🚐 Trip started!');
+      loadDriverBookings();
+    }
+  } catch (e) { toast('❌ Error'); }
+}
+
+async function loadDriverTrips() {
+  if (!currentDriver) return;
+  const container = document.getElementById('driverTrips');
+  try {
+    const res = await fetch(API + '/api/erikso/trips/driver/' + currentDriver.id).then(r => r.json());
+    const trips = res.trips || [];
+    if (trips.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-emoji">📭</div><div>No trips yet</div></div>';
+      return;
+    }
+    container.innerHTML = trips.slice(0, 5).map(t => `
+      <div class="booking-item" style="border-left-color:#9c27b0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;">${escapeHtml(t.type)} trip</div>
+            <div style="font-size:11px;opacity:0.7;">${new Date(t.startTime).toLocaleString()}</div>
+          </div>
+          <span class="status-badge status-${t.status}">${t.status}</span>
+        </div>
+        ${t.status === 'active' ? `<button class="btn-primary" style="margin-top:8px;font-size:13px;padding:10px;" onclick="completeTrip('${t.id}')">✅ Complete Trip</button>` : ''}
+      </div>
+    `).join('');
+  } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
+}
+
+async function completeTrip(tripId) {
+  try {
+    const res = await fetch(API + '/api/erikso/trip/' + tripId + '/complete', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driverId: currentDriver.id })
+    }).then(r => r.json());
+    if (res.success) { toast('✅ Trip completed!'); loadDriverTrips(); }
+  } catch (e) { toast('❌ Error'); }
+}
+
+// ===================
+// SCHOOL INTERFACE
+// ===================
+function renderSchool() {
+  const html = `
+    <div class="hero-card">
+      <div class="hero-emoji">🏫📊</div>
+      <div class="hero-title">School Transport Manager</div>
+      <div class="hero-sub">Manage all your school transport, drivers, and student pickups in one place</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Total Students</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Active Drivers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Today's Trips</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">₹0</div>
+        <div class="stat-label">Monthly Revenue</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🚐 School Drivers</div>
+      <div id="schoolDrivers"><div class="loading">Loading...</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📢 Coming Soon</div>
+      <div style="padding:12px;background:rgba(102,126,234,0.1);border-radius:10px;font-size:13px;">
+        • Student Transport Management<br>
+        • Bulk Booking for Students<br>
+        • Safety Reports & Analytics<br>
+        • Commission Tracking<br>
+        • Emergency Coordination
+      </div>
+    </div>
+  `;
+  document.getElementById('appContent').innerHTML = html;
+  loadSchoolDrivers();
+}
+
+async function loadSchoolDrivers() {
+  const container = document.getElementById('schoolDrivers');
+  try {
+    const res = await fetch(API + '/api/erikso/drivers').then(r => r.json());
+    const drivers = res.drivers || [];
+    if (drivers.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-emoji">🚐</div><div>No drivers registered yet</div></div>';
+      return;
+    }
+    container.innerHTML = drivers.slice(0, 10).map(d => `
+      <div class="driver-card">
+        <div class="driver-avatar">${(d.name || 'D')[0].toUpperCase()}</div>
+        <div class="driver-info">
+          <div class="driver-name">${escapeHtml(d.name)}</div>
+          <div class="driver-meta">${escapeHtml(d.vehicleNumber)} • ${escapeHtml(d.route || 'N/A')}</div>
+        </div>
+        <div class="driver-rating">⭐ ${(d.rating || 0).toFixed(1)}</div>
+      </div>
+    `).join('');
+  } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
+}
+
+// ===================
+// BOOT
+// ===================
+function boot() {
+  const saved = localStorage.getItem('erikso_user');
+  if (saved) {
+    try { currentUser = JSON.parse(saved); } catch (e) {}
+  }
+  const savedDriver = localStorage.getItem('erikso_driver');
+  if (savedDriver) {
+    try { currentDriver = JSON.parse(savedDriver); } catch (e) {}
+  }
+  renderRole();
+}
+
+boot();
+</script>
+</body>
+</html>
