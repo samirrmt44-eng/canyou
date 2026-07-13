@@ -576,6 +576,173 @@ module.exports = function(app, db, usersCol) {
     }
   });
 
+  // Admin report - detailed analytics for all members
+  app.get('/api/signals/admin/report', async (req, res) => {
+    try {
+      const members = await usersCol.find({ role: 'signal-member' })
+        .sort({ joinedAt: -1 })
+        .project({
+          id: 1, name: 1, phone: 1, location: 1, country: 1, avatar: 1,
+          signalsPosted: 1, joinedAt: 1, lastSeen: 1, online: 1
+        })
+        .toArray();
+      const now = Date.now();
+      const enriched = members.map(m => {
+        const lastSeenAgo = now - (m.lastSeen || 0);
+        const joinedAgo = now - (m.joinedAt || 0);
+        const daysSinceJoin = Math.floor(joinedAgo / 86400000);
+        return {
+          ...m,
+          _id: undefined,
+          isOnline: lastSeenAgo < 5 * 60 * 1000,
+          isRecent: lastSeenAgo < 24 * 60 * 60 * 1000,
+          daysSinceJoin: daysSinceJoin,
+          activity: lastSeenAgo < 3600000 ? 'active' : lastSeenAgo < 86400000 ? 'today' : lastSeenAgo < 7 * 86400000 ? 'this week' : 'inactive',
+        };
+      });
+      const stats = {
+        total: enriched.length,
+        online: enriched.filter(m => m.isOnline).length,
+        activeToday: enriched.filter(m => m.isRecent).length,
+        activeThisWeek: enriched.filter(m => m.activity !== 'inactive').length,
+        inactive: enriched.filter(m => m.activity === 'inactive').length,
+        postedSignals: enriched.filter(m => (m.signalsPosted || 0) > 0).length,
+        topPosters: enriched.sort((a, b) => (b.signalsPosted || 0) - (a.signalsPosted || 0)).slice(0, 10),
+      };
+      res.json({ success: true, stats, members: enriched });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Smart coin analyzer - real-time CCI strategy signal
+  // Returns LONG/SHORT/HOLD with confidence, entry, target, stop loss
+  app.get('/api/signals/analyze/:coin', async (req, res) => {
+    try {
+      const rawCoin = req.params.coin.toUpperCase();
+      const coin = rawCoin.includes('/') ? rawCoin.replace('/', '') : rawCoin;
+      const interval = req.query.interval || '15m';
+      const cciX = parseInt(req.query.cciX) || 14;
+      const cciY = parseInt(req.query.cciY) || 30;
+      const entryLevel = parseFloat(req.query.entryLevel) || 20;
+      const exitLevel = parseFloat(req.query.exitLevel) || 10;
+      const limit = Math.max(cciX, cciY) + 10;
+      const klineUrl = `https://fapi.binance.com/fapi/v1/klines?symbol=${coin}&interval=${interval}&limit=${limit}`;
+      const klineR = await axios.get(klineUrl, { timeout: 8000 });
+      if (!Array.isArray(klineR.data) || klineR.data.length < Math.max(cciX, cciY)) {
+        return res.status(400).json({ error: 'Not enough candle data for ' + coin });
+      }
+      const candles = klineR.data.map(k => ({
+        t: k[0], o: parseFloat(k[1]), h: parseFloat(k[2]),
+        l: parseFloat(k[3]), c: parseFloat(k[4]), v: parseFloat(k[5]),
+      }));
+      function calcCCI(data, period) {
+        if (data.length < period) return null;
+        const sl = data.slice(-period);
+        const tp = sl.map(c => (c.h + c.l + c.c) / 3);
+        const sma = tp.reduce((a, b) => a + b, 0) / period;
+        const md = tp.reduce((a, b) => a + Math.abs(b - sma), 0) / period;
+        if (md === 0) return 0;
+        return (tp[tp.length - 1] - sma) / (0.015 * md);
+      }
+      const cciXSeries = [], cciYSeries = [];
+      for (let i = 0; i < candles.length; i++) {
+        const slice = candles.slice(0, i + 1);
+        cciXSeries.push(calcCCI(slice, cciX));
+        cciYSeries.push(calcCCI(slice, cciY));
+      }
+      const cciXCur = cciXSeries[cciXSeries.length - 1];
+      const cciYCur = cciYSeries[cciYSeries.length - 1];
+      const cciXPrev = cciXSeries[cciXSeries.length - 2];
+      const cciYPrev = cciYSeries[cciYSeries.length - 2];
+      const sumCur = (cciXCur || 0) + (cciYCur || 0);
+      const sumPrev = (cciXPrev || 0) + (cciYPrev || 0);
+      // Get current price
+      const tickerUrl = `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${coin}`;
+      const tickerR = await axios.get(tickerUrl, { timeout: 5000 });
+      const currentPrice = parseFloat(tickerR.data.price);
+      let action = 'HOLD';
+      let confidence = 0;
+      let reason = '';
+      let entry = currentPrice;
+      let target = null;
+      let stopLoss = null;
+      // Entry cross up: LONG signal
+      if (sumPrev <= entryLevel && sumCur > entryLevel) {
+        action = 'LONG';
+        confidence = Math.min(95, 50 + Math.abs(sumCur - entryLevel));
+        reason = '🟢 Sum crossed above +' + entryLevel + ' — BULLISH crossover! Open LONG now.';
+        entry = currentPrice;
+        stopLoss = currentPrice * 0.98;
+        target = currentPrice * 1.05;
+      }
+      // Entry cross down: SHORT signal
+      else if (sumPrev >= -entryLevel && sumCur < -entryLevel) {
+        action = 'SHORT';
+        confidence = Math.min(95, 50 + Math.abs(-entryLevel - sumCur));
+        reason = '🔴 Sum crossed below -' + entryLevel + ' — BEARISH crossover! Open SHORT now.';
+        entry = currentPrice;
+        stopLoss = currentPrice * 1.02;
+        target = currentPrice * 0.95;
+      }
+      // Already in LONG zone
+      else if (sumCur > entryLevel) {
+        action = 'HOLD_LONG';
+        confidence = Math.min(90, 40 + Math.min(sumCur, 100) / 2);
+        reason = '✅ Already in LONG zone (sum = ' + sumCur.toFixed(2) + '). Hold your position. Exit when sum drops below +' + exitLevel + '.';
+        entry = currentPrice;
+        stopLoss = currentPrice * 0.98;
+        target = currentPrice * 1.06;
+      }
+      // Already in SHORT zone
+      else if (sumCur < -entryLevel) {
+        action = 'HOLD_SHORT';
+        confidence = Math.min(90, 40 + Math.min(Math.abs(sumCur), 100) / 2);
+        reason = '✅ Already in SHORT zone (sum = ' + sumCur.toFixed(2) + '). Hold your position. Exit when sum rises above -' + exitLevel + '.';
+        entry = currentPrice;
+        stopLoss = currentPrice * 1.02;
+        target = currentPrice * 0.94;
+      }
+      // Neutral zone - waiting
+      else {
+        action = 'WAIT';
+        confidence = 50;
+        reason = '⏳ No clear signal. Sum = ' + sumCur.toFixed(2) + ' (between -' + entryLevel + ' and +' + entryLevel + '). Wait for crossover.';
+        entry = currentPrice;
+      }
+      // Distance to next signal
+      let nextSignal = null;
+      if (action === 'WAIT' || action === 'HOLD_LONG' || action === 'HOLD_SHORT') {
+        if (sumCur >= 0) {
+          nextSignal = { type: 'LONG', distance: Math.max(0, entryLevel - sumCur).toFixed(2) };
+        } else {
+          nextSignal = { type: 'SHORT', distance: Math.max(0, sumCur - (-entryLevel)).toFixed(2) };
+        }
+      }
+      res.json({
+        success: true,
+        coin: coin,
+        interval: interval,
+        currentPrice: currentPrice,
+        cciX: { value: cciXCur, period: cciX },
+        cciY: { value: cciYCur, period: cciY },
+        sum: { current: sumCur, previous: sumPrev },
+        signal: {
+          action: action,
+          confidence: Math.round(confidence),
+          reason: reason,
+          entry: entry,
+          target: target,
+          stopLoss: stopLoss,
+          nextSignal: nextSignal,
+        },
+        timestamp: Date.now(),
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Get list of all signal members (for leaderboard)
   app.get('/api/signals/members', async (req, res) => {
     try {
