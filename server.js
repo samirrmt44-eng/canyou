@@ -2204,6 +2204,15 @@ app.get(/(.*)/, (req, res) => res.sendFile(path.join(__dirname, 'public', 'index
 // ============================================================
 // START
 // ============================================================
+// Initialize Erikso School Transport module
+try {
+  const eriksoModule = require('./erikso.js');
+  eriksoModule(app, db, usersCol, notificationsCol);
+  console.log('🚐 Erikso module loaded!');
+} catch (e) {
+  console.error('⚠️ Erikso module failed to load:', e.message);
+}
+
 connectDB().then(async () => {
   console.log('🚀 Initial channel sync...');
   await syncAllChannels();
