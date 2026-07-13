@@ -34,6 +34,15 @@ try {
   console.error('⚠️ News scraper module not found (will skip):', e.message);
 }
 
+// Initialize Trading Signals Module
+let tradingSignalsModule = null;
+try {
+  tradingSignalsModule = require('./trading_signals.js');
+  console.log('📈 Trading signals module file loaded');
+} catch (e) {
+  console.error('⚠️ Trading signals module not found (will skip):', e.message);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -2248,6 +2257,15 @@ connectDB().then(async () => {
       console.log('📰 DainikState News Scraper initialized!');
     } catch (e) {
       console.error('⚠️ News scraper init error:', e.message);
+    }
+  }
+  // Initialize Trading Signals (needs DB)
+  if (tradingSignalsModule) {
+    try {
+      tradingSignalsModule(app, db, usersCol);
+      console.log('📈 Trading Signals initialized!');
+    } catch (e) {
+      console.error('⚠️ Trading signals init error:', e.message);
     }
   }
   setInterval(async () => {
