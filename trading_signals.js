@@ -399,17 +399,24 @@ module.exports = function(app, db, usersCol) {
         }
         return c;
       });
-      // Fetch from Binance
-      const symbolsParam = encodeURIComponent(JSON.stringify(symbols));
-      const url = `https://fapi.binance.com/fapi/v1/ticker/price?symbols=${symbolsParam}`;
-      const r = await axios.get(url, { timeout: 5000 });
-      const priceMap = {};
-      if (Array.isArray(r.data)) {
-        r.data.forEach(t => {
-          priceMap[t.symbol] = parseFloat(t.price);
-        });
+      // Fetch from Binance - use individual calls or batch with proper format
+      // Binance's ?symbols=[...] works in POST but not GET query. Use batch approach:
+      // Get all tickers then filter client-side (cached, single call)
+      // Cache for 5 seconds to avoid rate limits
+      const now = Date.now();
+      if (!global._binanceCache || (now - global._binanceCache.ts) > 5000) {
+        const r = await axios.get('https://fapi.binance.com/fapi/v1/ticker/price', { timeout: 5000 });
+        global._binanceCache = { ts: now, data: r.data };
       }
-      res.json({ success: true, prices: priceMap, ts: Date.now() });
+      const allTickers = global._binanceCache.data;
+      const priceMap = {};
+      const wantedSet = new Set(symbols);
+      allTickers.forEach(t => {
+        if (wantedSet.has(t.symbol)) {
+          priceMap[t.symbol] = parseFloat(t.price);
+        }
+      });
+      res.json({ success: true, prices: priceMap, ts: now });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
