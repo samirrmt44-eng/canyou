@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Trading Signals - DainikState</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0e1a;
+    color: #fff;
+    min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #00c853 0%, #1de9b6 100%);
+    padding: 16px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .header h1 {
+    font-size: 22px; font-weight: 900;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .header .live-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #ff3b30;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+  .header p { font-size: 12px; opacity: 0.9; margin-top: 4px; }
+  .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+  .stats-bar {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 6px; margin-bottom: 16px;
+  }
+  .stat {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 16px; font-weight: 900;
+    color: #00c853;
+  }
+  .stat-label {
+    font-size: 10px; opacity: 0.7;
+    margin-top: 2px;
+  }
+  .stat.buy .stat-value { color: #00c853; }
+  .stat.sell .stat-value { color: #ff3b30; }
+  .stat.pnl .stat-value { color: #ffd700; }
+  .signals-list { display: flex; flex-direction: column; gap: 10px; }
+  .signal-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-left: 4px solid #00c853;
+    border-radius: 12px;
+    padding: 14px;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  .signal-card.sell { border-left-color: #ff3b30; }
+  .signal-card.close { border-left-color: #888; opacity: 0.7; }
+  .signal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+  }
+  .coin-name {
+    font-size: 16px; font-weight: 800;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .signal-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px; font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .signal-badge.buy { background: linear-gradient(135deg, #00c853, #1de9b6); color: #fff; }
+  .signal-badge.sell { background: linear-gradient(135deg, #ff3b30, #ff6b6b); color: #fff; }
+  .signal-badge.long { background: linear-gradient(135deg, #00c853, #1de9b6); color: #fff; }
+  .signal-badge.short { background: linear-gradient(135deg, #ff3b30, #ff6b6b); color: #fff; }
+  .signal-badge.close { background: rgba(255,255,255,0.1); color: #888; }
+  .signal-prices {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+    margin-bottom: 8px;
+  }
+  .price-item {
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    padding: 6px 8px;
+    text-align: center;
+  }
+  .price-label {
+    font-size: 9px; opacity: 0.7;
+    text-transform: uppercase;
+  }
+  .price-value {
+    font-size: 13px; font-weight: 700;
+    margin-top: 2px;
+  }
+  .pnl-display {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .pnl-value {
+    font-size: 18px; font-weight: 900;
+  }
+  .pnl-value.positive { color: #00c853; }
+  .pnl-value.negative { color: #ff3b30; }
+  .pnl-label {
+    font-size: 11px; opacity: 0.7;
+  }
+  .signal-meta {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .meta-tag {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    opacity: 0.7;
+  }
+  .signal-time {
+    font-size: 11px; opacity: 0.6;
+    margin-top: 4px;
+  }
+  .live-indicator {
+    display: inline-block;
+    background: rgba(0,200,83,0.2);
+    color: #00c853;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin-left: 6px;
+  }
+  .live-indicator::before {
+    content: '●';
+    margin-right: 3px;
+    animation: pulse 1s infinite;
+  }
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(255,255,255,0.5);
+  }
+  .empty-icon { font-size: 50px; margin-bottom: 12px; }
+  .empty-text { font-size: 14px; }
+  .empty-sub { font-size: 11px; margin-top: 4px; }
+  .refresh-bar {
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; opacity: 0.7;
+  }
+  .pulse-new {
+    animation: glow 1s ease;
+  }
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,200,83,0.5); }
+    50% { box-shadow: 0 0 0 8px rgba(0,200,83,0); }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>
+    <span class="live-dot"></span>
+    📈 Live Trading Signals
+  </h1>
+  <p>Real-time signals from your trading bot</p>
+</div>
+
+<div class="container">
+  <div class="refresh-bar">
+    <span id="lastUpdate">Loading...</span>
+    <span id="connectionStatus">● Connected</span>
+  </div>
+
+  <div class="stats-bar" id="statsBar">
+    <div class="stat buy">
+      <div class="stat-value" id="statBuy">0</div>
+      <div class="stat-label">BUY</div>
+    </div>
+    <div class="stat sell">
+      <div class="stat-value" id="statSell">0</div>
+      <div class="stat-label">SELL</div>
+    </div>
+    <div class="stat pnl">
+      <div class="stat-value" id="statPnL">0%</div>
+      <div class="stat-label">Total PnL</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="statWinRate">0%</div>
+      <div class="stat-label">Win Rate</div>
+    </div>
+  </div>
+
+  <div class="signals-list" id="signalsList">
+    <div class="empty">
+      <div class="empty-icon">⏳</div>
+      <div class="empty-text">Loading signals...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://canyou-uqkp.onrender.com';
+let lastSignals = [];
+let pollInterval = null;
+
+function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function timeAgo(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000) return Math.floor(d / 1000) + 's ago';
+  if (d < 3600000) return Math.floor(d / 60000) + 'm ago';
+  if (d < 86400000) return Math.floor(d / 3600000) + 'h ago';
+  return Math.floor(d / 86400000) + 'd ago';
+}
+
+function renderSignal(s, isNew = false) {
+  const pnlClass = s.pnl > 0 ? 'positive' : s.pnl < 0 ? 'negative' : '';
+  const signalClass = s.signal.toLowerCase();
+  const cardClass = signalClass.includes('sell') || signalClass.includes('short') ? 'sell' : (s.status === 'closed' ? 'close' : '');
+  return `
+    <div class="signal-card ${cardClass} ${isNew ? 'pulse-new' : ''}" data-id="${s.id}">
+      <div class="signal-header">
+        <div class="coin-name">
+          ${esc(s.coin)}
+          ${s.status === 'active' ? '<span class="live-indicator">LIVE</span>' : ''}
+        </div>
+        <span class="signal-badge ${signalClass}">${esc(s.signal)}</span>
+      </div>
+      ${s.entry || s.target || s.stopLoss ? `
+      <div class="signal-prices">
+        ${s.entry ? `<div class="price-item"><div class="price-label">Entry</div><div class="price-value">$${parseFloat(s.entry).toFixed(2)}</div></div>` : ''}
+        ${s.target ? `<div class="price-item"><div class="price-label">Target</div><div class="price-value" style="color:#00c853;">$${parseFloat(s.target).toFixed(2)}</div></div>` : ''}
+        ${s.stopLoss ? `<div class="price-item"><div class="price-label">Stop Loss</div><div class="price-value" style="color:#ff3b30;">$${parseFloat(s.stopLoss).toFixed(2)}</div></div>` : ''}
+      </div>
+      ` : ''}
+      <div class="pnl-display">
+        <div>
+          <div class="pnl-label">PnL</div>
+          <div class="pnl-value ${pnlClass}">${s.pnl > 0 ? '+' : ''}${parseFloat(s.pnl || 0).toFixed(2)}%</div>
+        </div>
+        <div class="signal-meta">
+          ${s.leverage ? `<span class="meta-tag">⚡ ${esc(s.leverage)}</span>` : ''}
+          ${s.timeframe ? `<span class="meta-tag">⏱ ${esc(s.timeframe)}</span>` : ''}
+          ${s.source ? `<span class="meta-tag">📡 ${esc(s.source).slice(0, 15)}</span>` : ''}
+        </div>
+      </div>
+      ${s.note ? `<div style="font-size:12px;margin-top:6px;opacity:0.7;">${esc(s.note)}</div>` : ''}
+      <div class="signal-time">🕐 ${timeAgo(s.createdAt)} ${s.status === 'closed' ? '• ✅ CLOSED' : ''}</div>
+    </div>
+  `;
+}
+
+async function fetchSignals() {
+  try {
+    const res = await fetch(API + '/api/signals/widget?count=20').then(r => r.json());
+    if (res.success) {
+      // Update stats
+      document.getElementById('statBuy').textContent = res.stats.buy || 0;
+      document.getElementById('statSell').textContent = res.stats.sell || 0;
+      const pnlEl = document.getElementById('statPnL');
+      pnlEl.textContent = (res.stats.totalPnL > 0 ? '+' : '') + res.stats.totalPnL + '%';
+      pnlEl.style.color = res.stats.totalPnL > 0 ? '#00c853' : res.stats.totalPnL < 0 ? '#ff3b30' : '#ffd700';
+      document.getElementById('statWinRate').textContent = res.stats.winRate + '%';
+      // Render signals
+      const list = document.getElementById('signalsList');
+      if (!res.signals || res.signals.length === 0) {
+        list.innerHTML = `
+          <div class="empty">
+            <div class="empty-icon">📊</div>
+            <div class="empty-text">No signals yet</div>
+            <div class="empty-sub">Waiting for your bot to send signals...</div>
+          </div>
+        `;
+      } else {
+        // Detect new signals for animation
+        const newIds = res.signals.filter(s => !lastSignals.find(ls => ls.id === s.id)).map(s => s.id);
+        list.innerHTML = res.signals.map(s => renderSignal(s, newIds.includes(s.id))).join('');
+        lastSignals = res.signals;
+      }
+      // Update last refresh time
+      document.getElementById('lastUpdate').textContent = '🕐 Updated ' + new Date().toLocaleTimeString();
+    }
+  } catch (e) {
+    document.getElementById('connectionStatus').innerHTML = '● Disconnected';
+    document.getElementById('connectionStatus').style.color = '#ff3b30';
+  }
+}
+
+// Auto-refresh every 5 seconds
+function startPolling() {
+  fetchSignals();
+  pollInterval = setInterval(fetchSignals, 5000);
+}
+
+startPolling();
+</script>
+</body>
+</html>
