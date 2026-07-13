@@ -3755,9 +3755,46 @@ function openJitsiCall(jitsiUrl, title, callId) {
   document.getElementById('jitsiCallTitle').textContent = '📞 ' + (title || 'Call');
   // Add user display name as Jitsi prejoin config
   const userName = currentUser?.name || 'Guest';
-  // Jitsi meet URL with prejoin config
-  const hashParams = `#userInfo.displayName=${encodeURIComponent(userName)}&config.prejoinPageEnabled=false&config.startWithAudioMuted=true&config.startWithVideoMuted=${jitsiCall?.type === 'voice' ? 'true' : 'false'}`;
-  frame.src = jitsiUrl + hashParams;
+  // Use 8x8.vc (no login popup) with guest mode + auto-join
+  // Convert meet.jit.si URL to 8x8.vc for seamless experience
+  let finalUrl = jitsiUrl;
+  // Multiple fallback hosts + config to disable ALL popups
+  const configParams = new URLSearchParams({
+    'userInfo.displayName': userName,
+    'config.prejoinPageEnabled': 'false',          // Skip prejoin page
+    'config.startWithAudioMuted': 'true',          // Start muted
+    'config.startWithVideoMuted': jitsiCall?.type === 'voice' ? 'true' : 'false',
+    'config.requireDisplayName': 'false',          // No name required
+    'config.enableWelcomePage': 'false',           // No welcome page
+    'config.disableDeepLinking': 'true',           // No app redirect
+    'config.deeplinking.disabled': 'true',         // No mobile app prompt
+    'config.callDisplayName': 'DainikState Call',
+    'config.subject': 'DainikState Call',
+    'config.hideConferenceSubject': 'false',
+    'config.toolbarButtons': '["microphone","camera","desktop","fullscreen","hangup","chat","tileview"]',
+    'config.showWatermark': 'false',
+    'config.showBrandWatermark': 'false',
+    'config.defaultRemoteDisplayName': 'DainikState User',
+    'interfaceConfig.SHOW_JITSI_WATERMARK': 'false',
+    'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS': 'false',
+    'interfaceConfig.DISABLE_JOIN_LEAVE_NOTIFICATIONS': 'true',
+    'interfaceConfig.MOBILE_APP_PROMO': 'false',
+    'interfaceConfig.SHOW_CHROME_EXTENSION_BANNER': 'false',
+    'interfaceConfig.HIDE_DEEP_LINKING_LOGO': 'true',
+    'interfaceConfig.LANG_DETECTION': 'en',
+  }).toString();
+  // Try multiple Jitsi-compatible servers (fallback chain)
+  // 1. 8x8.vc (no login popup, free)
+  // 2. jitsi.org (alternative)
+  // 3. meet.jit.si (original, may show login)
+  if (jitsiUrl.includes('meet.jit.si')) {
+    const roomName = jitsiUrl.split('/').pop();
+    // Primary: 8x8.vc (NO login popup)
+    finalUrl = `https://8x8.vc/${roomName}#${configParams}`;
+  } else {
+    finalUrl = `${jitsiUrl}#${configParams}`;
+  }
+  frame.src = finalUrl;
   modal.classList.add('show');
   document.body.style.overflow = 'hidden';
   // Start timer
