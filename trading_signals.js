@@ -275,6 +275,75 @@ module.exports = function(app, db, usersCol) {
     res.json({ success: true });
   });
 
+  // Track page visit (called from frontend on load) - counts unique-ish visitors
+  app.post('/api/signals/track-visit', async (req, res) => {
+    if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
+    const visitsCol = db.collection('signalPageVisits');
+    const { sessionId, referrer } = req.body || {};
+    const sid = sessionId || ('anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6));
+    // De-dupe: same sessionId within 30 min counts as 1 unique visitor
+    const cutoff = Date.now() - 30 * 60 * 1000;
+    const existing = await visitsCol.findOne({ sessionId: sid, lastSeen: { $gte: cutoff } });
+    if (existing) {
+      await visitsCol.updateOne({ _id: existing._id }, { $set: { lastSeen: Date.now() }, $inc: { hits: 1 } });
+      const total = await visitsCol.countDocuments({});
+      return res.json({ success: true, sessionId: sid, unique: false, totalVisitors: total });
+    }
+    await visitsCol.insertOne({
+      _id: 'visit_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+      sessionId: sid,
+      firstSeen: Date.now(),
+      lastSeen: Date.now(),
+      hits: 1,
+      referrer: referrer || '',
+    });
+    const total = await visitsCol.countDocuments({});
+    res.json({ success: true, sessionId: sid, unique: true, totalVisitors: total });
+  });
+
+  // Get overall stats: total visitors, total views, top signals
+  app.get('/api/signals/stats', async (req, res) => {
+    if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
+    try {
+      const visitsCol = db.collection('signalPageVisits');
+      const activeCutoff = Date.now() - 5 * 60 * 1000;
+      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+      const todayMs = todayStart.getTime();
+
+      const [totalVisitors, todayVisitors, activeNow, allSignals, todaySigs] = await Promise.all([
+        visitsCol.countDocuments({}),
+        visitsCol.countDocuments({ firstSeen: { $gte: todayMs } }),
+        visitsCol.countDocuments({ lastSeen: { $gte: activeCutoff } }),
+        signalsCol.find({ status: 'active' }).sort({ createdAt: -1 }).limit(200).toArray(),
+        signalsCol.find({ createdAt: { $gte: todayMs } }).toArray(),
+      ]);
+
+      const totalViews = allSignals.reduce((s, x) => s + (x.views || 0), 0);
+      const topSignals = allSignals
+        .filter(s => (s.views || 0) > 0)
+        .sort((a, b) => (b.views || 0) - (a.views || 0))
+        .slice(0, 5)
+        .map(s => ({ id: s.id, coin: s.coin, signal: s.signal, views: s.views || 0, pnl: s.pnl || 0 }));
+
+      res.json({
+        success: true,
+        visitors: {
+          total: totalVisitors,
+          today: todayVisitors,
+          activeNow: activeNow,
+          totalViews: totalViews,
+        },
+        signals: {
+          total: allSignals.length,
+          today: todaySigs.length,
+          topViewed: topSignals,
+        },
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Mark signal as closed
   app.post('/api/signals/:id/close', async (req, res) => {
     if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
