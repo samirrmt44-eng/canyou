@@ -1020,16 +1020,17 @@ module.exports = function(app, db, usersCol) {
       if (uniqueCoins.length === 0) {
         return res.json({ success: true, opportunities: [], message: 'No coins yet' });
       }
-      // Analyze top 10 coins (limit for performance)
+      // Analyze top coins
       const coinsToAnalyze = uniqueCoins.slice(0, 10);
       const opportunities = [];
       for (const coin of coinsToAnalyze) {
         try {
-          const r = await axios.get(`https://canyou-uqkp.onrender.com/api/signals/analyze/${encodeURIComponent(coin)}?interval=15m`, { timeout: 15000 });
+          // Call our own analyze endpoint internally via the module function
+          const r = await axios.get(`${req.protocol}://${req.get('host')}/api/signals/analyze/${encodeURIComponent(coin)}?interval=15m`, { timeout: 15000 });
           if (r.data && r.data.success) {
             const sig = r.data.signal;
-            // Score: only LONG/SHORT with high confidence
-            if ((sig.action === 'LONG' || sig.action === 'SHORT') && sig.confidence >= 70) {
+            // Include both active signals and HOLD with high confidence
+            if ((sig.action === 'LONG' || sig.action === 'SHORT') && sig.confidence >= 65) {
               opportunities.push({
                 coin: coin,
                 action: sig.action,
@@ -1041,7 +1042,6 @@ module.exports = function(app, db, usersCol) {
                 entry: sig.entry,
                 target: sig.target,
                 stopLoss: sig.stopLoss,
-                // Combined score: confidence + agreement + momentum
                 score: sig.confidence + (parseInt(sig.agreement.split('/')[0]) * 5),
               });
             }
