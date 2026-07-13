@@ -419,6 +419,115 @@
     font-size: 14px;
   }
 
+  /* ===== MOTIVATIONAL BANNER ===== */
+  .motivation-banner {
+    background: linear-gradient(135deg, rgba(255,107,107,0.15), rgba(255,165,0,0.1), rgba(255,215,0,0.15));
+    border: 1px solid rgba(255,165,0,0.4);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    text-align: center;
+    animation: motivationGlow 3s ease-in-out infinite;
+  }
+  @keyframes motivationGlow {
+    0%, 100% { box-shadow: 0 0 15px rgba(255,165,0,0.3); }
+    50% { box-shadow: 0 0 25px rgba(255,165,0,0.5); }
+  }
+  .motivation-text {
+    font-size: 14px; font-weight: 700;
+    color: #fff;
+    line-height: 1.4;
+  }
+  .motivation-emoji { font-size: 18px; }
+
+  /* ===== TOP 10 SCROLLER ===== */
+  .top-scorers-section {
+    margin-bottom: 14px;
+  }
+  .top-scorers-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 900;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: #ffd700;
+    margin-bottom: 10px;
+  }
+  .top-scorers-scroll {
+    display: flex; gap: 10px;
+    overflow-x: auto;
+    padding: 4px 2px 8px 2px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .top-scorers-scroll::-webkit-scrollbar { height: 3px; }
+  .top-scorers-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255,215,0,0.3); border-radius: 2px;
+  }
+  .top-scorer-card {
+    flex: 0 0 auto;
+    min-width: 160px; max-width: 180px;
+    background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,165,0,0.05));
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 12px;
+    padding: 10px;
+    scroll-snap-align: start;
+    position: relative;
+    transition: transform 0.2s;
+  }
+  .top-scorer-card:hover { transform: translateY(-2px); }
+  .top-scorer-rank {
+    position: absolute;
+    top: 6px; right: 6px;
+    background: linear-gradient(135deg, #ffd700, #ff9500);
+    color: #000;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 900;
+  }
+  .top-scorer-coin {
+    font-size: 14px; font-weight: 800;
+    color: #fff;
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .top-scorer-pnl {
+    font-size: 18px; font-weight: 900;
+    margin-bottom: 4px;
+  }
+  .top-scorer-pnl.positive { color: #00c853; }
+  .top-scorer-pnl.negative { color: #ff3b30; }
+  .top-scorer-user {
+    font-size: 10px; opacity: 0.7;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* ===== HIDE LOSS CONTROLS ===== */
+  .hide-loss-toggle {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11px; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .hide-loss-toggle.active {
+    background: linear-gradient(135deg, #00c853, #1de9b6);
+    color: #000; font-weight: 700;
+  }
+  .loss-filter-control {
+    display: flex; gap: 6px; align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .loss-threshold {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    padding: 6px 8px; border-radius: 6px;
+    font-size: 11px; width: 60px;
+  }
+
   /* ===== FREE badges ===== */
   .free-banner {
     background: linear-gradient(135deg, rgba(0,200,83,0.1), rgba(29,233,182,0.1));
@@ -508,6 +617,32 @@
     <div class="visitor-item"><span class="visitor-icon">🟢</span><span class="visitor-num" id="mOnline">0</span><span class="visitor-lbl">Online</span></div>
     <div class="visitor-item"><span class="visitor-icon">📅</span><span class="visitor-num" id="mNew">0</span><span class="visitor-lbl">New Today</span></div>
     <div class="visitor-item"><span class="visitor-icon">➡️</span><span class="visitor-num" style="font-size:13px;opacity:0.7">View All</span><span class="visitor-lbl">Leaderboard</span></div>
+  </div>
+
+  <!-- Motivational banner (dynamic based on performance) -->
+  <div class="motivation-banner" id="motivationBanner">
+    <div class="motivation-text">
+      <span class="motivation-emoji">🚀</span> Loading today's winners...
+    </div>
+  </div>
+
+  <!-- Top 10 scorers scroll -->
+  <div class="top-scorers-section" id="topScorersSection" style="display:none">
+    <div class="top-scorers-title">
+      <span>🏆</span> TOP 10 PERFORMERS
+      <span style="margin-left:auto; font-size:10px; opacity:0.6">Swipe →</span>
+    </div>
+    <div class="top-scorers-scroll" id="topScorersScroll"></div>
+  </div>
+
+  <!-- Loss filter controls -->
+  <div class="loss-filter-control">
+    <button id="hideLossBtn" class="hide-loss-toggle" onclick="toggleHideLoss()">
+      <span id="hideLossIcon">👁</span>
+      <span id="hideLossText">Hide Losses</span>
+    </button>
+    <input type="number" id="lossThreshold" class="loss-threshold" value="-5" min="-50" max="0" step="1" onchange="updateLossFilter()" title="Hide signals below this PnL%">
+    <span style="font-size:10px; opacity:0.6">min PnL%</span>
   </div>
 
   <!-- Filter bar -->
@@ -1036,32 +1171,41 @@ async function fetchSignals() {
     if (currentFilter !== 'all') params.set('coin', currentFilter);
     const r = await fetch(API + '/api/signals?' + params).then(r => r.json());
     if (r.success) {
+      // Apply loss filter
+      let filteredSignals = r.signals || [];
+      if (hideLosses) {
+        filteredSignals = filteredSignals.filter(s => (s.pnl || 0) >= lossThreshold);
+      }
       // Update stats
-      document.getElementById('statBuy').textContent = r.signals.filter(s => s.signal === 'LONG' || s.signal === 'BUY').length;
-      document.getElementById('statSell').textContent = r.signals.filter(s => s.signal === 'SHORT' || s.signal === 'SELL').length;
-      const totalPnl = r.signals.reduce((s, x) => s + (x.pnl || 0), 0);
+      document.getElementById('statBuy').textContent = filteredSignals.filter(s => s.signal === 'LONG' || s.signal === 'BUY').length;
+      document.getElementById('statSell').textContent = filteredSignals.filter(s => s.signal === 'SHORT' || s.signal === 'SELL').length;
+      const totalPnl = filteredSignals.reduce((s, x) => s + (x.pnl || 0), 0);
       const pnlEl = document.getElementById('statPnL');
       pnlEl.textContent = (totalPnl > 0 ? '+' : '') + totalPnl.toFixed(2) + '%';
       pnlEl.style.color = totalPnl > 0 ? '#00c853' : totalPnl < 0 ? '#ff3b30' : '#ffd700';
-      const winners = r.signals.filter(s => s.pnl > 0).length;
-      const winRate = r.signals.length > 0 ? Math.round((winners / r.signals.length) * 100) : 0;
+      const winners = filteredSignals.filter(s => s.pnl > 0).length;
+      const winRate = filteredSignals.length > 0 ? Math.round((winners / filteredSignals.length) * 100) : 0;
       document.getElementById('statWinRate').textContent = winRate + '%';
 
       // Render list
       const list = document.getElementById('signalsList');
-      if (!r.signals || r.signals.length === 0) {
-        list.innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">No signals ${currentFilter !== 'all' ? 'for ' + currentFilter : 'yet'}</div><div class="empty-sub">Be the first to post!</div></div>`;
+      if (!filteredSignals || filteredSignals.length === 0) {
+        const reason = hideLosses ? '<br><span style="font-size:11px;opacity:0.7">Try turning off "Hide Losses"</span>' : '';
+        list.innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">No signals ${currentFilter !== 'all' ? 'for ' + currentFilter : 'yet'}</div><div class="empty-sub">Be the first to post!${reason}</div></div>`;
       } else {
-        const newIds = r.signals.filter(s => !lastSignals.find(ls => ls.id === s.id)).map(s => s.id);
-        list.innerHTML = r.signals.map(s => renderSignal(s, newIds.includes(s.id))).join('');
-        r.signals.forEach(s => trackSignalView(s.id));
-        lastSignals = r.signals;
+        const newIds = filteredSignals.filter(s => !lastSignals.find(ls => ls.id === s.id)).map(s => s.id);
+        list.innerHTML = filteredSignals.map(s => renderSignal(s, newIds.includes(s.id))).join('');
+        filteredSignals.forEach(s => trackSignalView(s.id));
+        lastSignals = filteredSignals;
       }
 
       // Update pagination
       totalPages = r.totalPages || 1;
       document.getElementById('pagination').style.display = r.total > pageSize ? 'flex' : 'none';
-      document.getElementById('pageInfo').textContent = `Page ${r.page} / ${r.totalPages} (${r.total} total)`;
+      const pageInfo = hideLosses
+        ? `Page ${r.page} / ${r.totalPages} (${r.total} total, ${filteredSignals.length} shown)`
+        : `Page ${r.page} / ${r.totalPages} (${r.total} total)`;
+      document.getElementById('pageInfo').textContent = pageInfo;
       document.getElementById('prevBtn').disabled = !r.hasPrev;
       document.getElementById('nextBtn').disabled = !r.hasNext;
       document.getElementById('lastUpdate').textContent = '🕐 Updated ' + new Date().toLocaleTimeString();
@@ -1070,6 +1214,9 @@ async function fetchSignals() {
 
       // Update filter buttons with unique coins
       updateFilterButtons(r);
+      // Update motivation banner & top scorers (use unfiltered data for these)
+      updateMotivationBanner(r.signals);
+      updateTopScorers(r.signals);
     }
   } catch (e) {
     document.getElementById('connectionStatus').innerHTML = '● Disconnected';
@@ -1257,6 +1404,116 @@ async function loadMembers() {
   } catch (e) {
     list.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div>';
   }
+}
+
+// ===== Loss filter + Hide losses =====
+let hideLosses = false;
+let lossThreshold = -5;  // Default: hide signals below -5%
+
+function toggleHideLoss() {
+  hideLosses = !hideLosses;
+  const btn = document.getElementById('hideLossBtn');
+  const icon = document.getElementById('hideLossIcon');
+  const text = document.getElementById('hideLossText');
+  if (hideLosses) {
+    btn.classList.add('active');
+    icon.textContent = '🚫';
+    text.textContent = 'Show All';
+  } else {
+    btn.classList.remove('active');
+    icon.textContent = '👁';
+    text.textContent = 'Hide Losses';
+  }
+  fetchSignals();  // Re-render
+}
+
+function updateLossFilter() {
+  lossThreshold = parseFloat(document.getElementById('lossThreshold').value) || -5;
+  if (hideLosses) fetchSignals();
+}
+
+// ===== Motivational banner =====
+function updateMotivationBanner(allSignals) {
+  const banner = document.getElementById('motivationBanner');
+  if (!allSignals || allSignals.length === 0) {
+    banner.innerHTML = '<div class="motivation-text">📊 Be the first to share a signal today!</div>';
+    return;
+  }
+  // Calculate stats
+  const winners = allSignals.filter(s => s.pnl > 0);
+  const losers = allSignals.filter(s => s.pnl < 0);
+  const winRate = allSignals.length > 0 ? Math.round((winners.length / allSignals.length) * 100) : 0;
+  const avgPnl = allSignals.reduce((s, x) => s + (x.pnl || 0), 0) / allSignals.length;
+  // Motivational messages based on performance
+  const messages = [];
+  if (winRate >= 70) {
+    messages.push('🎯 Community is CRUSHING it! ' + winRate + '% win rate today!');
+  } else if (winRate >= 50) {
+    messages.push('📈 ' + winRate + '% win rate — keep posting those winners!');
+  } else if (winRate < 30 && allSignals.length >= 5) {
+    messages.push('🎲 Markets are tough — only ' + winRate + '% green. Trade safe!');
+  }
+  if (winners.length > 0) {
+    const topPnl = Math.max(...allSignals.map(s => s.pnl || 0));
+    if (topPnl >= 20) messages.push('🔥 Someone is up ' + topPnl.toFixed(1) + '%! Can you beat that?');
+  }
+  if (allSignals.length >= 10 && avgPnl > 0) {
+    messages.push('💎 ' + winners.length + ' winners today. Average +' + avgPnl.toFixed(1) + '%');
+  }
+  // Default message
+  if (messages.length === 0) {
+    messages.push('🚀 Share your first signal to climb the leaderboard!');
+  }
+  // Pick one random message
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+  banner.innerHTML = '<div class="motivation-text">' + msg + '</div>';
+}
+
+// ===== Top 10 scorers =====
+function updateTopScorers(allSignals) {
+  const section = document.getElementById('topScorersSection');
+  const scroll = document.getElementById('topScorersScroll');
+  if (!allSignals || allSignals.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  // Only consider signals with meaningful pnl data
+  const eligible = allSignals.filter(s => s.pnl !== 0 || s.entry);
+  if (eligible.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  // Sort by pnl descending, take top 10
+  const top10 = eligible.sort((a, b) => (b.pnl || 0) - (a.pnl || 0)).slice(0, 10);
+  section.style.display = 'block';
+  scroll.innerHTML = top10.map((s, i) => {
+    const rank = i + 1;
+    const pnlClass = s.pnl > 0 ? 'positive' : (s.pnl < 0 ? 'negative' : '');
+    const userName = s.userName || 'Anon';
+    const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=ffd700&color=000&bold=true&size=64`;
+    return `
+      <div class="top-scorer-card" onclick="filterByCoin('${esc(s.coin)}')">
+        <div class="top-scorer-rank">${rank}</div>
+        <div class="top-scorer-coin">${esc(s.coin)}</div>
+        <div class="top-scorer-pnl ${pnlClass}">${s.pnl > 0 ? '+' : ''}${parseFloat(s.pnl || 0).toFixed(2)}%</div>
+        <div class="top-scorer-user">
+          <img src="${avatar}" style="width:16px;height:16px;border-radius:50%;vertical-align:middle">
+          ${esc(userName)}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Helper to filter by coin (called from top scorer card click)
+function filterByCoin(coin) {
+  currentFilter = coin;
+  currentPage = 1;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-filter') === coin);
+  });
+  fetchSignals();
+  window.scrollTo({ top: document.getElementById('signalsList').offsetTop - 50, behavior: 'smooth' });
 }
 
 // ===== INIT =====
