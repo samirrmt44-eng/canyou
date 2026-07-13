@@ -466,11 +466,13 @@
     border-radius: 12px; margin-bottom: 12px;
     cursor: pointer;
   }
+  /* Smart Embed: Click to play overlay */
   .odysee-live-card {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255, 102, 0, 0.4);
     border-radius: 16px; overflow: hidden;
     margin-bottom: 16px;
+    position: relative;
   }
   .odysee-live-header {
     background: linear-gradient(90deg, #ff6600, #ff9900);
@@ -481,6 +483,40 @@
   .odysee-live-header .live-dot {
     width: 10px; height: 10px; border-radius: 50%;
     background: #fff; animation: pulse-dot 1s infinite;
+  }
+  .odysee-embed-container {
+    position: relative; width: 100%;
+    background: #000;
+  }
+  .odysee-play-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,0.85), rgba(255,102,0,0.3));
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 2;
+    transition: opacity 0.3s;
+  }
+  .odysee-play-overlay:hover {
+    background: linear-gradient(135deg, rgba(0,0,0,0.75), rgba(255,102,0,0.4));
+  }
+  .odysee-play-overlay .play-circle {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(255,102,0,0.6);
+    margin-bottom: 12px;
+    transition: transform 0.2s;
+  }
+  .odysee-play-overlay:hover .play-circle { transform: scale(1.1); }
+  .odysee-play-overlay .play-icon {
+    color: #ff6600; font-size: 32px; margin-left: 4px;
+  }
+  .odysee-play-overlay .play-text {
+    color: #fff; font-size: 14px; font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+  .odysee-play-overlay .play-sub {
+    color: rgba(255,255,255,0.8); font-size: 11px;
+    margin-top: 4px;
   }
   .odysee-embed {
     width: 100%; aspect-ratio: 16/9;
@@ -499,6 +535,15 @@
     background: linear-gradient(90deg, #ff6600, #ff9900) !important;
     color: #fff !important;
   }
+  /* Tip button for LBC support */
+  .odysee-tip-btn {
+    display: inline-block; margin-left: 6px;
+    background: linear-gradient(90deg, #ffd700, #ff9900);
+    color: #000; font-weight: 700; font-size: 11px;
+    padding: 4px 10px; border-radius: 6px;
+    text-decoration: none;
+  }
+  .odysee-tip-btn:hover { transform: scale(1.05); }
   .live-dot {
     width: 10px; height: 10px; border-radius: 50%;
     background: #fff; animation: pulse-dot 1s infinite;
@@ -1352,21 +1397,31 @@ async function loadOdyseeLiveSection() {
         <span class="live-dot" style="background:#ff6600;"></span> ODYSEE LIVE NOW
         <span style="font-size:11px;opacity:0.6;margin-left:auto;">via Odysee</span>
       </h3>
-      ${res.streams.map(s => `
+      ${res.streams.map((s, i) => {
+        const autoIdx = 'auto_' + i;
+        return `
         <div class="odysee-live-card">
           <div class="odysee-live-header">
             <span class="live-dot"></span>
             <span style="flex:1;">🔴 ${esc(s.channelName || s.channelHandle)}</span>
             <span style="font-size:11px;opacity:0.9;">👁 ${s.views || 0}</span>
             <a href="${esc(s.url)}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;background:rgba(0,0,0,0.2);padding:4px 10px;border-radius:6px;font-size:11px;margin-left:6px;">Open on Odysee ↗</a>
+            <a href="https://odysee.com/$/tip?claim_id=${esc(s.claimId || 'a')}" target="_blank" rel="noopener" class="odysee-tip-btn">💰 Tip</a>
           </div>
-          <iframe class="odysee-embed" src="${esc(s.embedUrl)}" allow="autoplay; fullscreen" allowfullscreen referrerpolicy="no-referrer"></iframe>
+          <div class="odysee-embed-container" id="odysee-container-${autoIdx}">
+            <div class="odysee-play-overlay" onclick="playOdyseeStream('${esc(s.embedUrl)}', '${autoIdx}')">
+              <div class="play-circle"><div class="play-icon">▶</div></div>
+              <div class="play-text">Watch Live on DainikState</div>
+              <div class="play-sub">📺 Click to start • Views count on Odysee</div>
+            </div>
+            <iframe class="odysee-embed" data-src="${esc(s.embedUrl)}" allow="autoplay; fullscreen" allowfullscreen referrerpolicy="no-referrer" style="display:none;"></iframe>
+          </div>
           <div class="odysee-info">
             <div class="title">${esc(s.title)}</div>
             <div class="channel">@${esc(s.channelHandle)}</div>
           </div>
         </div>
-      `).join('')}
+      `;}).join('')}
     `;
     // If we have manual streams, keep them and append auto-detected
     if (saved.length > 0) {
@@ -1480,8 +1535,6 @@ function renderManualOdyseeStreams() {
   `;
   saved.forEach((stream, idx) => {
     // Build the correct embed URL - Odysee format: https://odysee.com/$/embed/<name>:<claimid>
-    // stream.name is like @DainikState:1/cripto-panda, stream.claimId is like 'a'
-    // Correct embed: https://odysee.com/$/embed/@DainikState:1/cripto-panda:a
     const correctEmbedUrl = `https://odysee.com/$/embed/${stream.name}:${stream.claimId || 'a'}`;
     html += `
       <div class="odysee-live-card" data-idx="${idx}">
@@ -1489,9 +1542,17 @@ function renderManualOdyseeStreams() {
           <span class="live-dot"></span>
           <span style="flex:1;">🔴 ${esc(stream.channelName || stream.channelHandle || stream.name)}</span>
           <a href="${esc(stream.url)}" target="_blank" rel="noopener" style="color:#fff;text-decoration:none;background:rgba(0,0,0,0.2);padding:4px 10px;border-radius:6px;font-size:11px;margin-left:6px;">Open on Odysee ↗</a>
+          <a href="https://odysee.com/$/tip?claim_id=${esc(stream.claimId || 'a')}" target="_blank" rel="noopener" class="odysee-tip-btn">💰 Tip</a>
           <button onclick="removeManualOdyseeStream(${idx})" style="background:rgba(0,0,0,0.2);border:none;color:#fff;padding:4px 8px;border-radius:6px;font-size:11px;margin-left:4px;cursor:pointer;">✕</button>
         </div>
-        <iframe class="odysee-embed" src="${esc(correctEmbedUrl)}" allow="autoplay; fullscreen" allowfullscreen referrerpolicy="no-referrer"></iframe>
+        <div class="odysee-embed-container" id="odysee-container-${idx}">
+          <div class="odysee-play-overlay" onclick="playOdyseeStream('${esc(correctEmbedUrl)}', ${idx})">
+            <div class="play-circle"><div class="play-icon">▶</div></div>
+            <div class="play-text">Watch Live on DainikState</div>
+            <div class="play-sub">📺 Click to start • Views count on Odysee</div>
+          </div>
+          <iframe class="odysee-embed" data-src="${esc(correctEmbedUrl)}" allow="autoplay; fullscreen" allowfullscreen referrerpolicy="no-referrer" style="display:none;"></iframe>
+        </div>
         <div class="odysee-info">
           <div class="title">${esc(stream.title)}</div>
           <div class="channel">@${esc(stream.channelHandle || stream.name.split('/')[0])}</div>
@@ -1534,6 +1595,42 @@ function loadManualOdyseeStreams() {
   let saved = [];
   try { saved = JSON.parse(localStorage.getItem('ds_odysee_manual_streams') || '[]'); } catch (e) { return; }
   if (saved.length > 0) renderManualOdyseeStreams();
+}
+
+// Track Odysee embed views (quality views only - on user click)
+const odyseeViewedStreams = new Set();
+function playOdyseeStream(embedUrl, streamIdx) {
+  // Record view attempt
+  const container = document.getElementById('odysee-container-' + streamIdx);
+  if (!container) return;
+  // Hide play overlay
+  const overlay = container.querySelector('.odysee-play-overlay');
+  if (overlay) overlay.style.display = 'none';
+  // Show iframe with autoplay
+  const iframe = container.querySelector('iframe.odysee-embed');
+  if (iframe) {
+    iframe.style.display = 'block';
+    iframe.src = embedUrl + '?autoplay=1';
+    // Track this view
+    if (!odyseeViewedStreams.has(streamIdx)) {
+      odyseeViewedStreams.add(streamIdx);
+      // Count view after 5 seconds (Odysee requires 5+ sec watch)
+      setTimeout(() => {
+        // Send view to backend for analytics
+        if (currentUser) {
+          fetch(API + '/api/odysee/view', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: currentUser.id,
+              streamName: embedUrl.split('/embed/')[1] || 'unknown',
+              watchSeconds: 5
+            }),
+          }).catch(() => {});
+        }
+        toast('✅ +1 view counted on Odysee!');
+      }, 5000);
+    }
+  }
 }
 
 async function submitAddOdyseeChannel() {
