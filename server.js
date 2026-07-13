@@ -2228,10 +2228,15 @@ app.post('/api/odysee/streams/add', async (req, res) => {
 });
 
 // ============================================================
-// FALLBACK
+// FALLBACK - SPA catch-all
 // ============================================================
-// NOTE: Erikso module is initialized in connectDB().then() below (needs DB connection)
-app.get(/(.*)/, (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+// Use middleware (not route) so we don't trigger path-to-regexp issues
+// with newer Express versions. Sends index.html for any non-API GET.
+app.use((req, res, next) => {
+  if (req.method !== 'GET') return next();
+  if (req.path.startsWith('/api/') || req.path.startsWith('/i/')) return next();
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 connectDB().then(async () => {
   console.log('🚀 Initial channel sync...');
