@@ -1,15 +1,11 @@
 // ============================================================
-// TRADING SIGNALS MODULE
-// ============================================================
-// Receives trading signals from your HTML bot via:
-// 1. Webhook (POST /api/signals/webhook)
-// 2. API Polling (GET /api/signals/poll)
-// 3. Manual entry (POST /api/signals/manual)
-// Displays LIVE on DainikState app
+// TRADING SIGNALS MODULE - V2
+// Auto-member, per-user API keys, pagination, public/private signals
 // ============================================================
 
 module.exports = function(app, db, usersCol) {
   const axios = require('axios');
+  const crypto = require('crypto');
   let signalsCol;
 
   async function connectDB_signals() {
@@ -17,23 +13,138 @@ module.exports = function(app, db, usersCol) {
     await signalsCol.createIndex({ createdAt: -1 });
     await signalsCol.createIndex({ coin: 1, createdAt: -1 });
     await signalsCol.createIndex({ status: 1 });
+    await signalsCol.createIndex({ userId: 1 });
+    await signalsCol.createIndex({ visibility: 1, createdAt: -1 });
     console.log('📈 Trading Signals module loaded!');
   }
 
   // ============================================================
-  // METHOD 1: WEBHOOK (Bot directly posts to this endpoint)
+  // AUTO-MEMBER CREATION (called from trading.html on first visit)
   // ============================================================
+  app.post('/api/signals/auto-register', async (req, res) => {
+    try {
+      const { name, phone, location, country, avatar } = req.body || {};
+      if (!name || !name.trim()) {
+        return res.status(400).json({ error: 'Name is required' });
+      }
+      // Check if user with this phone already exists
+      let user = null;
+      if (phone) {
+        user = await usersCol.findOne({ phone: phone });
+      }
+      if (!user) {
+        // Create new user
+        const userId = 'u_' + crypto.randomBytes(8).toString('hex');
+        const sessionId = crypto.randomBytes(16).toString('hex');
+        // Generate unique API key for signals
+        const apiKey = 'sig_' + crypto.randomBytes(12).toString('hex');
+        user = {
+          _id: userId, id: userId, sessionId,
+          name: name.trim(),
+          phone: phone || '',
+          location: location || 'Unknown',
+          country: country || 'India',
+          avatar: avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=667eea&color=fff&bold=true&size=200`,
+          bio: 'Trading signals member',
+          reputation: 1,
+          signalApiKey: apiKey,
+          signalsPosted: 0,
+          joinedAt: Date.now(),
+          lastSeen: Date.now(),
+          online: true,
+          role: 'signal-member',
+        };
+        await usersCol.insertOne(user);
+      } else {
+        // Existing user - update last seen and ensure API key
+        const updates = { lastSeen: Date.now(), online: true };
+        if (!user.signalApiKey) {
+          updates.signalApiKey = 'sig_' + crypto.randomBytes(12).toString('hex');
+        }
+        if (phone) updates.phone = phone;
+        if (location) updates.location = location;
+        await usersCol.updateOne({ id: user.id }, { $set: updates });
+        user = await usersCol.findOne({ id: user.id });
+      }
+      const { _id, signalApiKey, ...userData } = user;
+      // Build personalized webhook URL
+      const webhookUrl = `https://canyou-uqkp.onrender.com/api/signals/webhook?key=${signalApiKey}`;
+      res.json({
+        success: true,
+        user: userData,
+        sessionId: user.sessionId,
+        apiKey: signalApiKey,
+        webhookUrl: webhookUrl,
+      });
+    } catch (e) {
+      console.error('Auto-register error:', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Login by phone (returning user)
+  app.post('/api/signals/login', async (req, res) => {
+    try {
+      const { phone } = req.body || {};
+      if (!phone) return res.status(400).json({ error: 'Phone required' });
+      const user = await usersCol.findOne({ phone: phone });
+      if (!user) return res.status(404).json({ error: 'No account found with this phone' });
+      await usersCol.updateOne({ id: user.id }, { $set: { lastSeen: Date.now() } });
+      const { _id, signalApiKey, ...userData } = user;
+      const webhookUrl = `https://canyou-uqkp.onrender.com/api/signals/webhook?key=${signalApiKey}`;
+      res.json({
+        success: true,
+        user: userData,
+        sessionId: user.sessionId,
+        apiKey: signalApiKey,
+        webhookUrl: webhookUrl,
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Get current user info (verify session)
+  app.get('/api/signals/me', async (req, res) => {
+    const sessionId = req.headers['x-session-id'] || req.query.sessionId;
+    if (!sessionId) return res.status(401).json({ error: 'No session' });
+    const user = await usersCol.findOne({ sessionId });
+    if (!user) return res.status(404).json({ error: 'Session invalid' });
+    const { _id, signalApiKey, ...userData } = user;
+    res.json({
+      success: true,
+      user: userData,
+      apiKey: signalApiKey,
+      webhookUrl: `https://canyou-uqkp.onrender.com/api/signals/webhook?key=${signalApiKey}`,
+    });
+  });
+
+  // ============================================================
+  // WEBHOOK with per-user API key support
+  // Usage: POST /api/signals/webhook?key=sig_XXXX
+  // Body: { coin, signal, pnl, entry, target, stopLoss }
+  // ============================================================
+  async function authenticateWebhook(req) {
+    const apiKey = req.query.key || req.body.apiKey || req.headers['x-api-key'];
+    if (!apiKey) return { error: 'API key required (use ?key=sig_xxx in URL)' };
+    const user = await usersCol.findOne({ signalApiKey: apiKey });
+    if (!user) return { error: 'Invalid API key' };
+    return { user };
+  }
+
   app.post('/api/signals/webhook', async (req, res) => {
     try {
-      const { coin, signal, entry, target, stopLoss, pnl, note, leverage, timeframe } = req.body;
+      const auth = await authenticateWebhook(req);
+      if (auth.error) return res.status(401).json({ error: auth.error });
+      const { coin, signal, entry, target, stopLoss, pnl, note, leverage, timeframe, visibility } = req.body;
       if (!coin || !signal) {
         return res.status(400).json({ error: 'coin and signal are required' });
       }
       const signalData = {
-        _id: 'sig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-        id: 'sig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        _id: 'sig_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+        id: 'sig_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
         coin: String(coin).toUpperCase(),
-        signal: String(signal).toUpperCase(),  // 'BUY' | 'SELL' | 'LONG' | 'SHORT' | 'CLOSE'
+        signal: String(signal).toUpperCase(),
         entry: parseFloat(entry) || null,
         target: parseFloat(target) || null,
         stopLoss: parseFloat(stopLoss) || null,
@@ -41,31 +152,38 @@ module.exports = function(app, db, usersCol) {
         leverage: leverage || '1x',
         timeframe: timeframe || '1H',
         note: note || '',
-        source: req.body.source || 'html-bot',
-        status: 'active',  // 'active' | 'closed' | 'expired'
+        source: 'bot:' + auth.user.name,
+        userId: auth.user.id,
+        userName: auth.user.name,
+        visibility: visibility || 'public',  // 'public' | 'private'
+        status: 'active',
         createdAt: Date.now(),
         views: 0,
       };
       await signalsCol.insertOne(signalData);
+      // Increment user's signal count
+      await usersCol.updateOne({ id: auth.user.id }, { $inc: { signalsPosted: 1 } });
       const { _id, ...result } = signalData;
-      console.log(`📈 New signal: ${result.coin} ${result.signal} (PnL: ${result.pnl}%)`);
+      console.log(`📈 [${auth.user.name}] New signal: ${result.coin} ${result.signal} PnL:${result.pnl}%`);
       res.json({ success: true, signal: result });
     } catch (e) {
-      console.error('Webhook error:', e.message);
+      console.error('Webhook error:', e);
       res.status(500).json({ error: e.message });
     }
   });
 
-  // Bulk webhook (multiple signals at once)
+  // Bulk webhook
   app.post('/api/signals/webhook/bulk', async (req, res) => {
     try {
+      const auth = await authenticateWebhook(req);
+      if (auth.error) return res.status(401).json({ error: auth.error });
       const signals = req.body.signals || (Array.isArray(req.body) ? req.body : []);
       if (!Array.isArray(signals) || signals.length === 0) {
         return res.status(400).json({ error: 'signals array required' });
       }
       const docs = signals.map(s => ({
-        _id: 'sig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-        id: 'sig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        _id: 'sig_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+        id: 'sig_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
         coin: String(s.coin || '').toUpperCase(),
         signal: String(s.signal || '').toUpperCase(),
         entry: parseFloat(s.entry) || null,
@@ -75,7 +193,10 @@ module.exports = function(app, db, usersCol) {
         leverage: s.leverage || '1x',
         timeframe: s.timeframe || '1H',
         note: s.note || '',
-        source: s.source || 'html-bot',
+        source: 'bot:' + auth.user.name,
+        userId: auth.user.id,
+        userName: auth.user.name,
+        visibility: s.visibility || 'public',
         status: 'active',
         createdAt: Date.now(),
         views: 0,
@@ -87,138 +208,91 @@ module.exports = function(app, db, usersCol) {
     }
   });
 
-  // ============================================================
-  // METHOD 2: API POLLING (Your bot has its own API)
-  // ============================================================
-  app.post('/api/signals/configure', async (req, res) => {
-    const { userId, name, sourceUrl, pollInterval } = req.body;
-    if (!userId || !sourceUrl) return res.status(400).json({ error: 'userId and sourceUrl required' });
-    // Store config in a separate collection
-    const configCol = db.collection('signalConfigs');
-    await configCol.updateOne(
-      { userId, name: name || 'default' },
-      { $set: { userId, name: name || 'default', sourceUrl, pollInterval: pollInterval || 30, createdAt: Date.now() } },
-      { upsert: true }
-    );
-    res.json({ success: true, message: 'Signal source configured. Polling will start in 10 seconds.' });
-    // Trigger immediate poll
-    setTimeout(() => pollSignalSource(userId, sourceUrl, name || 'default'), 10000);
-  });
-
-  // Poll a signal source URL
-  async function pollSignalSource(userId, sourceUrl, configName) {
-    try {
-      const response = await axios.get(sourceUrl, { timeout: 15000 });
-      const data = response.data;
-      // Expect data to be array of signals or { signals: [...] }
-      const signals = Array.isArray(data) ? data : (data.signals || []);
-      if (!Array.isArray(signals) || signals.length === 0) {
-        console.log(`📈 No signals from ${sourceUrl}`);
-        return;
-      }
-      for (const s of signals) {
-        if (!s.coin || !s.signal) continue;
-        // Check if already exists (by coin + signal + similar timestamp)
-        const existing = await signalsCol.findOne({
-          coin: String(s.coin).toUpperCase(),
-          signal: String(s.signal).toUpperCase(),
-          entry: parseFloat(s.entry) || null,
-          createdAt: { $gt: Date.now() - 60 * 60 * 1000 }  // Last 1 hour
-        });
-        if (existing) continue;  // Skip duplicates
-        // Insert new
-        const signalData = {
-          _id: 'sig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-          id: 'sig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-          coin: String(s.coin).toUpperCase(),
-          signal: String(s.signal).toUpperCase(),
-          entry: parseFloat(s.entry) || null,
-          target: parseFloat(s.target) || null,
-          stopLoss: parseFloat(s.stopLoss) || null,
-          pnl: parseFloat(s.pnl) || 0,
-          leverage: s.leverage || '1x',
-          timeframe: s.timeframe || '1H',
-          note: s.note || '',
-          source: 'api-poll:' + new URL(sourceUrl).hostname,
-          status: 'active',
-          createdAt: Date.now(),
-          views: 0,
-        };
-        await signalsCol.insertOne(signalData);
-      }
-      console.log(`📈 Polled ${signals.length} signals from ${sourceUrl}`);
-    } catch (e) {
-      console.error(`Poll error for ${sourceUrl}:`, e.message);
-    }
-  }
-
-  // Auto-poll every N seconds for all configured sources
-  function startAutoPolling() {
-    setInterval(async () => {
-      const configCol = db.collection('signalConfigs');
-      const configs = await configCol.find({}).toArray();
-      for (const cfg of configs) {
-        await pollSignalSource(cfg.userId, cfg.sourceUrl, cfg.name);
-      }
-    }, 30 * 1000);  // Poll every 30 seconds
-  }
-
-  // ============================================================
-  // METHOD 3: MANUAL ENTRY (Admin panel)
-  // ============================================================
+  // Manual entry
   app.post('/api/signals/manual', async (req, res) => {
-    const { userId, coin, signal, entry, target, stopLoss, pnl, note } = req.body;
-    if (!userId || !coin || !signal) return res.status(400).json({ error: 'Missing fields' });
-    const signalData = {
-      _id: 'sig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-      id: 'sig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-      coin: String(coin).toUpperCase(),
-      signal: String(signal).toUpperCase(),
-      entry: parseFloat(entry) || null,
-      target: parseFloat(target) || null,
-      stopLoss: parseFloat(stopLoss) || null,
-      pnl: parseFloat(pnl) || 0,
-      leverage: req.body.leverage || '1x',
-      timeframe: req.body.timeframe || '1H',
-      note: note || '',
-      source: 'manual',
-      status: 'active',
-      createdAt: Date.now(),
-      views: 0,
-    };
-    await signalsCol.insertOne(signalData);
-    const { _id, ...result } = signalData;
-    res.json({ success: true, signal: result });
+    try {
+      const { coin, signal, entry, target, stopLoss, pnl, note, leverage, timeframe, visibility, sessionId } = req.body;
+      if (!coin || !signal) return res.status(400).json({ error: 'coin and signal required' });
+      // Try to authenticate via sessionId for tracking who posted
+      let user = null;
+      if (sessionId) user = await usersCol.findOne({ sessionId });
+      const signalData = {
+        _id: 'sig_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+        id: 'sig_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+        coin: String(coin).toUpperCase(),
+        signal: String(signal).toUpperCase(),
+        entry: parseFloat(entry) || null,
+        target: parseFloat(target) || null,
+        stopLoss: parseFloat(stopLoss) || null,
+        pnl: parseFloat(pnl) || 0,
+        leverage: leverage || '1x',
+        timeframe: timeframe || '1H',
+        note: note || '',
+        source: user ? ('manual:' + user.name) : 'manual',
+        userId: user ? user.id : null,
+        userName: user ? user.name : null,
+        visibility: visibility || 'public',
+        status: 'active',
+        createdAt: Date.now(),
+        views: 0,
+      };
+      await signalsCol.insertOne(signalData);
+      if (user) await usersCol.updateOne({ id: user.id }, { $inc: { signalsPosted: 1 } });
+      const { _id, ...result } = signalData;
+      res.json({ success: true, signal: result });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // ============================================================
-  // READ ENDPOINTS
+  // READ ENDPOINTS - PAGINATED
   // ============================================================
-  // Get latest signals
+  // Get signals with pagination
   app.get('/api/signals', async (req, res) => {
     if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
-    const { limit, coin, signal, status } = req.query;
-    const query = {};
-    if (coin) query.coin = String(coin).toUpperCase();
-    if (signal) query.signal = String(signal).toUpperCase();
-    if (status) query.status = status;
-    else query.status = 'active';
-    const lim = parseInt(limit) || 50;
-    const signals = await signalsCol.find(query).sort({ createdAt: -1 }).limit(lim).toArray();
-    res.json({
-      success: true,
-      count: signals.length,
-      signals: signals.map(s => { const { _id, ...r } = s; return r; })
-    });
+    try {
+      const { limit, page, coin, signal, status, userId, sort } = req.query;
+      const pageSize = Math.min(parseInt(limit) || 50, 200);  // Max 200 per page
+      const pageNum = Math.max(parseInt(page) || 1, 1);
+      const query = { visibility: { $in: ['public', null] } };  // Only public by default
+      if (coin) query.coin = String(coin).toUpperCase();
+      if (signal) query.signal = String(signal).toUpperCase();
+      if (status) query.status = status;
+      else query.status = 'active';
+      if (userId) query.userId = userId;
+      const sortBy = sort === 'pnl_desc' ? { pnl: -1, createdAt: -1 }
+                   : sort === 'pnl_asc' ? { pnl: 1, createdAt: -1 }
+                   : sort === 'views' ? { views: -1, createdAt: -1 }
+                   : { createdAt: -1 };
+      const total = await signalsCol.countDocuments(query);
+      const totalPages = Math.ceil(total / pageSize);
+      const skip = (pageNum - 1) * pageSize;
+      const signals = await signalsCol.find(query).sort(sortBy).skip(skip).limit(pageSize).toArray();
+      res.json({
+        success: true,
+        count: signals.length,
+        total: total,
+        page: pageNum,
+        pageSize: pageSize,
+        totalPages: totalPages,
+        hasNext: pageNum < totalPages,
+        hasPrev: pageNum > 1,
+        signals: signals.map(s => { const { _id, ...r } = s; return r; }),
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
-  // Get today's signals with stats
+  // Today's signals
   app.get('/api/signals/today', async (req, res) => {
     if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const startTime = today.getTime();
-    const signals = await signalsCol.find({ createdAt: { $gte: startTime } }).sort({ createdAt: -1 }).toArray();
+    const query = { createdAt: { $gte: startTime }, visibility: { $in: ['public', null] } };
+    const signals = await signalsCol.find(query).sort({ createdAt: -1 }).toArray();
     const stats = {
       total: signals.length,
       buy: signals.filter(s => s.signal === 'BUY' || s.signal === 'LONG').length,
@@ -228,44 +302,85 @@ module.exports = function(app, db, usersCol) {
       winners: signals.filter(s => s.pnl > 0).length,
       losers: signals.filter(s => s.pnl < 0).length,
     };
-    res.json({
-      success: true,
-      stats,
-      signals: signals.map(s => { const { _id, ...r } = s; return r; })
-    });
+    res.json({ success: true, stats, signals: signals.map(s => { const { _id, ...r } = s; return r; }) });
   });
 
-  // Get signal configs
-  app.get('/api/signals/configs/:userId', async (req, res) => {
-    const configCol = db.collection('signalConfigs');
-    const configs = await configCol.find({ userId: req.params.userId }).toArray();
-    res.json({ success: true, configs: configs.map(c => { const { _id, ...r } = c; return r; }) });
-  });
-
-  // Get widget data (optimized for frontend)
+  // Widget endpoint (latest N signals for live display)
   app.get('/api/signals/widget', async (req, res) => {
     if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
     const { count } = req.query;
-    const lim = parseInt(count) || 10;
-    const signals = await signalsCol.find({ status: 'active' }).sort({ createdAt: -1 }).limit(lim).toArray();
-    // Calculate aggregate stats
+    const lim = Math.min(parseInt(count) || 10, 100);
+    const signals = await signalsCol.find({ status: 'active', visibility: { $in: ['public', null] } })
+      .sort({ createdAt: -1 }).limit(lim).toArray();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const allToday = await signalsCol.find({ createdAt: { $gte: today.getTime() } }).toArray();
+    const allToday = await signalsCol.find({
+      createdAt: { $gte: today.getTime() },
+      visibility: { $in: ['public', null] }
+    }).toArray();
     const stats = {
       total: allToday.length,
       buy: allToday.filter(s => s.signal === 'BUY' || s.signal === 'LONG').length,
       sell: allToday.filter(s => s.signal === 'SELL' || s.signal === 'SHORT').length,
       totalPnL: allToday.reduce((sum, s) => sum + (s.pnl || 0), 0).toFixed(2),
-      winRate: allToday.length > 0 
-        ? Math.round((allToday.filter(s => s.pnl > 0).length / allToday.length) * 100) 
+      winRate: allToday.length > 0
+        ? Math.round((allToday.filter(s => s.pnl > 0).length / allToday.length) * 100)
         : 0,
     };
+    res.json({ success: true, stats, signals: signals.map(s => { const { _id, ...r } = s; return r; }) });
+  });
+
+  // Per-coin summary (all signals for one coin aggregated)
+  app.get('/api/signals/coin/:coin/summary', async (req, res) => {
+    if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
+    const coin = String(req.params.coin).toUpperCase();
+    const signals = await signalsCol.find({ coin, status: 'active', visibility: { $in: ['public', null] } })
+      .sort({ createdAt: -1 }).limit(100).toArray();
+    if (signals.length === 0) {
+      return res.json({ success: true, coin, signals: [], stats: { total: 0, totalPnL: 0, winRate: 0, lastSignal: null } });
+    }
+    const closed = signals.filter(s => s.signal.includes('CLOSE'));
+    const totalPnL = closed.reduce((s, x) => s + (x.pnl || 0), 0);
+    const winners = closed.filter(s => s.pnl > 0).length;
     res.json({
       success: true,
-      stats,
-      signals: signals.map(s => { const { _id, ...r } = s; return r; })
+      coin,
+      stats: {
+        total: signals.length,
+        closed: closed.length,
+        totalPnL: Number(totalPnL.toFixed(2)),
+        winRate: closed.length > 0 ? Math.round((winners / closed.length) * 100) : 0,
+        lastSignal: signals[0],
+      },
+      signals: signals.map(s => { const { _id, ...r } = s; return r; }),
     });
+  });
+
+  // List of all unique coins with stats
+  app.get('/api/signals/coins', async (req, res) => {
+    if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
+    const allSignals = await signalsCol.find({ status: 'active', visibility: { $in: ['public', null] } })
+      .sort({ createdAt: -1 }).limit(1000).toArray();
+    const coinMap = {};
+    allSignals.forEach(s => {
+      if (!coinMap[s.coin]) {
+        coinMap[s.coin] = { coin: s.coin, count: 0, totalPnL: 0, lastSignal: null, winners: 0, losers: 0 };
+      }
+      coinMap[s.coin].count++;
+      if (s.signal.includes('CLOSE')) {
+        coinMap[s.coin].totalPnL += s.pnl || 0;
+        if (s.pnl > 0) coinMap[s.coin].winners++;
+        else if (s.pnl < 0) coinMap[s.coin].losers++;
+      }
+      if (!coinMap[s.coin].lastSignal || s.createdAt > coinMap[s.coin].lastSignal) {
+        coinMap[s.coin].lastSignal = s.createdAt;
+      }
+    });
+    const coins = Object.values(coinMap).map(c => ({
+      ...c,
+      totalPnL: Number(c.totalPnL.toFixed(2)),
+    })).sort((a, b) => b.lastSignal - a.lastSignal);
+    res.json({ success: true, count: coins.length, coins });
   });
 
   // Increment view count
@@ -275,13 +390,12 @@ module.exports = function(app, db, usersCol) {
     res.json({ success: true });
   });
 
-  // Track page visit (called from frontend on load) - counts unique-ish visitors
+  // Track page visit
   app.post('/api/signals/track-visit', async (req, res) => {
     if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
     const visitsCol = db.collection('signalPageVisits');
     const { sessionId, referrer } = req.body || {};
-    const sid = sessionId || ('anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6));
-    // De-dupe: same sessionId within 30 min counts as 1 unique visitor
+    const sid = sessionId || ('anon_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'));
     const cutoff = Date.now() - 30 * 60 * 1000;
     const existing = await visitsCol.findOne({ sessionId: sid, lastSeen: { $gte: cutoff } });
     if (existing) {
@@ -290,7 +404,7 @@ module.exports = function(app, db, usersCol) {
       return res.json({ success: true, sessionId: sid, unique: false, totalVisitors: total });
     }
     await visitsCol.insertOne({
-      _id: 'visit_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+      _id: 'visit_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
       sessionId: sid,
       firstSeen: Date.now(),
       lastSeen: Date.now(),
@@ -301,7 +415,7 @@ module.exports = function(app, db, usersCol) {
     res.json({ success: true, sessionId: sid, unique: true, totalVisitors: total });
   });
 
-  // Get overall stats: total visitors, total views, top signals
+  // Overall stats
   app.get('/api/signals/stats', async (req, res) => {
     if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
     try {
@@ -310,33 +424,26 @@ module.exports = function(app, db, usersCol) {
       const todayStart = new Date(); todayStart.setHours(0,0,0,0);
       const todayMs = todayStart.getTime();
 
-      const [totalVisitors, todayVisitors, activeNow, allSignals, todaySigs] = await Promise.all([
+      const [totalVisitors, todayVisitors, activeNow, totalSignalsAll, todaySigs] = await Promise.all([
         visitsCol.countDocuments({}),
         visitsCol.countDocuments({ firstSeen: { $gte: todayMs } }),
         visitsCol.countDocuments({ lastSeen: { $gte: activeCutoff } }),
-        signalsCol.find({ status: 'active' }).sort({ createdAt: -1 }).limit(200).toArray(),
-        signalsCol.find({ createdAt: { $gte: todayMs } }).toArray(),
+        signalsCol.countDocuments({}),
+        signalsCol.countDocuments({ createdAt: { $gte: todayMs } }),
       ]);
 
-      const totalViews = allSignals.reduce((s, x) => s + (x.views || 0), 0);
-      const topSignals = allSignals
-        .filter(s => (s.views || 0) > 0)
-        .sort((a, b) => (b.views || 0) - (a.views || 0))
-        .slice(0, 5)
-        .map(s => ({ id: s.id, coin: s.coin, signal: s.signal, views: s.views || 0, pnl: s.pnl || 0 }));
+      // For top viewed, only fetch fields we need (lighter)
+      const topViewedFull = await signalsCol.find({ visibility: { $in: ['public', null] } })
+        .sort({ views: -1 }).limit(5).project({ id: 1, coin: 1, signal: 1, views: 1, pnl: 1 }).toArray();
+      const totalViews = topViewedFull.reduce((s, x) => s + (x.views || 0), 0);
 
       res.json({
         success: true,
-        visitors: {
-          total: totalVisitors,
-          today: todayVisitors,
-          activeNow: activeNow,
-          totalViews: totalViews,
-        },
+        visitors: { total: totalVisitors, today: todayVisitors, activeNow: activeNow, totalViews: totalViews },
         signals: {
-          total: allSignals.length,
-          today: todaySigs.length,
-          topViewed: topSignals,
+          total: totalSignalsAll,
+          today: todaySigs,
+          topViewed: topViewedFull.map(s => { const { _id, ...r } = s; return r; }),
         },
       });
     } catch (e) {
@@ -347,27 +454,42 @@ module.exports = function(app, db, usersCol) {
   // Mark signal as closed
   app.post('/api/signals/:id/close', async (req, res) => {
     if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
-    const { finalPnl } = req.body;
+    const { finalPnl, apiKey } = req.body;
+    // Optional auth - only the owner can close
+    if (apiKey) {
+      const user = await usersCol.findOne({ signalApiKey: apiKey });
+      if (user) {
+        await signalsCol.updateOne(
+          { id: req.params.id, userId: user.id },
+          { $set: { status: 'closed', closedAt: Date.now(), pnl: parseFloat(finalPnl) || 0 } }
+        );
+        return res.json({ success: true });
+      }
+    }
     const update = { status: 'closed', closedAt: Date.now() };
     if (finalPnl !== undefined) update.pnl = parseFloat(finalPnl);
     await signalsCol.updateOne({ id: req.params.id }, { $set: update });
     res.json({ success: true });
   });
 
-  // Delete signal
+  // Delete signal (owner only)
   app.delete('/api/signals/:id', async (req, res) => {
     if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
-    await signalsCol.deleteOne({ id: req.params.id });
-    res.json({ success: true });
+    const apiKey = req.query.key || req.body.apiKey;
+    if (!apiKey) return res.status(401).json({ error: 'API key required' });
+    const user = await usersCol.findOne({ signalApiKey: apiKey });
+    if (!user) return res.status(401).json({ error: 'Invalid API key' });
+    const result = await signalsCol.deleteOne({ id: req.params.id, userId: user.id });
+    res.json({ success: true, deleted: result.deletedCount });
   });
 
   // ============================================================
-  // GENERATE DEMO DATA (for testing)
+  // DEMO DATA
   // ============================================================
   app.post('/api/signals/demo', async (req, res) => {
     if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
-    const coins = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'XRP/USDT', 'DOGE/USDT'];
-    const signals = ['BUY', 'SELL', 'LONG', 'SHORT'];
+    const coins = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT'];
+    const signals = ['LONG', 'SHORT', 'CLOSE_LONG', 'CLOSE_SHORT'];
     const demo = [];
     for (let i = 0; i < 8; i++) {
       const coin = coins[Math.floor(Math.random() * coins.length)];
@@ -375,14 +497,16 @@ module.exports = function(app, db, usersCol) {
       const entry = parseFloat((Math.random() * 50000 + 100).toFixed(2));
       const pnl = parseFloat((Math.random() * 20 - 5).toFixed(2));
       demo.push({
-        _id: 'sig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6) + '_' + i,
-        id: 'sig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6) + '_' + i,
+        _id: 'sig_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex') + '_' + i,
+        id: 'sig_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex') + '_' + i,
         coin, signal: sig,
         entry, target: parseFloat((entry * 1.05).toFixed(2)),
         stopLoss: parseFloat((entry * 0.97).toFixed(2)),
         pnl, leverage: '5x', timeframe: '1H',
         note: 'Demo signal',
         source: 'demo-generator',
+        userId: null, userName: null,
+        visibility: 'public',
         status: 'active',
         createdAt: Date.now() - Math.floor(Math.random() * 3600000),
         views: 0,
@@ -391,6 +515,76 @@ module.exports = function(app, db, usersCol) {
     await signalsCol.insertMany(demo);
     res.json({ success: true, count: demo.length, message: 'Demo signals added!' });
   });
+
+  // ============================================================
+  // CONFIGURE (existing API polling)
+  // ============================================================
+  app.post('/api/signals/configure', async (req, res) => {
+    const { apiKey, name, sourceUrl, pollInterval } = req.body;
+    if (!apiKey || !sourceUrl) return res.status(400).json({ error: 'apiKey and sourceUrl required' });
+    const user = await usersCol.findOne({ signalApiKey: apiKey });
+    if (!user) return res.status(401).json({ error: 'Invalid API key' });
+    const configCol = db.collection('signalConfigs');
+    await configCol.updateOne(
+      { userId: user.id, name: name || 'default' },
+      { $set: { userId: user.id, name: name || 'default', sourceUrl, pollInterval: pollInterval || 30, createdAt: Date.now() } },
+      { upsert: true }
+    );
+    res.json({ success: true, message: 'Signal source configured. Polling will start in 10 seconds.' });
+    setTimeout(() => pollSignalSource(user.id, sourceUrl, name || 'default'), 10000);
+  });
+
+  async function pollSignalSource(userId, sourceUrl, configName) {
+    try {
+      const response = await axios.get(sourceUrl, { timeout: 15000 });
+      const data = response.data;
+      const signals = Array.isArray(data) ? data : (data.signals || []);
+      if (!Array.isArray(signals) || signals.length === 0) return;
+      const user = await usersCol.findOne({ id: userId });
+      for (const s of signals) {
+        if (!s.coin || !s.signal) continue;
+        const existing = await signalsCol.findOne({
+          coin: String(s.coin).toUpperCase(),
+          signal: String(s.signal).toUpperCase(),
+          entry: parseFloat(s.entry) || null,
+          createdAt: { $gt: Date.now() - 60 * 60 * 1000 }
+        });
+        if (existing) continue;
+        const signalData = {
+          _id: 'sig_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+          id: 'sig_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+          coin: String(s.coin).toUpperCase(),
+          signal: String(s.signal).toUpperCase(),
+          entry: parseFloat(s.entry) || null,
+          target: parseFloat(s.target) || null,
+          stopLoss: parseFloat(s.stopLoss) || null,
+          pnl: parseFloat(s.pnl) || 0,
+          leverage: s.leverage || '1x',
+          timeframe: s.timeframe || '1H',
+          note: s.note || '',
+          source: 'api-poll:' + new URL(sourceUrl).hostname,
+          userId: user.id, userName: user.name,
+          visibility: 'public',
+          status: 'active',
+          createdAt: Date.now(),
+          views: 0,
+        };
+        await signalsCol.insertOne(signalData);
+      }
+    } catch (e) {
+      console.error(`Poll error for ${sourceUrl}:`, e.message);
+    }
+  }
+
+  function startAutoPolling() {
+    setInterval(async () => {
+      const configCol = db.collection('signalConfigs');
+      const configs = await configCol.find({}).toArray();
+      for (const cfg of configs) {
+        await pollSignalSource(cfg.userId, cfg.sourceUrl, cfg.name);
+      }
+    }, 30 * 1000);
+  }
 
   // Initialize
   connectDB_signals().then(() => {
