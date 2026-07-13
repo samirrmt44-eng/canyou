@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-<title>Trading Signals - DainikState</title>
+<title>DainikState Trading - Simple & Free</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
@@ -14,20 +14,18 @@
     background: linear-gradient(135deg, #00c853 0%, #1de9b6 100%);
     padding: 16px; position: sticky; top: 0; z-index: 100;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    text-align: center;
   }
-  .header h1 { font-size: 22px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+  .header h1 { font-size: 22px; font-weight: 900; display: inline-flex; align-items: center; gap: 8px; }
   .header .live-dot {
     width: 10px; height: 10px; border-radius: 50%;
     background: #ff3b30; animation: pulse 1.5s infinite;
   }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.8); }
-  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
   .header p { font-size: 12px; opacity: 0.9; margin-top: 4px; }
   .container { max-width: 480px; margin: 0 auto; padding: 16px; }
 
-  /* User profile bar */
+  /* User bar */
   .user-bar {
     display: flex; align-items: center; gap: 10px;
     background: rgba(255,255,255,0.05);
@@ -35,314 +33,215 @@
     border-radius: 10px;
     padding: 10px 12px; margin-bottom: 12px;
   }
-  .user-bar img { width: 36px; height: 36px; border-radius: 50%; }
-  .user-bar-info { flex: 1; min-width: 0; }
+  .user-bar img { width: 32px; height: 32px; border-radius: 50%; }
+  .user-bar-info { flex: 1; }
   .user-bar-name { font-size: 14px; font-weight: 700; }
-  .user-bar-sub { font-size: 11px; opacity: 0.7; }
   .user-bar button {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: #fff; padding: 6px 12px; border-radius: 6px;
-    font-size: 12px; cursor: pointer;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
   }
 
-  /* Filter bar */
-  .filter-bar {
-    display: flex; gap: 6px; margin-bottom: 12px;
-    overflow-x: auto; padding-bottom: 4px;
+  /* Hero analyzer input */
+  .hero-section {
+    text-align: center;
+    margin-bottom: 20px;
   }
-  .filter-bar::-webkit-scrollbar { height: 0; }
-  .filter-btn {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: #fff; padding: 6px 12px; border-radius: 6px;
-    font-size: 12px; cursor: pointer; white-space: nowrap;
-    flex-shrink: 0;
-  }
-  .filter-btn.active {
+  .hero-title {
+    font-size: 20px; font-weight: 900;
     background: linear-gradient(135deg, #00c853, #1de9b6);
-    border-color: transparent; font-weight: 700;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
   }
-  .add-coin-btn {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    border: none; color: #fff; padding: 6px 12px; border-radius: 6px;
-    font-size: 12px; font-weight: 700; cursor: pointer;
-    flex-shrink: 0;
+  .hero-subtitle { font-size: 13px; opacity: 0.7; margin-bottom: 14px; }
+  .analyze-input-wrap {
+    display: flex; gap: 8px;
   }
-
-  .stats-bar {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 6px; margin-bottom: 12px;
-  }
-  .stat {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px; padding: 10px 6px; text-align: center;
-  }
-  .stat-value { font-size: 16px; font-weight: 900; color: #00c853; }
-  .stat-label { font-size: 10px; opacity: 0.7; margin-top: 2px; }
-  .stat.buy .stat-value { color: #00c853; }
-  .stat.sell .stat-value { color: #ff3b30; }
-  .stat.pnl .stat-value { color: #ffd700; }
-
-  .visitor-bar {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 6px; margin-bottom: 12px;
-    background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
-    border: 1px solid rgba(102,126,234,0.2);
-    border-radius: 10px; padding: 10px 6px;
-  }
-  .visitor-item {
-    text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  }
-  .visitor-icon { font-size: 16px; }
-  .visitor-num {
-    font-size: 18px; font-weight: 900; color: #1de9b6;
-    font-variant-numeric: tabular-nums;
-  }
-  .visitor-lbl { font-size: 9px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.3px; }
-
-  .signals-list { display: flex; flex-direction: column; gap: 10px; }
-  .signal-card {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-left: 4px solid #00c853;
-    border-radius: 12px; padding: 14px;
-    animation: slideIn 0.3s ease;
-  }
-  @keyframes slideIn {
-    from { transform: translateX(20px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-  }
-  .signal-card.sell { border-left-color: #ff3b30; }
-  .signal-card.close { border-left-color: #888; opacity: 0.85; }
-  .signal-card:hover { transform: translateY(-2px); transition: transform 0.2s; }
-  .signal-header {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
-  }
-  .coin-name {
-    font-size: 16px; font-weight: 800;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .signal-badge {
-    display: inline-block; padding: 4px 10px;
-    border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
-  }
-  .signal-badge.buy { background: linear-gradient(135deg, #00c853, #1de9b6); color: #fff; }
-  .signal-badge.sell { background: linear-gradient(135deg, #ff3b30, #ff6b6b); color: #fff; }
-  .signal-badge.long { background: linear-gradient(135deg, #00c853, #1de9b6); color: #fff; }
-  .signal-badge.short { background: linear-gradient(135deg, #ff3b30, #ff6b6b); color: #fff; }
-  .signal-badge.close { background: rgba(255,255,255,0.1); color: #aaa; }
-  .signal-prices {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;
-  }
-  .mini-chart-wrap {
-    position: relative;
-    width: 100%; height: 50px;
-    margin-bottom: 8px;
-    background: rgba(0,0,0,0.2);
-    border-radius: 6px;
-    overflow: hidden;
-  }
-  .mini-chart-wrap canvas {
-    width: 100%; height: 100%;
-    display: block;
-  }
-  .mini-chart-overlay {
-    position: absolute;
-    top: 4px; right: 6px;
-    font-size: 10px; font-weight: 800;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-  }
-  .mini-chart-overlay.up { color: #00c853; }
-  .mini-chart-overlay.down { color: #ff3b30; }
-  .price-now-overlay {
-    position: absolute;
-    bottom: 4px; left: 6px;
-    font-size: 11px; font-weight: 700;
-    color: #fff;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-  }
-  .price-item {
-    background: rgba(255,255,255,0.03);
-    border-radius: 6px; padding: 6px 8px; text-align: center;
-  }
-  .price-label { font-size: 9px; opacity: 0.7; text-transform: uppercase; }
-  .price-value { font-size: 13px; font-weight: 700; margin-top: 2px; }
-  .pnl-display {
-    display: flex; justify-content: space-between; align-items: center;
-    padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05);
-  }
-  .pnl-value { font-size: 18px; font-weight: 900; }
-  .pnl-value.positive { color: #00c853; }
-  .pnl-value.negative { color: #ff3b30; }
-  .pnl-label { font-size: 11px; opacity: 0.7; }
-  .signal-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-  .meta-tag {
-    background: rgba(255,255,255,0.05);
-    border-radius: 4px; padding: 2px 6px; font-size: 10px; opacity: 0.7;
-  }
-  .signal-time { font-size: 11px; opacity: 0.6; margin-top: 4px; }
-  .live-indicator {
-    display: inline-block;
-    background: rgba(0,200,83,0.2); color: #00c853;
-    padding: 2px 6px; border-radius: 4px; font-size: 9px;
-    font-weight: 800; letter-spacing: 0.5px; margin-left: 6px;
-  }
-
-  /* ===== TICKER TAPE (top scrolling analysis) ===== */
-  .ticker-section {
-    background: linear-gradient(90deg, rgba(0,0,0,0.5), rgba(0,0,0,0.3), rgba(0,0,0,0.5));
-    border-top: 1px solid rgba(255,215,0,0.3);
-    border-bottom: 1px solid rgba(255,215,0,0.3);
-    overflow: hidden;
-    margin: 0 -16px 14px;
-    padding: 8px 0;
-    position: relative;
-  }
-  .ticker-label {
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    background: linear-gradient(135deg, #ffd700, #ff9500);
-    color: #000;
-    padding: 0 12px;
-    display: flex; align-items: center;
-    font-size: 11px; font-weight: 900;
-    z-index: 2;
+  .analyze-input {
+    flex: 1; padding: 14px 16px;
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,215,0,0.3);
+    border-radius: 10px;
+    color: #fff; font-size: 16px; font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
   }
-  .ticker-track {
-    display: flex; gap: 16px;
-    padding-left: 90px;
-    animation: tickerScroll 60s linear infinite;
-    white-space: nowrap;
+  .analyze-input:focus { outline: none; border-color: #ffd700; }
+  .analyze-input::placeholder { color: rgba(255,255,255,0.4); text-transform: none; font-weight: 400; }
+  .analyze-btn {
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #00c853, #1de9b6);
+    color: #000; font-weight: 900; font-size: 14px;
+    border: none; border-radius: 10px; cursor: pointer;
   }
-  .ticker-track:hover { animation-play-state: paused; }
-  @keyframes tickerScroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-  .ticker-item {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,215,0,0.2);
-    border-radius: 6px;
-    padding: 6px 12px;
-    flex-shrink: 0;
-    font-size: 12px;
-  }
-  .ticker-coin { font-weight: 800; color: #fff; }
-  .ticker-action {
-    font-size: 10px; font-weight: 900;
-    padding: 2px 6px; border-radius: 3px;
-  }
-  .ticker-action.long { background: #00c853; color: #000; }
-  .ticker-action.short { background: #ff3b30; color: #fff; }
-  .ticker-action.hold_long { background: rgba(0,200,83,0.2); color: #00c853; }
-  .ticker-action.hold_short { background: rgba(255,59,48,0.2); color: #ff3b30; }
-  .ticker-action.wait { background: rgba(255,255,255,0.1); color: #aaa; }
-  .ticker-conf {
-    font-weight: 700;
-    color: #ffd700;
-  }
-  .ticker-price { color: #1de9b6; font-weight: 700; }
-  .ticker-change.up { color: #00c853; }
-  .ticker-change.down { color: #ff3b30; }
 
-  /* ===== PROFIT TESTIMONIALS ===== */
-  .profit-ticker {
-    background: linear-gradient(135deg, rgba(0,200,83,0.1), rgba(255,215,0,0.08));
-    border: 1px solid rgba(0,200,83,0.3);
-    border-radius: 8px;
-    padding: 8px 14px;
-    margin-bottom: 12px;
-    overflow: hidden;
-    position: relative;
-  }
-  .profit-ticker-inner {
-    display: inline-block;
-    white-space: nowrap;
-    animation: profitScroll 40s linear infinite;
-  }
-  .profit-ticker-inner:hover { animation-play-state: paused; }
-  @keyframes profitScroll {
-    0% { transform: translateX(100%); }
-    100% { transform: translateX(-100%); }
-  }
-  .profit-msg {
-    display: inline-block;
-    margin-right: 30px;
-    font-size: 13px;
-    font-weight: 600;
-  }
-  .profit-name { color: #1de9b6; font-weight: 800; }
-  .profit-amount { color: #00c853; font-weight: 900; }
-  .profit-coin { color: #ffd700; font-weight: 700; }
-  .profit-emoji { font-size: 16px; margin-right: 4px; }
-  .live-indicator::before { content: '●'; margin-right: 3px; animation: pulse 1s infinite; }
-  /* Live PnL pulse - when value updates */
-  .pnl-live {
-    transition: all 0.3s ease;
-  }
-  .pnl-live.live-updated {
-    animation: pnlFlash 0.8s ease;
-  }
-  @keyframes pnlFlash {
-    0% { transform: scale(1); }
-    30% { transform: scale(1.15); text-shadow: 0 0 12px currentColor; }
-    100% { transform: scale(1); }
-  }
-  .live-dot-pnl {
-    display: inline-block;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #1de9b6;
-    margin-left: 4px;
-    animation: pulse 1.5s infinite;
-    vertical-align: middle;
-  }
-  .view-count {
-    display: inline-block;
-    background: rgba(29,233,182,0.15); color: #1de9b6;
-    padding: 1px 5px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-left: 4px;
-  }
-  .empty {
-    text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.5);
-  }
-  .empty-icon { font-size: 50px; margin-bottom: 12px; }
-  .empty-text { font-size: 14px; }
-  .empty-sub { font-size: 11px; margin-top: 4px; }
-  .refresh-bar {
+  /* Tabs */
+  .tab-nav {
+    display: flex; gap: 4px; margin-bottom: 14px;
     background: rgba(255,255,255,0.05);
-    border-radius: 8px; padding: 8px 12px; margin-bottom: 12px;
-    display: flex; justify-content: space-between; align-items: center; font-size: 11px; opacity: 0.7;
+    padding: 4px; border-radius: 10px;
   }
-  .pulse-new { animation: glow 1s ease; }
-  @keyframes glow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(0,200,83,0.5); }
-    50% { box-shadow: 0 0 0 8px rgba(0,200,83,0); }
+  .tab-nav button {
+    flex: 1; background: transparent; border: none;
+    color: rgba(255,255,255,0.6); padding: 10px;
+    border-radius: 8px; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
   }
-  .pagination {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: 16px; gap: 8px;
+  .tab-nav button.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
   }
-  .pagination button {
-    flex: 1;
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Analysis result */
+  .analysis-result {
+    margin-top: 12px;
+    border-radius: 12px;
+    padding: 16px;
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
-    color: #fff; padding: 10px;
-    border-radius: 8px; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all 0.15s;
   }
-  .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
-  .pagination button:not(:disabled):hover { background: rgba(255,255,255,0.1); }
-  .page-info { font-size: 12px; opacity: 0.7; text-align: center; }
 
-  /* Modal */
+  /* Top 10 grid */
+  .top10-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+  }
+  .top10-title { font-size: 14px; font-weight: 900; color: #1de9b6; }
+  .top10-timer {
+    font-size: 11px; opacity: 0.7;
+    background: rgba(255,255,255,0.05);
+    padding: 3px 8px; border-radius: 10px;
+  }
+  .top10-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .top10-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .top10-card:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
+  .top10-coin { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+  .top10-action {
+    display: inline-block; font-size: 10px; font-weight: 900;
+    padding: 2px 5px; border-radius: 3px; margin-bottom: 4px;
+  }
+  .top10-action.long { background: #00c853; color: #000; }
+  .top10-action.short { background: #ff3b30; color: #fff; }
+  .top10-action.hold_long { background: rgba(0,200,83,0.2); color: #00c853; }
+  .top10-action.hold_short { background: rgba(255,59,48,0.2); color: #ff3b30; }
+  .top10-action.wait { background: rgba(255,255,255,0.1); color: #aaa; }
+  .top10-price { font-size: 11px; color: #1de9b6; font-weight: 700; }
+  .top10-change { font-size: 10px; }
+  .top10-change.up { color: #00c853; }
+  .top10-change.down { color: #ff3b30; }
+  .top10-conf { font-size: 10px; color: #ffd700; font-weight: 700; }
+
+  /* Feedback section */
+  .feedback-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .feedback-author {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px;
+  }
+  .feedback-avatar { width: 28px; height: 28px; border-radius: 50%; }
+  .feedback-name { font-size: 13px; font-weight: 700; color: #1de9b6; }
+  .feedback-time { font-size: 10px; opacity: 0.5; }
+  .feedback-text { font-size: 14px; line-height: 1.5; margin-bottom: 8px; }
+  .feedback-actions {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .feedback-like {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: #fff; padding: 4px 10px; border-radius: 6px;
+    font-size: 11px; cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .feedback-like.liked { background: rgba(255,59,48,0.2); border-color: #ff3b30; color: #ff3b30; }
+
+  /* Post input */
+  .post-input-wrap {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 14px;
+  }
+  .post-input {
+    width: 100%; min-height: 60px;
+    background: transparent; border: none;
+    color: #fff; font-size: 14px; font-family: inherit;
+    resize: vertical; outline: none;
+  }
+  .post-input::placeholder { color: rgba(255,255,255,0.4); }
+  .post-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 8px;
+  }
+  .post-counter { font-size: 11px; opacity: 0.5; }
+  .post-btn {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #00c853, #1de9b6);
+    color: #000; font-weight: 700; font-size: 13px;
+    border: none; border-radius: 6px; cursor: pointer;
+  }
+  .post-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Alerts section */
+  .alert-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .alert-card.triggered { background: rgba(0,200,83,0.1); border-color: #00c853; }
+  .alert-coin { font-size: 14px; font-weight: 800; }
+  .alert-detail { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+  .alert-status {
+    font-size: 10px; font-weight: 800;
+    padding: 2px 8px; border-radius: 4px;
+    background: rgba(255,215,0,0.2); color: #ffd700;
+  }
+  .alert-status.triggered { background: rgba(0,200,83,0.2); color: #00c853; }
+  .alert-status.cancelled { background: rgba(255,59,48,0.2); color: #ff3b30; }
+  .alert-cancel {
+    background: none; border: none; color: #ff3b30;
+    font-size: 14px; cursor: pointer; padding: 4px 8px;
+  }
+  .alert-form {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .alert-form input, .alert-form select {
+    width: 100%; padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px; color: #fff; font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .alert-form-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+
+  /* Auth modal */
   .modal-bg {
     position: fixed; inset: 0; z-index: 1000;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.85);
     display: none; align-items: center; justify-content: center;
     padding: 16px;
   }
@@ -354,658 +253,148 @@
     max-width: 400px; width: 100%;
     max-height: 90vh; overflow-y: auto;
   }
-  .modal h2 { font-size: 18px; margin-bottom: 12px; }
-  .modal label {
-    display: block; font-size: 12px; opacity: 0.7;
-    margin-top: 10px; margin-bottom: 4px;
-  }
+  .modal h2 { font-size: 18px; margin-bottom: 8px; }
   .modal input, .modal select, .modal textarea {
-    width: 100%; padding: 10px;
+    width: 100%; padding: 10px; margin-top: 4px;
     background: #1b2129; border: 1px solid #2b3139;
     border-radius: 6px; color: #fff; font-size: 14px;
     font-family: inherit;
   }
-  .modal-buttons {
-    display: flex; gap: 8px; margin-top: 16px;
-  }
+  .modal label { display: block; font-size: 12px; opacity: 0.7; margin-top: 8px; }
+  .modal-buttons { display: flex; gap: 8px; margin-top: 16px; }
   .modal-buttons button {
-    flex: 1; padding: 10px; border: none;
-    border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer;
+    flex: 1; padding: 10px; border: none; border-radius: 6px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
   }
-  .btn-primary {
-    background: linear-gradient(135deg, #00c853, #1de9b6); color: #000;
-  }
-  .btn-secondary {
-    background: rgba(255,255,255,0.1); color: #fff;
-  }
-  .webhook-box {
-    background: #0d1117; padding: 10px;
-    border-radius: 6px; font-family: monospace; font-size: 11px;
-    word-break: break-all; color: #1de9b6;
-    margin-top: 8px; position: relative;
-  }
-  .copy-btn {
-    position: absolute; top: 6px; right: 6px;
-    background: rgba(255,255,255,0.1); border: none;
-    color: #fff; padding: 4px 8px; border-radius: 4px;
-    font-size: 11px; cursor: pointer;
-  }
+  .btn-primary { background: linear-gradient(135deg, #00c853, #1de9b6); color: #000; }
+  .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
+
   .toast {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
     background: #00c853; color: #000;
     padding: 10px 20px; border-radius: 8px;
     font-size: 14px; font-weight: 600;
     z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    animation: slideUp 0.3s ease;
-  }
-  @keyframes slideUp {
-    from { transform: translate(-50%, 20px); opacity: 0; }
-    to { transform: translate(-50%, 0); opacity: 1; }
-  }
-  .tab-switch {
-    display: flex; background: rgba(255,255,255,0.05);
-    border-radius: 8px; padding: 3px; margin-bottom: 12px;
-  }
-  .tab-switch button {
-    flex: 1; background: transparent; border: none;
-    color: rgba(255,255,255,0.6); padding: 8px;
-    border-radius: 6px; font-size: 13px; font-weight: 600;
-    cursor: pointer;
-  }
-  .tab-switch button.active {
-    background: rgba(255,255,255,0.1); color: #fff;
-  }
-  .members-bar {
-    cursor: pointer;
-    transition: transform 0.15s;
-  }
-  .members-bar:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102,126,234,0.3);
-  }
-  .member-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
-  .member-item {
-    display: flex; align-items: center; gap: 10px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
-    padding: 10px 12px;
-  }
-  .member-item img { width: 40px; height: 40px; border-radius: 50%; }
-  .member-info { flex: 1; min-width: 0; }
-  .member-name { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
-  .member-meta { font-size: 11px; opacity: 0.7; margin-top: 2px; }
-  .member-stats { text-align: right; }
-  .member-stat-num { font-size: 16px; font-weight: 800; color: #1de9b6; }
-  .member-stat-lbl { font-size: 9px; opacity: 0.7; }
-  .online-dot {
-    display: inline-block; width: 8px; height: 8px;
-    border-radius: 50%; background: #00c853;
-    box-shadow: 0 0 4px #00c853;
   }
 
-  /* ===== BEST SIGNAL (Top PnL) ===== */
-  .best-signal {
-    background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.1), rgba(255,215,0,0.05));
-    border: 2px solid #ffd700;
-    border-radius: 14px;
-    padding: 16px;
-    margin-bottom: 16px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 0 20px rgba(255,215,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
-    animation: goldPulse 2.5s ease-in-out infinite;
-  }
-  @keyframes goldPulse {
-    0%, 100% { box-shadow: 0 0 20px rgba(255,215,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1); }
-    50% { box-shadow: 0 0 30px rgba(255,215,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2); }
-  }
-  .best-signal::before {
-    content: '';
-    position: absolute;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%);
-    animation: shine 3s linear infinite;
-    pointer-events: none;
-  }
-  @keyframes shine {
-    0% { transform: translateX(-100%) rotate(45deg); }
-    100% { transform: translateX(100%) rotate(45deg); }
-  }
-  .best-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  .best-title {
-    font-size: 11px; font-weight: 900;
-    text-transform: uppercase; letter-spacing: 1.5px;
-    color: #ffd700;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .best-rank {
-    background: linear-gradient(135deg, #ffd700, #ff9500);
-    color: #000;
-    padding: 3px 10px; border-radius: 12px;
-    font-size: 10px; font-weight: 900;
-  }
-  .best-coin {
-    font-size: 22px; font-weight: 900; color: #fff;
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 8px;
-  }
-  .best-pnl-big {
-    font-size: 36px; font-weight: 900;
-    background: linear-gradient(135deg, #00c853, #1de9b6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1.1;
-  }
-  .best-pnl-big.negative {
-    background: linear-gradient(135deg, #ff3b30, #ff6b6b);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .best-meta {
-    display: flex; gap: 8px; flex-wrap: wrap;
-    margin-top: 8px;
-  }
-  .best-meta .meta-tag {
-    background: rgba(255,215,0,0.15);
-    color: #ffd700;
-    border: 1px solid rgba(255,215,0,0.3);
-  }
-  .best-owner {
-    display: flex; align-items: center; gap: 10px;
-    background: rgba(0,0,0,0.25);
-    border-radius: 10px;
-    padding: 8px 12px;
-    margin-bottom: 12px;
-  }
-  .best-owner-avatar {
-    width: 32px; height: 32px; border-radius: 50%;
-    border: 2px solid #ffd700;
-  }
-  .best-owner-text {
-    font-size: 13px; font-weight: 600;
-    color: #fff;
-    line-height: 1.3;
-  }
-  .best-owner-name {
-    color: #ffd700; font-weight: 900;
-    font-size: 14px;
-  }
-
-  /* ===== MOTIVATIONAL BANNER ===== */
-  .motivation-banner {
-    background: linear-gradient(135deg, rgba(255,107,107,0.15), rgba(255,165,0,0.1), rgba(255,215,0,0.15));
-    border: 1px solid rgba(255,165,0,0.4);
-    border-radius: 12px;
-    padding: 12px 16px;
-    margin-bottom: 12px;
-    text-align: center;
-    animation: motivationGlow 3s ease-in-out infinite;
-  }
-  @keyframes motivationGlow {
-    0%, 100% { box-shadow: 0 0 15px rgba(255,165,0,0.3); }
-    50% { box-shadow: 0 0 25px rgba(255,165,0,0.5); }
-  }
-  .motivation-text {
-    font-size: 14px; font-weight: 700;
-    color: #fff;
-    line-height: 1.4;
-  }
-  .motivation-emoji { font-size: 18px; }
-
-  /* ===== TOP 10 SCROLLER ===== */
-  .top-scorers-section {
-    margin-bottom: 14px;
-  }
-  .top-scorers-title {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 12px; font-weight: 900;
-    text-transform: uppercase; letter-spacing: 1.5px;
-    color: #ffd700;
-    margin-bottom: 10px;
-  }
-  .top-scorers-scroll {
-    display: flex; gap: 10px;
-    overflow-x: auto;
-    padding: 4px 2px 8px 2px;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-  .top-scorers-scroll::-webkit-scrollbar { height: 3px; }
-  .top-scorers-scroll::-webkit-scrollbar-thumb {
-    background: rgba(255,215,0,0.3); border-radius: 2px;
-  }
-  .top-scorer-card {
-    flex: 0 0 auto;
-    min-width: 160px; max-width: 180px;
-    background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,165,0,0.05));
-    border: 1px solid rgba(255,215,0,0.3);
-    border-radius: 12px;
-    padding: 10px;
-    scroll-snap-align: start;
-    position: relative;
-    transition: transform 0.2s;
-  }
-  .top-scorer-card:hover { transform: translateY(-2px); }
-  .top-scorer-rank {
-    position: absolute;
-    top: 6px; right: 6px;
-    background: linear-gradient(135deg, #ffd700, #ff9500);
-    color: #000;
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 900;
-  }
-  .top-scorer-coin {
-    font-size: 14px; font-weight: 800;
-    color: #fff;
-    margin-bottom: 4px;
-    display: flex; align-items: center; gap: 4px;
-  }
-  .top-scorer-pnl {
-    font-size: 18px; font-weight: 900;
-    margin-bottom: 4px;
-  }
-  .top-scorer-pnl.positive { color: #00c853; }
-  .top-scorer-pnl.negative { color: #ff3b30; }
-  .top-scorer-user {
-    font-size: 10px; opacity: 0.7;
-    display: flex; align-items: center; gap: 4px;
-  }
-
-  /* ===== HIDE LOSS CONTROLS ===== */
-  .hide-loss-toggle {
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 11px; cursor: pointer;
-    flex-shrink: 0;
-  }
-  .hide-loss-toggle.active {
-    background: linear-gradient(135deg, #00c853, #1de9b6);
-    color: #000; font-weight: 700;
-  }
-  .loss-filter-control {
-    display: flex; gap: 6px; align-items: center;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
-  }
-  .loss-threshold {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: #fff;
-    padding: 6px 8px; border-radius: 6px;
-    font-size: 11px; width: 60px;
-  }
-
-  /* ===== FREE badges ===== */
-  .free-banner {
-    background: linear-gradient(135deg, rgba(0,200,83,0.1), rgba(29,233,182,0.1));
-    border: 1px solid rgba(0,200,83,0.3);
-    border-radius: 10px;
-    padding: 10px 12px;
-    margin-bottom: 12px;
-    display: flex; align-items: center; gap: 10px;
-    font-size: 12px;
-  }
-  .free-banner-icon { font-size: 28px; }
-  .free-banner-text { flex: 1; }
-  .free-banner-title {
-    font-size: 13px; font-weight: 900; color: #00c853;
-    margin-bottom: 2px;
-  }
-  .free-banner-sub { font-size: 11px; opacity: 0.8; }
   .free-tag {
     display: inline-block;
     background: linear-gradient(135deg, #00c853, #1de9b6);
-    color: #000;
-    padding: 2px 8px; border-radius: 4px;
+    color: #000; padding: 2px 8px; border-radius: 4px;
     font-size: 10px; font-weight: 900;
-    letter-spacing: 0.5px;
-    margin-left: 4px;
+    letter-spacing: 0.5px; margin-left: 4px;
   }
-  .feature-list {
-    list-style: none; margin-top: 8px; font-size: 12px;
-    text-align: left;
+  .login-prompt {
+    text-align: center; padding: 16px;
+    background: rgba(102,126,234,0.1);
+    border: 1px solid rgba(102,126,234,0.3);
+    border-radius: 10px; margin-bottom: 12px;
+    font-size: 13px;
   }
-  .feature-list li {
-    padding: 3px 0;
-    display: flex; align-items: center; gap: 6px;
-    opacity: 0.85;
+  .login-prompt button {
+    background: linear-gradient(135deg, #00c853, #1de9b6);
+    color: #000; border: none; padding: 8px 16px;
+    border-radius: 6px; font-weight: 700; cursor: pointer;
+    margin-top: 8px;
   }
-  .feature-list li::before {
-    content: '✓';
-    color: #00c853;
-    font-weight: 900;
-    font-size: 14px;
-  }
+  .empty { text-align: center; padding: 20px; opacity: 0.5; font-size: 13px; }
 </style>
 </head>
 <body>
 <div class="header">
   <h1>
     <span class="live-dot"></span>
-    📈 Live Trading Signals
+    📈 DainikState Trading
   </h1>
-  <p>Real-time signals from DainikState traders</p>
+  <p>Type any coin. Get instant LONG/SHORT signal. <span class="free-tag">100% FREE</span></p>
 </div>
 
 <div class="container">
-  <!-- Live ticker tape (analyzed coins scrolling) -->
-  <div class="ticker-section" id="tickerSection">
-    <div class="ticker-label">🔴 LIVE</div>
-    <div class="ticker-track" id="tickerTrack">
-      <div style="color:rgba(255,255,255,0.5);padding:4px 12px">⏳ Loading analyzed coins...</div>
-    </div>
-  </div>
-
-  <!-- Profit testimonials ticker -->
-  <div class="profit-ticker">
-    <div class="profit-ticker-inner" id="profitTickerInner">
-      <span style="color:rgba(255,255,255,0.5)">⏳ Loading success stories...</span>
-    </div>
-  </div>
-  <!-- User bar (auto-shown when logged in) -->
+  <!-- User bar -->
   <div id="userBar" class="user-bar" style="display:none">
     <img id="userAvatar" src="" alt="">
     <div class="user-bar-info">
       <div class="user-bar-name" id="userName">User</div>
-      <div class="user-bar-sub" id="userSub">Loading...</div>
     </div>
-    <button onclick="showWebhookModal()">🔑 Webhook</button>
-    <button onclick="showAnalyzerModal()">📊 Analyze</button>
     <button onclick="logout()">Logout</button>
   </div>
 
-  <div class="refresh-bar">
-    <span id="lastUpdate">Loading...</span>
-    <span id="connectionStatus">● Connected</span>
+  <!-- Login prompt for guests -->
+  <div id="loginPrompt" class="login-prompt" style="display:none">
+    <div>👋 Save your analyses & post your thoughts</div>
+    <button onclick="showAuthModal()">Login / Register FREE</button>
   </div>
 
-  <div class="stats-bar" id="statsBar">
-    <div class="stat buy"><div class="stat-value" id="statBuy">0</div><div class="stat-label">BUY</div></div>
-    <div class="stat sell"><div class="stat-value" id="statSell">0</div><div class="stat-label">SELL</div></div>
-    <div class="stat pnl"><div class="stat-value" id="statPnL">0%</div><div class="stat-label">Total PnL</div></div>
-    <div class="stat"><div class="stat-value" id="statWinRate">0%</div><div class="stat-label">Win Rate</div></div>
+  <!-- Hero analyzer input -->
+  <div class="hero-section">
+    <div class="hero-title">🔍 Smart Coin Analyzer</div>
+    <div class="hero-subtitle">5 strategies vote for best signal</div>
+    <div class="analyze-input-wrap">
+      <input type="text" id="analyzerCoin" class="analyze-input"
+             placeholder="Type coin (e.g. BTCUSDT)" onkeypress="if(event.key==='Enter')runAnalyzer()">
+      <button class="analyze-btn" onclick="runAnalyzer()">Analyze</button>
+    </div>
+    <div id="analyzerResult"></div>
   </div>
 
-  <div class="visitor-bar">
-    <div class="visitor-item"><span class="visitor-icon">👥</span><span class="visitor-num" id="vTotal">0</span><span class="visitor-lbl">Visitors</span></div>
-    <div class="visitor-item"><span class="visitor-icon">🟢</span><span class="visitor-num" id="vActive">0</span><span class="visitor-lbl">Active</span></div>
-    <div class="visitor-item"><span class="visitor-icon">🆕</span><span class="visitor-num" id="vToday">0</span><span class="visitor-lbl">Visits Today</span></div>
-    <div class="visitor-item"><span class="visitor-icon">👁️</span><span class="visitor-num" id="vViews">0</span><span class="visitor-lbl">Views</span></div>
+  <!-- Tabs -->
+  <div class="tab-nav">
+    <button class="active" data-tab="top10">🔥 Top 10 Now</button>
+    <button data-tab="community">💬 Community</button>
+    <button data-tab="alerts">🔔 My Alerts</button>
   </div>
 
-  <!-- Members bar -->
-  <div class="visitor-bar members-bar" onclick="showAdminModal()">
-    <div class="visitor-item"><span class="visitor-icon">🏆</span><span class="visitor-num" id="mTotal">0</span><span class="visitor-lbl">Members</span></div>
-    <div class="visitor-item"><span class="visitor-icon">🟢</span><span class="visitor-num" id="mOnline">0</span><span class="visitor-lbl">Online</span></div>
-    <div class="visitor-item"><span class="visitor-icon">📅</span><span class="visitor-num" id="mNew">0</span><span class="visitor-lbl">New Today</span></div>
-    <div class="visitor-item"><span class="visitor-icon">📊</span><span class="visitor-num" style="font-size:13px;opacity:0.7">Report</span><span class="visitor-lbl">Login</span></div>
-  </div>
-
-  <!-- Motivational banner (dynamic based on performance) -->
-  <div class="motivation-banner" id="motivationBanner">
-    <div class="motivation-text">
-      <span class="motivation-emoji">🚀</span> Loading today's winners...
+  <div class="tab-content active" id="tab-top10">
+    <div class="top10-header">
+      <div class="top10-title">⚡ Live Analysis - Updates Every Minute</div>
+      <div class="top10-timer" id="top10Timer">⏱ 60s</div>
+    </div>
+    <div class="top10-grid" id="top10Grid">
+      <div class="empty">⏳ Loading top 10 coins...</div>
     </div>
   </div>
 
-  <!-- Top 10 scorers scroll -->
-  <div class="top-scorers-section" id="topScorersSection" style="display:none">
-    <div class="top-scorers-title">
-      <span>🏆</span> TOP 10 PERFORMERS
-      <span style="margin-left:auto; font-size:10px; opacity:0.6">Swipe →</span>
-    </div>
-    <div class="top-scorers-scroll" id="topScorersScroll"></div>
-  </div>
-
-  <!-- Loss filter controls -->
-  <div class="loss-filter-control">
-    <button id="hideLossBtn" class="hide-loss-toggle" onclick="toggleHideLoss()">
-      <span id="hideLossIcon">👁</span>
-      <span id="hideLossText">Hide Losses</span>
-    </button>
-    <input type="number" id="lossThreshold" class="loss-threshold" value="-5" min="-50" max="0" step="1" onchange="updateLossFilter()" title="Hide signals below this PnL%">
-    <span style="font-size:10px; opacity:0.6">min PnL%</span>
-  </div>
-
-  <!-- Filter bar -->
-  <div class="filter-bar">
-    <button class="filter-btn active" data-filter="all">All Coins</button>
-    <button class="add-coin-btn" onclick="showAddSignalModal()">➕ Add My Coin</button>
-  </div>
-
-  <!-- Best signal (top PnL) -->
-  <div id="bestSignalContainer"></div>
-
-  <div class="signals-list" id="signalsList">
-    <div class="empty">
-      <div class="empty-icon">⏳</div>
-      <div class="empty-text">Loading signals...</div>
+  <div class="tab-content" id="tab-community">
+    <div id="postFormContainer"></div>
+    <div id="communityList">
+      <div class="empty">💬 Loading community posts...</div>
     </div>
   </div>
 
-  <!-- Pagination -->
-  <div class="pagination" id="pagination" style="display:none">
-    <button id="prevBtn" onclick="changePage(-1)">← Prev</button>
-    <span class="page-info" id="pageInfo">Page 1</span>
-    <button id="nextBtn" onclick="changePage(1)">Next →</button>
+  <div class="tab-content" id="tab-alerts">
+    <div id="alertFormContainer"></div>
+    <div id="alertsList">
+      <div class="empty">🔔 No alerts yet. Set one above!</div>
+    </div>
   </div>
 </div>
 
-<!-- Auto-register / Login modal -->
+<!-- Auth modal -->
 <div class="modal-bg" id="authModal">
   <div class="modal">
-    <h2>👋 Welcome to DainikState Trading! <span class="free-tag">100% FREE</span></h2>
-
-    <div class="free-banner">
-      <div class="free-banner-icon">🎉</div>
-      <div class="free-banner-text">
-        <div class="free-banner-title">बिल्कुल FREE! कोई पैसा नहीं लगेगा</div>
-        <div class="free-banner-sub">No credit card. No hidden charges. Lifetime free.</div>
-      </div>
+    <h2>👋 Welcome <span class="free-tag">100% FREE</span></h2>
+    <p style="font-size:12px;opacity:0.7;margin-bottom:8px">Bilkul FREE! No credit card. Lifetime free.</p>
+    <div class="tab-switch" style="display:flex;background:rgba(255,255,255,0.05);border-radius:8px;padding:3px;margin-bottom:12px">
+      <button id="registerTab" style="flex:1;background:rgba(255,255,255,0.1);border:none;color:#fff;padding:8px;border-radius:6px;font-weight:600;cursor:pointer" onclick="switchAuthTab('register')">New Account</button>
+      <button id="loginTab" style="flex:1;background:transparent;border:none;color:rgba(255,255,255,0.6);padding:8px;border-radius:6px;font-weight:600;cursor:pointer" onclick="switchAuthTab('login')">Login</button>
     </div>
-
-    <ul class="feature-list">
-      <li>✅ Share unlimited coin signals</li>
-      <li>✅ Get your personal webhook URL</li>
-      <li>✅ Live PnL tracking &amp; leaderboard</li>
-      <li>✅ Connect any trading bot (Binance, etc.)</li>
-    </ul>
-
-    <div class="tab-switch" style="margin-top:14px">
-      <button id="registerTab" class="active" onclick="switchAuthTab('register')">🆕 New Account</button>
-      <button id="loginTab" onclick="switchAuthTab('login')">🔑 Login</button>
-    </div>
-
     <div id="registerForm">
       <label>Your Name *</label>
-      <input type="text" id="regName" placeholder="e.g. Rajesh Kumar">
-
-      <label>Phone Number (optional)</label>
+      <input type="text" id="regName" placeholder="Rajesh Kumar">
+      <label>Phone</label>
       <input type="tel" id="regPhone" placeholder="+91 9876543210">
-
-      <label>Location (optional)</label>
-      <input type="text" id="regLocation" placeholder="e.g. Delhi, India">
-
       <div class="modal-buttons">
-        <button class="btn-secondary" onclick="skipAuth()">Skip for now</button>
-        <button class="btn-primary" onclick="doRegister()">🚀 Create FREE Account</button>
+        <button class="btn-secondary" onclick="skipAuth()">Skip</button>
+        <button class="btn-primary" onclick="doRegister()">Create FREE Account</button>
       </div>
     </div>
-
     <div id="loginForm" style="display:none">
-      <label>Phone Number *</label>
+      <label>Phone *</label>
       <input type="tel" id="loginPhone" placeholder="+91 9876543210">
-
       <div class="modal-buttons">
         <button class="btn-secondary" onclick="skipAuth()">Cancel</button>
-        <button class="btn-primary" onclick="doLogin()">🔑 Login</button>
+        <button class="btn-primary" onclick="doLogin()">Login</button>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- Webhook URL modal -->
-<div class="modal-bg" id="webhookModal">
-  <div class="modal">
-    <h2>🔑 Your Webhook URL</h2>
-    <p style="font-size:12px;opacity:0.7;margin-bottom:8px;">Send POST requests to this URL from your trading bot. Each member has a unique API key.</p>
-
-    <label>Webhook URL (with your API key)</label>
-    <div class="webhook-box" id="webhookUrl">Loading...
-      <button class="copy-btn" onclick="copyWebhook()">Copy</button>
-    </div>
-
-    <h2 style="margin-top:18px">📤 Send Signal Example</h2>
-    <div class="webhook-box" style="color:#ffd700">
-curl -X POST "WEBHOOK_URL" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "coin": "BTCUSDT",
-    "signal": "LONG",
-    "pnl": 0,
-    "entry": 67500,
-    "leverage": "10x",
-    "timeframe": "15m"
-  }'
-    </div>
-
-    <p style="font-size:11px;opacity:0.6;margin-top:8px;">
-      Signals: LONG, SHORT, CLOSE_LONG, CLOSE_SHORT
-    </p>
-
-    <div class="modal-buttons">
-      <button class="btn-secondary" onclick="closeWebhookModal()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Members modal -->
-<div class="modal-bg" id="membersModal">
-  <div class="modal">
-    <h2>🏆 Signal Members</h2>
-    <p style="font-size:12px;opacity:0.7;margin-bottom:8px;">All registered members of the DainikState trading community.</p>
-
-    <div class="tab-switch">
-      <button id="memberSortRecent" class="active" onclick="sortMembers('recent')">🕐 Recent</button>
-      <button id="memberSortSignals" onclick="sortMembers('signals')">📊 Top Signals</button>
-      <button id="memberSortName" onclick="sortMembers('name')">🔤 A-Z</button>
-    </div>
-
-    <div class="member-list" id="memberList">
-      <div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading members...</div></div>
-    </div>
-
-    <div class="modal-buttons">
-      <button class="btn-secondary" onclick="closeMembersModal()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Add My Signal modal (for manual entry) -->
-<div class="modal-bg" id="addSignalModal">
-  <div class="modal">
-    <h2>➕ Add Your Coin Signal</h2>
-    <p style="font-size:12px;opacity:0.7;margin-bottom:8px;">Post a signal manually for your favorite coin.</p>
-
-    <label>Coin *</label>
-    <input type="text" id="addCoin" placeholder="e.g. BTCUSDT, ETHUSDT, SOLUSDT" style="text-transform:uppercase;">
-
-    <label>Signal *</label>
-    <select id="addSignal">
-      <option value="LONG">🟢 LONG (Buy)</option>
-      <option value="SHORT">🔴 SHORT (Sell)</option>
-      <option value="CLOSE_LONG">⚪ CLOSE LONG</option>
-      <option value="CLOSE_SHORT">⚪ CLOSE SHORT</option>
-    </select>
-
-    <label>Entry Price</label>
-    <input type="number" id="addEntry" placeholder="67500" step="any">
-
-    <label>PnL % (for CLOSE signals)</label>
-    <input type="number" id="addPnl" placeholder="e.g. 5.2 or -3.1" step="0.01">
-
-    <label>Note (optional)</label>
-    <input type="text" id="addNote" placeholder="e.g. Breakout confirmed">
-
-    <div class="modal-buttons">
-      <button class="btn-secondary" onclick="closeAddSignalModal()">Cancel</button>
-      <button class="btn-primary" onclick="submitMySignal()">Post Signal</button>
-    </div>
-  </div>
-</div>
-
-<!-- Smart Analyzer modal (auto LONG/SHORT/HOLD for any coin) -->
-<div class="modal-bg" id="analyzerModal">
-  <div class="modal" style="max-width: 480px;">
-    <h2>📊 Smart Coin Analyzer</h2>
-    <p style="font-size:12px;opacity:0.7;margin-bottom:8px;">Real-time CCI strategy analysis. Type any coin to get LONG/SHORT/HOLD signal with confidence, entry, target &amp; stop loss.</p>
-
-    <label>Coin *</label>
-    <input type="text" id="analyzerCoin" placeholder="e.g. BTCUSDT, ETHUSDT, SOLUSDT" style="text-transform:uppercase;" onkeypress="if(event.key==='Enter')runAnalyzer()">
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-      <div>
-        <label>Timeframe</label>
-        <select id="analyzerTimeframe">
-          <option value="1m">1m</option>
-          <option value="5m">5m</option>
-          <option value="15m" selected>15m</option>
-          <option value="1h">1h</option>
-          <option value="4h">4h</option>
-        </select>
-      </div>
-      <div>
-        <label>Strategy</label>
-        <select id="analyzerStrategy">
-          <option value="standard" selected>Standard (14/30)</option>
-          <option value="fast">Fast (8/21)</option>
-          <option value="slow">Slow (20/50)</option>
-        </select>
-      </div>
-    </div>
-
-    <button class="btn-primary" style="width:100%;margin-top:12px" onclick="runAnalyzer()">🔍 Analyze Now</button>
-
-    <div id="analyzerResult" style="margin-top:14px"></div>
-
-    <div class="modal-buttons" style="margin-top:14px">
-      <button class="btn-secondary" onclick="closeAnalyzerModal()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Admin report modal (for site owner) -->
-<div class="modal-bg" id="adminModal">
-  <div class="modal" style="max-width: 600px;">
-    <h2>📊 Login Report — Members Analytics</h2>
-    <p style="font-size:12px;opacity:0.7;margin-bottom:8px;">All registered members of DainikState Trading. Click any member for details.</p>
-
-    <div id="adminStats" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px"></div>
-
-    <div class="tab-switch">
-      <button id="adminSortJoined" class="active" onclick="sortAdmin('joined')">📅 By Join</button>
-      <button id="adminSortLastSeen" onclick="sortAdmin('lastSeen')">🕐 Last Seen</button>
-      <button id="adminSortActivity" onclick="sortAdmin('activity')">📊 Activity</button>
-    </div>
-
-    <div class="member-list" id="adminList">
-      <div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading members...</div></div>
-    </div>
-
-    <div class="modal-buttons">
-      <button class="btn-secondary" onclick="closeAdminModal()">Close</button>
     </div>
   </div>
 </div>
@@ -1013,34 +402,23 @@ curl -X POST "WEBHOOK_URL" \
 <script>
 const API = 'https://canyou-uqkp.onrender.com';
 let currentUser = null;
-let currentPage = 1;
-const pageSize = 50;
-let totalPages = 1;
-let lastSignals = [];
-let pollInterval = null;
-let viewedSignals = new Set();
-let currentFilter = 'all';
+let currentTab = 'top10';
+let top10Cache = {};
+let communityPosts = [];
+let userAlerts = [];
+let top10RefreshInterval = null;
+let postRefreshInterval = null;
+let alertsRefreshInterval = null;
 
-// Session ID
-function getSessionId() {
-  let sid = localStorage.getItem('ds_signal_sid');
-  if (!sid) {
-    sid = 'sid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('ds_signal_sid', sid);
-  }
-  return sid;
-}
-
+function $(id) { return document.getElementById(id); }
 function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
 function timeAgo(ts) {
   const d = Date.now() - ts;
-  if (d < 60000) return Math.floor(d / 1000) + 's ago';
-  if (d < 3600000) return Math.floor(d / 60000) + 'm ago';
-  if (d < 86400000) return Math.floor(d / 3600000) + 'h ago';
-  return Math.floor(d / 86400000) + 'd ago';
+  if (d < 60000) return Math.floor(d / 1000) + 's';
+  if (d < 3600000) return Math.floor(d / 60000) + 'm';
+  if (d < 86400000) return Math.floor(d / 3600000) + 'h';
+  return Math.floor(d / 86400000) + 'd';
 }
-
 function showToast(msg, color) {
   const t = document.createElement('div');
   t.className = 'toast';
@@ -1048,6 +426,22 @@ function showToast(msg, color) {
   if (color) t.style.background = color;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
+}
+function formatPrice(p) {
+  if (p >= 1000) return p.toFixed(2);
+  if (p >= 1) return p.toFixed(3);
+  if (p >= 0.01) return p.toFixed(4);
+  return p.toFixed(6);
+}
+
+// ===== SESSION =====
+function getSessionId() {
+  let sid = localStorage.getItem('ds_signal_sid');
+  if (!sid) {
+    sid = 'sid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('ds_signal_sid', sid);
+  }
+  return sid;
 }
 
 // ===== AUTH =====
@@ -1062,6 +456,9 @@ async function checkAuth() {
     if (r.success) {
       currentUser = r;
       showUserBar();
+      renderPostForm();
+      renderAlertForm();
+      loadAlerts();
     } else {
       showAuthModal();
     }
@@ -1069,60 +466,46 @@ async function checkAuth() {
     showAuthModal();
   }
 }
-
-function showAuthModal() {
-  document.getElementById('authModal').classList.add('active');
-}
-
-function closeAuthModal() {
-  document.getElementById('authModal').classList.remove('active');
-}
-
+function showAuthModal() { $('authModal').classList.add('active'); $('loginPrompt').style.display = 'block'; }
+function closeAuthModal() { $('authModal').classList.remove('active'); }
 function switchAuthTab(tab) {
-  document.getElementById('registerTab').classList.toggle('active', tab === 'register');
-  document.getElementById('loginTab').classList.toggle('active', tab === 'login');
-  document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
-  document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+  $('registerTab').style.background = tab === 'register' ? 'rgba(255,255,255,0.1)' : 'transparent';
+  $('loginTab').style.background = tab === 'login' ? 'rgba(255,255,255,0.1)' : 'transparent';
+  $('registerTab').style.color = tab === 'register' ? '#fff' : 'rgba(255,255,255,0.6)';
+  $('loginTab').style.color = tab === 'login' ? '#fff' : 'rgba(255,255,255,0.6)';
+  $('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+  $('loginForm').style.display = tab === 'login' ? 'block' : 'none';
 }
-
-function skipAuth() {
-  closeAuthModal();
-  showToast('Viewing as guest. Some features limited.', '#ff9800');
-}
-
+function skipAuth() { closeAuthModal(); }
 async function doRegister() {
-  const name = document.getElementById('regName').value.trim();
-  const phone = document.getElementById('regPhone').value.trim();
-  const location = document.getElementById('regLocation').value.trim();
-  if (!name) return showToast('Name is required!', '#ff3b30');
+  const name = $('regName').value.trim();
+  const phone = $('regPhone').value.trim();
+  if (!name) return showToast('Name required!', '#ff3b30');
   try {
     const r = await fetch(API + '/api/signals/auto-register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, location, country: 'India' })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone })
     }).then(r => r.json());
     if (r.success) {
       currentUser = r;
       localStorage.setItem('ds_user_session', r.sessionId);
       localStorage.setItem('ds_user_api_key', r.apiKey);
       closeAuthModal();
+      $('loginPrompt').style.display = 'none';
       showUserBar();
-      showToast('✅ Account created! Your webhook is ready.', '#00c853');
-    } else {
-      showToast('Error: ' + r.error, '#ff3b30');
-    }
-  } catch (e) {
-    showToast('Network error: ' + e.message, '#ff3b30');
-  }
+      renderPostForm();
+      renderAlertForm();
+      loadAlerts();
+      showToast('✅ Welcome ' + r.user.name + '!', '#00c853');
+    } else { showToast('Error: ' + r.error, '#ff3b30'); }
+  } catch (e) { showToast('Network error', '#ff3b30'); }
 }
-
 async function doLogin() {
-  const phone = document.getElementById('loginPhone').value.trim();
+  const phone = $('loginPhone').value.trim();
   if (!phone) return showToast('Phone required!', '#ff3b30');
   try {
     const r = await fetch(API + '/api/signals/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone })
     }).then(r => r.json());
     if (r.success) {
@@ -1130,1045 +513,372 @@ async function doLogin() {
       localStorage.setItem('ds_user_session', r.sessionId);
       localStorage.setItem('ds_user_api_key', r.apiKey);
       closeAuthModal();
+      $('loginPrompt').style.display = 'none';
       showUserBar();
-      showToast('✅ Welcome back, ' + r.user.name + '!', '#00c853');
-    } else {
-      showToast('No account found with this phone', '#ff3b30');
-    }
-  } catch (e) {
-    showToast('Network error: ' + e.message, '#ff3b30');
-  }
+      renderPostForm();
+      renderAlertForm();
+      loadAlerts();
+      showToast('✅ Welcome back!', '#00c853');
+    } else { showToast('No account found', '#ff3b30'); }
+  } catch (e) { showToast('Network error', '#ff3b30'); }
 }
-
 function logout() {
   localStorage.removeItem('ds_user_session');
   localStorage.removeItem('ds_user_api_key');
   currentUser = null;
-  document.getElementById('userBar').style.display = 'none';
-  showAuthModal();
+  $('userBar').style.display = 'none';
+  $('postFormContainer').innerHTML = '';
+  $('alertFormContainer').innerHTML = '';
+  $('alertsList').innerHTML = '<div class="empty">🔔 No alerts yet. Set one above!</div>';
+  $('loginPrompt').style.display = 'block';
   showToast('Logged out', '#888');
 }
-
 function showUserBar() {
   if (!currentUser) return;
   const u = currentUser.user;
-  document.getElementById('userBar').style.display = 'flex';
-  document.getElementById('userAvatar').src = u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=667eea&color=fff`;
-  document.getElementById('userName').textContent = u.name;
-  document.getElementById('userSub').textContent = `📍 ${u.location || 'Unknown'} • Signals: ${u.signalsPosted || 0}`;
+  $('userBar').style.display = 'flex';
+  $('userAvatar').src = u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=667eea&color=fff&bold=true&size=200`;
+  $('userName').textContent = u.name;
 }
 
-// ===== Webhook modal =====
-function showWebhookModal() {
-  if (!currentUser) return showToast('Please login first!', '#ff3b30');
-  document.getElementById('webhookUrl').innerHTML = currentUser.webhookUrl + '<button class="copy-btn" onclick="copyWebhook()">Copy</button>';
-  document.getElementById('webhookModal').classList.add('active');
-}
-
-function closeWebhookModal() {
-  document.getElementById('webhookModal').classList.remove('active');
-}
-
-function copyWebhook() {
-  if (!currentUser) return;
-  navigator.clipboard.writeText(currentUser.webhookUrl).then(() => {
-    showToast('📋 Webhook URL copied!', '#00c853');
-  });
-}
-
-// ===== Add my signal modal =====
-function showAddSignalModal() {
-  if (!currentUser) {
-    showAuthModal();
-    return showToast('Login to post your own signals', '#ff9800');
-  }
-  document.getElementById('addSignalModal').classList.add('active');
-}
-
-function closeAddSignalModal() {
-  document.getElementById('addSignalModal').classList.remove('active');
-}
-
-async function submitMySignal() {
-  const coin = document.getElementById('addCoin').value.trim();
-  const signal = document.getElementById('addSignal').value;
-  const entry = document.getElementById('addEntry').value;
-  const pnl = document.getElementById('addPnl').value;
-  const note = document.getElementById('addNote').value;
-  if (!coin) return showToast('Coin required!', '#ff3b30');
+// ===== ANALYZER =====
+async function runAnalyzer() {
+  const coinInput = $('analyzerCoin');
+  const coin = coinInput.value.trim().toUpperCase();
+  if (!coin) return showToast('Enter a coin!', '#ff3b30');
+  const resultDiv = $('analyzerResult');
+  resultDiv.innerHTML = '<div class="analysis-result" style="text-align:center"><div style="font-size:30px">⏳</div><div style="opacity:0.7">Analyzing ' + esc(coin) + '...</div></div>';
   try {
-    const r = await fetch(API + '/api/signals/manual', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        coin, signal,
-        entry: entry || null,
-        pnl: pnl || 0,
-        note: note,
-        sessionId: currentUser.sessionId
-      })
-    }).then(r => r.json());
-    if (r.success) {
-      closeAddSignalModal();
-      showToast('✅ Signal posted!', '#00c853');
-      // Clear form
-      document.getElementById('addCoin').value = '';
-      document.getElementById('addEntry').value = '';
-      document.getElementById('addPnl').value = '';
-      document.getElementById('addNote').value = '';
-      currentPage = 1;
-      fetchSignals();
-    } else {
-      showToast('Error: ' + r.error, '#ff3b30');
-    }
+    const r = await fetch(API + '/api/signals/analyze/' + encodeURIComponent(coin) + '?interval=15m').then(r => r.json());
+    if (r.success) renderAnalysis(r);
+    else resultDiv.innerHTML = '<div class="analysis-result" style="text-align:center;color:#ff3b30">' + (r.error || 'Failed') + '</div>';
   } catch (e) {
-    showToast('Network error: ' + e.message, '#ff3b30');
+    resultDiv.innerHTML = '<div class="analysis-result" style="text-align:center;color:#ff3b30">Network error</div>';
   }
 }
 
-// ===== Track visit =====
-async function trackVisit() {
-  try {
-    await fetch(API + '/api/signals/track-visit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: getSessionId(), referrer: document.referrer || '' })
-    });
-  } catch (e) {}
-}
-
-// ===== View tracking =====
-async function trackSignalView(signalId) {
-  if (!signalId || viewedSignals.has(signalId)) return;
-  viewedSignals.add(signalId);
-  try {
-    await fetch(API + '/api/signals/' + encodeURIComponent(signalId) + '/view', { method: 'POST' });
-  } catch (e) {}
-}
-
-// ===== Mini chart cache & drawing =====
-const miniChartCache = {};
-const miniChartDrawing = {};
-
-async function loadAndDrawMiniCharts() {
-  // Get all mini-chart-wrappers
-  const wraps = document.querySelectorAll('.mini-chart-wrap');
-  if (wraps.length === 0) return;
-  // Collect unique coins
-  const coins = new Set();
-  wraps.forEach(w => {
-    const c = w.getAttribute('data-coin');
-    if (c) coins.add(c);
-  });
-  // Fetch data for each (cached for 60s)
-  const fetchPromises = [];
-  for (const coin of coins) {
-    if (miniChartCache[coin] && (Date.now() - miniChartCache[coin].ts) < 60000) {
-      drawAllChartsForCoin(coin, miniChartCache[coin].data);
-    } else {
-      fetchPromises.push(
-        fetch(API + '/api/signals/sparkline/' + encodeURIComponent(coin) + '?interval=15m&limit=96')
-          .then(r => r.json())
-          .then(data => {
-            if (data.success) {
-              miniChartCache[coin] = { ts: Date.now(), data: data };
-              drawAllChartsForCoin(coin, data);
-            }
-          }).catch(() => {})
-      );
-    }
-  }
-  await Promise.all(fetchPromises);
-}
-
-function drawAllChartsForCoin(coin, data) {
-  const wraps = document.querySelectorAll('.mini-chart-wrap[data-coin="' + coin + '"]');
-  wraps.forEach(w => {
-    const id = w.getAttribute('data-canvas-id');
-    const entry = parseFloat(w.getAttribute('data-entry')) || 0;
-    const canvas = document.getElementById(id);
-    if (!canvas) return;
-    drawMiniChart(canvas, data, entry);
-    // Add overlay text
-    const wrap = canvas.parentElement;
-    let overlay = wrap.querySelector('.mini-chart-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.className = 'mini-chart-overlay ' + (data.change24h >= 0 ? 'up' : 'down');
-      wrap.appendChild(overlay);
-    }
-    overlay.textContent = (data.change24h >= 0 ? '▲ ' : '▼ ') + Math.abs(data.change24h).toFixed(2) + '%';
-    let priceOverlay = wrap.querySelector('.price-now-overlay');
-    if (!priceOverlay) {
-      priceOverlay = document.createElement('div');
-      priceOverlay.className = 'price-now-overlay';
-      wrap.appendChild(priceOverlay);
-    }
-    priceOverlay.textContent = '$' + formatPrice(data.currentPrice);
-  });
-}
-
-function formatPrice(p) {
-  if (p >= 1000) return p.toFixed(2);
-  if (p >= 1) return p.toFixed(3);
-  if (p >= 0.01) return p.toFixed(4);
-  return p.toFixed(6);
-}
-
-function drawMiniChart(canvas, data, entryPrice) {
-  if (!canvas || !data || !data.prices || data.prices.length < 2) return;
-  const dpr = window.devicePixelRatio || 1;
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, w, h);
-  const prices = data.prices;
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-  const range = max - min || 1;
-  const isUp = data.change24h >= 0;
-  const lineColor = isUp ? '#00c853' : '#ff3b30';
-  // Draw gradient fill
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, isUp ? 'rgba(0,200,83,0.3)' : 'rgba(255,59,48,0.3)');
-  grad.addColorStop(1, 'rgba(0,0,0,0)');
-  // Build path
-  ctx.beginPath();
-  for (let i = 0; i < prices.length; i++) {
-    const x = (i / (prices.length - 1)) * w;
-    const y = h - ((prices[i] - min) / range) * (h - 4) - 2;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  // Fill area
-  ctx.lineTo(w, h);
-  ctx.lineTo(0, h);
-  ctx.closePath();
-  ctx.fillStyle = grad;
-  ctx.fill();
-  // Draw line
-  ctx.beginPath();
-  for (let i = 0; i < prices.length; i++) {
-    const x = (i / (prices.length - 1)) * w;
-    const y = h - ((prices[i] - min) / range) * (h - 4) - 2;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  // Draw entry price line if available
-  if (entryPrice && entryPrice > 0) {
-    if (entryPrice >= min && entryPrice <= max) {
-      const y = h - ((entryPrice - min) / range) * (h - 4) - 2;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.strokeStyle = '#ffd700';
-      ctx.setLineDash([4, 4]);
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.setLineDash([]);
-      // Label
-      ctx.fillStyle = '#ffd700';
-      ctx.font = 'bold 9px monospace';
-      ctx.fillText('Entry $' + formatPrice(entryPrice), 4, y - 2);
-    }
-  }
-}
-
-// ===== Render signal =====
-function renderSignal(s, isNew = false) {
-  const pnlClass = s.pnl > 0 ? 'positive' : s.pnl < 0 ? 'negative' : '';
-  const signalClass = s.signal.toLowerCase();
-  const cardClass = signalClass.includes('sell') || signalClass.includes('short') ? 'sell' : (s.signal.includes('CLOSE') ? 'close' : '');
-  return `
-    <div class="signal-card ${cardClass} ${isNew ? 'pulse-new' : ''}" data-id="${s.id}">
-      <div class="signal-header">
-        <div class="coin-name">
-          ${esc(s.coin)}
-          ${!s.signal.includes('CLOSE') && s.status === 'active' ? '<span class="live-indicator">LIVE</span><span class="live-dot-pnl" title="Live price updating"></span>' : ''}
-          ${s.signal.includes('CLOSE') ? '<span class="live-indicator" style="background:rgba(255,255,255,0.1);color:#aaa;">CLOSED</span>' : ''}
-          ${s.views > 0 ? `<span class="view-count">👁 ${s.views}</span>` : ''}
+function renderAnalysis(r) {
+  const sig = r.signal;
+  const actionColors = {
+    LONG: ['#00c853', '#1de9b6', '🟢'],
+    SHORT: ['#ff3b30', '#ff6b6b', '🔴'],
+    HOLD_LONG: ['#00c853', '#1de9b6', '✅'],
+    HOLD_SHORT: ['#ff3b30', '#ff6b6b', '✅'],
+    WAIT: ['#888', '#aaa', '⏳'],
+  };
+  const colors = actionColors[sig.action] || actionColors.WAIT;
+  const conf = sig.confidence;
+  const confColor = conf >= 70 ? '#00c853' : conf >= 40 ? '#ffd700' : '#ff3b30';
+  $('analyzerResult').innerHTML = `
+    <div class="analysis-result" style="background:linear-gradient(135deg, ${colors[0]}22, ${colors[1]}11);border:1px solid ${colors[0]}66">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div style="font-size:20px;font-weight:900">${esc(r.coin)}</div>
+          <div style="font-size:11px;opacity:0.7">$${formatPrice(r.currentPrice)} • 24h: ${r.change24h >= 0 ? '+' : ''}${r.change24h}%</div>
         </div>
-        <span class="signal-badge ${signalClass}">${esc(s.signal)}</span>
+        <div style="text-align:right">
+          <div style="font-size:26px">${colors[2]}</div>
+          <div style="font-size:20px;font-weight:900;color:${colors[0]}">${sig.action.replace('_', ' ')}</div>
+        </div>
       </div>
-      <div class="mini-chart-wrap" data-coin="${esc(s.coin)}" data-entry="${s.entry || 0}" data-canvas-id="chart-${esc(s.id)}">
-        <canvas id="chart-${esc(s.id)}"></canvas>
+      <div style="background:rgba(0,0,0,0.3);padding:8px;border-radius:6px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;opacity:0.7;margin-bottom:4px">
+          <span>CONFIDENCE (${r.strategies ? r.strategies.length : 5} strategies)</span>
+          <span>${sig.agreement || ''} agree</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;background:rgba(255,255,255,0.1);height:6px;border-radius:3px;overflow:hidden">
+            <div style="width:${conf}%;height:100%;background:${confColor};border-radius:3px"></div>
+          </div>
+          <div style="font-size:14px;font-weight:900;color:${confColor}">${conf}%</div>
+        </div>
       </div>
-      ${s.entry || s.target || s.stopLoss ? `
-      <div class="signal-prices">
-        ${s.entry ? `<div class="price-item"><div class="price-label">Entry</div><div class="price-value">$${parseFloat(s.entry).toFixed(2)}</div></div>` : ''}
-        ${s.target ? `<div class="price-item"><div class="price-label">Target</div><div class="price-value" style="color:#00c853;">$${parseFloat(s.target).toFixed(2)}</div></div>` : ''}
-        ${s.stopLoss ? `<div class="price-item"><div class="price-label">Stop Loss</div><div class="price-value" style="color:#ff3b30;">$${parseFloat(s.stopLoss).toFixed(2)}</div></div>` : ''}
+      <div style="font-size:12px;line-height:1.5;margin-bottom:8px">${esc(sig.reason)}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        <div style="text-align:center;background:rgba(0,0,0,0.2);padding:6px;border-radius:6px">
+          <div style="font-size:9px;opacity:0.7">ENTRY</div>
+          <div style="font-size:12px;font-weight:700">$${formatPrice(sig.entry)}</div>
+        </div>
+        <div style="text-align:center;background:rgba(0,200,83,0.15);padding:6px;border-radius:6px">
+          <div style="font-size:9px;opacity:0.7">TARGET</div>
+          <div style="font-size:12px;font-weight:700;color:#00c853">$${sig.target ? formatPrice(sig.target) : '-'}</div>
+        </div>
+        <div style="text-align:center;background:rgba(255,59,48,0.15);padding:6px;border-radius:6px">
+          <div style="font-size:9px;opacity:0.7">STOP</div>
+          <div style="font-size:12px;font-weight:700;color:#ff3b30">$${sig.stopLoss ? formatPrice(sig.stopLoss) : '-'}</div>
+        </div>
+      </div>
+      ${r.strategies ? `
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1)">
+        <div style="font-size:10px;opacity:0.7;margin-bottom:4px">🗳️ STRATEGY VOTES</div>
+        ${r.strategies.map(s => {
+          const emoji = s.action === 'LONG' ? '🟢' : s.action === 'SHORT' ? '🔴' : '⚪';
+          return '<div style="display:flex;justify-content:space-between;padding:3px 6px;background:rgba(0,0,0,0.15);border-radius:4px;margin-bottom:2px;font-size:11px"><span>' + emoji + ' ' + s.name + '</span><span style="opacity:0.7">' + s.confidence + '%</span></div>';
+        }).join('')}
       </div>
       ` : ''}
-      <div class="pnl-display">
-        <div>
-          <div class="pnl-label">PnL</div>
-          <div class="pnl-value ${pnlClass} pnl-live"
-               data-signal-id="${esc(s.id)}"
-               data-coin="${esc(s.coin)}"
-               data-entry="${s.entry || 0}"
-               data-signal="${esc(s.signal)}"
-               data-static-pnl="${s.pnl || 0}"
-               data-side="${s.signal.includes('SHORT') ? 'SHORT' : (s.signal.includes('LONG') ? 'LONG' : '')}"
-               data-status="${esc(s.status)}"
-               data-leverage="${(s.leverage || '20x').replace('x','')}">${s.pnl > 0 ? '+' : ''}${parseFloat(s.pnl || 0).toFixed(2)}%</div>
-        </div>
-        <div class="signal-meta">
-          ${s.leverage ? `<span class="meta-tag">⚡ ${esc(s.leverage)}</span>` : ''}
-          ${s.timeframe ? `<span class="meta-tag">⏱ ${esc(s.timeframe)}</span>` : ''}
-          ${s.userName ? `<span class="meta-tag">👤 ${esc(s.userName)}</span>` : ''}
-        </div>
-      </div>
-      ${s.note ? `<div style="font-size:12px;margin-top:6px;opacity:0.7;">${esc(s.note)}</div>` : ''}
-      <div class="signal-time">🕐 ${timeAgo(s.createdAt)} ${s.status === 'closed' ? '• ✅ CLOSED' : ''}</div>
     </div>
   `;
 }
 
-// ===== Find and render the BEST signal (top PnL%) =====
-function findAndRenderBestSignal(signals) {
-  const container = document.getElementById('bestSignalContainer');
-  // Only consider CLOSE signals (those have actual pnl values)
-  const closedSignals = signals.filter(s => s.signal.includes('CLOSE') && s.pnl !== 0);
-  if (closedSignals.length === 0) {
-    container.innerHTML = '';
-    return;
-  }
-  // Find the one with highest pnl
-  const best = closedSignals.reduce((max, s) => (s.pnl > max.pnl ? s : max), closedSignals[0]);
-  // Don't show the best signal again in the main list to avoid duplication
-  // Actually let's still show it in main list, but here as featured
-  const pnlClass = best.pnl > 0 ? '' : 'negative';
-  const signalClass = best.signal.toLowerCase();
-  container.innerHTML = `
-    <div class="best-signal" data-id="${best.id}">
-  <div class="best-header">
-    <div class="best-title">🏆 BEST SIGNAL</div>
-    <div class="best-rank">#1 RANK</div>
-  </div>
-  ${best.userName ? `
-  <div class="best-owner">
-    <img src="${esc(best.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(best.userName)}&background=ffd700&color=000&bold=true&size=64`)}" alt="" class="best-owner-avatar">
-    <div class="best-owner-text">
-      <span class="best-owner-name">${esc(best.userName)}</span>'s coin is on fire 🔥
-    </div>
-  </div>
-  ` : `
-  <div class="best-owner">
-    <div class="best-owner-text">
-      🚀 Top performer right now
-    </div>
-  </div>
-  `}
-  <div class="best-coin">
-    ${esc(best.coin)}
-    ${best.signal.includes('CLOSE') ? '<span class="live-indicator" style="background:rgba(255,255,255,0.1);color:#aaa;">CLOSED</span>' : ''}
-    ${best.views > 0 ? `<span class="view-count">👁 ${best.views}</span>` : ''}
-  </div>
-  <div class="best-pnl-big ${pnlClass} pnl-live"
-       data-signal-id="${esc(best.id)}"
-       data-coin="${esc(best.coin)}"
-       data-entry="${best.entry || 0}"
-       data-signal="${esc(best.signal)}"
-       data-static-pnl="${best.pnl}"
-       data-side="${best.signal.includes('SHORT') ? 'SHORT' : 'LONG'}"
-       data-leverage="${(best.leverage || '20x').replace('x','')}">
-    ${best.pnl > 0 ? '+' : ''}${parseFloat(best.pnl).toFixed(2)}%
-  </div>
-      <div class="best-meta">
-        <span class="meta-tag">${esc(best.signal)}</span>
-        ${best.entry ? `<span class="meta-tag">Entry: $${parseFloat(best.entry).toFixed(2)}</span>` : ''}
-        ${best.leverage ? `<span class="meta-tag">⚡ ${esc(best.leverage)}</span>` : ''}
-        ${best.timeframe ? `<span class="meta-tag">⏱ ${esc(best.timeframe)}</span>` : ''}
-        ${best.userName ? `<span class="meta-tag">👤 ${esc(best.userName)}</span>` : ''}
-        <span class="meta-tag">🕐 ${timeAgo(best.createdAt)}</span>
-      </div>
-      ${best.note ? `<div style="font-size:12px;margin-top:8px;opacity:0.8;color:#ffd700;">💡 ${esc(best.note)}</div>` : ''}
-    </div>
-  `;
-  // Track view on the best signal
-  trackSignalView(best.id);
-}
-
-// ===== Fetch signals (paginated) =====
-async function fetchSignals() {
+// ===== TOP 10 (rotates every minute) =====
+async function loadTop10() {
   try {
-    const params = new URLSearchParams({
-      page: currentPage,
-      limit: pageSize,
-    });
-    if (currentFilter !== 'all') params.set('coin', currentFilter);
-    const r = await fetch(API + '/api/signals?' + params).then(r => r.json());
-    if (r.success) {
-      // Apply loss filter
-      let filteredSignals = r.signals || [];
-      if (hideLosses) {
-        filteredSignals = filteredSignals.filter(s => (s.pnl || 0) >= lossThreshold);
-      }
-      // Update stats
-      document.getElementById('statBuy').textContent = filteredSignals.filter(s => s.signal === 'LONG' || s.signal === 'BUY').length;
-      document.getElementById('statSell').textContent = filteredSignals.filter(s => s.signal === 'SHORT' || s.signal === 'SELL').length;
-      const totalPnl = filteredSignals.reduce((s, x) => s + (x.pnl || 0), 0);
-      const pnlEl = document.getElementById('statPnL');
-      pnlEl.textContent = (totalPnl > 0 ? '+' : '') + totalPnl.toFixed(2) + '%';
-      pnlEl.style.color = totalPnl > 0 ? '#00c853' : totalPnl < 0 ? '#ff3b30' : '#ffd700';
-      const winners = filteredSignals.filter(s => s.pnl > 0).length;
-      const winRate = filteredSignals.length > 0 ? Math.round((winners / filteredSignals.length) * 100) : 0;
-      document.getElementById('statWinRate').textContent = winRate + '%';
-
-      // Render list
-      const list = document.getElementById('signalsList');
-      if (!filteredSignals || filteredSignals.length === 0) {
-        const reason = hideLosses ? '<br><span style="font-size:11px;opacity:0.7">Try turning off "Hide Losses"</span>' : '';
-        list.innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">No signals ${currentFilter !== 'all' ? 'for ' + currentFilter : 'yet'}</div><div class="empty-sub">Be the first to post!${reason}</div></div>`;
-      } else {
-        const newIds = filteredSignals.filter(s => !lastSignals.find(ls => ls.id === s.id)).map(s => s.id);
-        list.innerHTML = filteredSignals.map(s => renderSignal(s, newIds.includes(s.id))).join('');
-        filteredSignals.forEach(s => trackSignalView(s.id));
-        lastSignals = filteredSignals;
-        // Draw mini charts (async, non-blocking)
-        setTimeout(loadAndDrawMiniCharts, 100);
-      }
-
-      // Update pagination
-      totalPages = r.totalPages || 1;
-      document.getElementById('pagination').style.display = r.total > pageSize ? 'flex' : 'none';
-      const pageInfo = hideLosses
-        ? `Page ${r.page} / ${r.totalPages} (${r.total} total, ${filteredSignals.length} shown)`
-        : `Page ${r.page} / ${r.totalPages} (${r.total} total)`;
-      document.getElementById('pageInfo').textContent = pageInfo;
-      document.getElementById('prevBtn').disabled = !r.hasPrev;
-      document.getElementById('nextBtn').disabled = !r.hasNext;
-      document.getElementById('lastUpdate').textContent = '🕐 Updated ' + new Date().toLocaleTimeString();
-      document.getElementById('connectionStatus').innerHTML = '● Connected';
-      document.getElementById('connectionStatus').style.color = '#00c853';
-
-      // Update filter buttons with unique coins
-      updateFilterButtons(r);
-      // Update motivation banner & top scorers (use unfiltered data for these)
-      updateMotivationBanner(r.signals);
-      updateTopScorers(r.signals);
-    }
-  } catch (e) {
-    document.getElementById('connectionStatus').innerHTML = '● Disconnected';
-    document.getElementById('connectionStatus').style.color = '#ff3b30';
-  }
-}
-
-// ===== Fetch BEST signal (separately, looks at top 200 signals) =====
-async function fetchBestSignal() {
-  try {
-    // Only look at public signals, sorted by pnl descending
-    const r = await fetch(API + '/api/signals?limit=200&sort=pnl_desc').then(r => r.json());
-    if (r.success && r.signals) {
-      findAndRenderBestSignal(r.signals);
-    }
-  } catch (e) {
-    // silent fail
-  }
-}
-
-// ===== Live PnL update - uses server-side live-pnl endpoint =====
-// This is more powerful: it can calculate pnl for signals with pnl=0
-// (uses entry price + leverage + current Binance price)
-let lastLivePnlFetch = 0;
-let cachedLivePnl = {};
-
-async function fetchLivePricesAndUpdatePnl() {
-  try {
-    // Collect signal IDs from visible pnl-live elements
-    const pnlElements = document.querySelectorAll('.pnl-live');
-    if (pnlElements.length === 0) return;
-    const idSet = new Set();
-    pnlElements.forEach(el => {
-      const id = el.getAttribute('data-signal-id');
-      if (id) idSet.add(id);
-    });
-    if (idSet.size === 0) return;
-    // Throttle: 1 request per 4s
-    const now = Date.now();
-    if (now - lastLivePnlFetch < 3500) {
-      // Use cached pnl
-      applyPnlUpdates(cachedLivePnl);
-      return;
-    }
-    lastLivePnlFetch = now;
-    const idsParam = Array.from(idSet).join(',');
-    const url = API + '/api/signals/live-pnl?signalIds=' + encodeURIComponent(idsParam) + '&defaultLeverage=20';
-    const r = await fetch(url).then(r => r.json());
-    if (r.success && r.pnl) {
-      cachedLivePnl = r.pnl;
-      applyPnlUpdates(r.pnl);
-    }
-  } catch (e) {
-    // silent fail
-  }
-}
-
-function applyPnlUpdates(pnlData) {
-  const elements = document.querySelectorAll('.pnl-live');
-  elements.forEach(el => {
-    const id = el.getAttribute('data-signal-id');
-    if (!id || !pnlData[id]) return;
-    const info = pnlData[id];
-    const newPnl = info.pnl;
-    const sign = newPnl > 0 ? '+' : '';
-    const newText = sign + newPnl.toFixed(2) + '%';
-    const oldText = el.textContent.trim();
-    if (oldText !== newText) {
-      el.textContent = newText;
-      // Update color
-      el.classList.remove('positive', 'negative');
-      if (newPnl > 0) el.classList.add('positive');
-      else if (newPnl < 0) el.classList.add('negative');
-      // Pulse animation
-      el.classList.remove('live-updated');
-      void el.offsetWidth;
-      el.classList.add('live-updated');
-    }
-  });
-}
-
-// ===== Filter buttons =====
-function updateFilterButtons(currentResponse) {
-  const uniqueCoins = [...new Set(currentResponse.signals.map(s => s.coin))].sort();
-  const filterBar = document.querySelector('.filter-bar');
-  // Keep first (All) and last (Add) buttons, refresh middle ones
-  const allBtn = filterBar.querySelector('[data-filter="all"]');
-  const addBtn = filterBar.querySelector('.add-coin-btn');
-  filterBar.innerHTML = '';
-  filterBar.appendChild(allBtn);
-  uniqueCoins.slice(0, 12).forEach(coin => {
-    const btn = document.createElement('button');
-    btn.className = 'filter-btn' + (currentFilter === coin ? ' active' : '');
-    btn.setAttribute('data-filter', coin);
-    btn.textContent = coin;
-    btn.onclick = () => {
-      currentFilter = coin;
-      currentPage = 1;
-      fetchSignals();
-    };
-    filterBar.appendChild(btn);
-  });
-  // Update active states
-  document.querySelectorAll('.filter-btn').forEach(b => {
-    b.classList.toggle('active', b.getAttribute('data-filter') === currentFilter);
-  });
-  filterBar.appendChild(addBtn);
-}
-
-function changePage(delta) {
-  const newPage = currentPage + delta;
-  if (newPage < 1 || newPage > totalPages) return;
-  currentPage = newPage;
-  fetchSignals();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// ===== Stats =====
-async function fetchStats() {
-  try {
-    const r = await fetch(API + '/api/signals/stats').then(r => r.json());
-    if (r.success) {
-      document.getElementById('vTotal').textContent = r.visitors.total || 0;
-      document.getElementById('vActive').textContent = r.visitors.activeNow || 0;
-      document.getElementById('vToday').textContent = r.visitors.today || 0;
-      document.getElementById('vViews').textContent = r.visitors.totalViews || 0;
-      // Members
-      if (r.members) {
-        document.getElementById('mTotal').textContent = r.members.total || 0;
-        document.getElementById('mOnline').textContent = r.members.online || 0;
-        document.getElementById('mNew').textContent = r.members.newToday || 0;
-      }
-    }
-  } catch (e) {}
-}
-
-// ===== Members =====
-let currentMemberSort = 'recent';
-
-async function showMembersModal() {
-  document.getElementById('membersModal').classList.add('active');
-  await loadMembers();
-}
-
-function closeMembersModal() {
-  document.getElementById('membersModal').classList.remove('active');
-}
-
-async function sortMembers(sortBy) {
-  currentMemberSort = sortBy;
-  document.getElementById('memberSortRecent').classList.toggle('active', sortBy === 'recent');
-  document.getElementById('memberSortSignals').classList.toggle('active', sortBy === 'signals');
-  document.getElementById('memberSortName').classList.toggle('active', sortBy === 'name');
-  await loadMembers();
-}
-
-async function loadMembers() {
-  const list = document.getElementById('memberList');
-  list.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading members...</div></div>';
-  try {
-    const r = await fetch(API + '/api/signals/members?sort=' + currentMemberSort + '&limit=50').then(r => r.json());
-    if (r.success && r.members.length > 0) {
-      list.innerHTML = r.members.map(m => {
-        const isOnline = m.online || (m.lastSeen && (Date.now() - m.lastSeen) < 5 * 60 * 1000);
-        return `
-          <div class="member-item">
-            <img src="${esc(m.avatar)}" alt="">
-            <div class="member-info">
-              <div class="member-name">
-                ${esc(m.name)}
-                ${isOnline ? '<span class="online-dot" title="Online"></span>' : ''}
-              </div>
-              <div class="member-meta">📍 ${esc(m.location || 'Unknown')} • ${m.signalsPosted || 0} signals</div>
-            </div>
-            <div class="member-stats">
-              <div class="member-stat-num">${m.signalsPosted || 0}</div>
-              <div class="member-stat-lbl">SIGNALS</div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    } else {
-      list.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No members yet</div><div class="empty-sub">Be the first to join!</div></div>';
-    }
-  } catch (e) {
-    list.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div>';
-  }
-}
-
-// ===== Loss filter + Hide losses =====
-let hideLosses = false;
-let lossThreshold = -5;  // Default: hide signals below -5%
-
-function toggleHideLoss() {
-  hideLosses = !hideLosses;
-  const btn = document.getElementById('hideLossBtn');
-  const icon = document.getElementById('hideLossIcon');
-  const text = document.getElementById('hideLossText');
-  if (hideLosses) {
-    btn.classList.add('active');
-    icon.textContent = '🚫';
-    text.textContent = 'Show All';
-  } else {
-    btn.classList.remove('active');
-    icon.textContent = '👁';
-    text.textContent = 'Hide Losses';
-  }
-  fetchSignals();  // Re-render
-}
-
-function updateLossFilter() {
-  lossThreshold = parseFloat(document.getElementById('lossThreshold').value) || -5;
-  if (hideLosses) fetchSignals();
-}
-
-// ===== Motivational banner =====
-function updateMotivationBanner(allSignals) {
-  const banner = document.getElementById('motivationBanner');
-  if (!allSignals || allSignals.length === 0) {
-    banner.innerHTML = '<div class="motivation-text">📊 Be the first to share a signal today!</div>';
-    return;
-  }
-  // Calculate stats
-  const winners = allSignals.filter(s => s.pnl > 0);
-  const losers = allSignals.filter(s => s.pnl < 0);
-  const winRate = allSignals.length > 0 ? Math.round((winners.length / allSignals.length) * 100) : 0;
-  const avgPnl = allSignals.reduce((s, x) => s + (x.pnl || 0), 0) / allSignals.length;
-  // Motivational messages based on performance
-  const messages = [];
-  if (winRate >= 70) {
-    messages.push('🎯 Community is CRUSHING it! ' + winRate + '% win rate today!');
-  } else if (winRate >= 50) {
-    messages.push('📈 ' + winRate + '% win rate — keep posting those winners!');
-  } else if (winRate < 30 && allSignals.length >= 5) {
-    messages.push('🎲 Markets are tough — only ' + winRate + '% green. Trade safe!');
-  }
-  if (winners.length > 0) {
-    const topPnl = Math.max(...allSignals.map(s => s.pnl || 0));
-    if (topPnl >= 20) messages.push('🔥 Someone is up ' + topPnl.toFixed(1) + '%! Can you beat that?');
-  }
-  if (allSignals.length >= 10 && avgPnl > 0) {
-    messages.push('💎 ' + winners.length + ' winners today. Average +' + avgPnl.toFixed(1) + '%');
-  }
-  // Default message
-  if (messages.length === 0) {
-    messages.push('🚀 Share your first signal to climb the leaderboard!');
-  }
-  // Pick one random message
-  const msg = messages[Math.floor(Math.random() * messages.length)];
-  banner.innerHTML = '<div class="motivation-text">' + msg + '</div>';
-}
-
-// ===== Top 10 scorers =====
-function updateTopScorers(allSignals) {
-  const section = document.getElementById('topScorersSection');
-  const scroll = document.getElementById('topScorersScroll');
-  if (!allSignals || allSignals.length === 0) {
-    section.style.display = 'none';
-    return;
-  }
-  // Only consider signals with meaningful pnl data
-  const eligible = allSignals.filter(s => s.pnl !== 0 || s.entry);
-  if (eligible.length === 0) {
-    section.style.display = 'none';
-    return;
-  }
-  // Sort by pnl descending, take top 10
-  const top10 = eligible.sort((a, b) => (b.pnl || 0) - (a.pnl || 0)).slice(0, 10);
-  section.style.display = 'block';
-  scroll.innerHTML = top10.map((s, i) => {
-    const rank = i + 1;
-    const pnlClass = s.pnl > 0 ? 'positive' : (s.pnl < 0 ? 'negative' : '');
-    const userName = s.userName || 'Anon';
-    const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=ffd700&color=000&bold=true&size=64`;
-    return `
-      <div class="top-scorer-card" onclick="filterByCoin('${esc(s.coin)}')">
-        <div class="top-scorer-rank">${rank}</div>
-        <div class="top-scorer-coin">${esc(s.coin)}</div>
-        <div class="top-scorer-pnl ${pnlClass}">${s.pnl > 0 ? '+' : ''}${parseFloat(s.pnl || 0).toFixed(2)}%</div>
-        <div class="top-scorer-user">
-          <img src="${avatar}" style="width:16px;height:16px;border-radius:50%;vertical-align:middle">
-          ${esc(userName)}
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-// Helper to filter by coin (called from top scorer card click)
-function filterByCoin(coin) {
-  currentFilter = coin;
-  currentPage = 1;
-  document.querySelectorAll('.filter-btn').forEach(b => {
-    b.classList.toggle('active', b.getAttribute('data-filter') === coin);
-  });
-  fetchSignals();
-  window.scrollTo({ top: document.getElementById('signalsList').offsetTop - 50, behavior: 'smooth' });
-}
-
-// ===== Smart Coin Analyzer =====
-function showAnalyzerModal() {
-  document.getElementById('analyzerModal').classList.add('active');
-  document.getElementById('analyzerResult').innerHTML = '';
-  setTimeout(() => document.getElementById('analyzerCoin').focus(), 100);
-}
-
-function closeAnalyzerModal() {
-  document.getElementById('analyzerModal').classList.remove('active');
-}
-
-async function runAnalyzer() {
-  const coin = document.getElementById('analyzerCoin').value.trim().toUpperCase();
-  if (!coin) return showToast('Enter a coin!', '#ff3b30');
-  const interval = document.getElementById('analyzerTimeframe').value;
-  const strategy = document.getElementById('analyzerStrategy').value;
-  const cciSettings = { standard: [14, 30], fast: [8, 21], slow: [20, 50] };
-  const [cciX, cciY] = cciSettings[strategy];
-  const resultDiv = document.getElementById('analyzerResult');
-  resultDiv.innerHTML = '<div style="text-align:center;padding:20px"><div style="font-size:24px">⏳</div><div style="opacity:0.7">Analyzing ' + esc(coin) + '...</div></div>';
-  try {
-    const r = await fetch(API + '/api/signals/analyze/' + encodeURIComponent(coin) + '?interval=' + interval + '&cciX=' + cciX + '&cciY=' + cciY).then(r => r.json());
-    if (r.success) {
-      const sig = r.signal;
-      const actionColors = {
-        LONG: ['#00c853', '#1de9b6', '🟢'],
-        SHORT: ['#ff3b30', '#ff6b6b', '🔴'],
-        HOLD_LONG: ['#00c853', '#1de9b6', '✅'],
-        HOLD_SHORT: ['#ff3b30', '#ff6b6b', '✅'],
-        WAIT: ['#888', '#aaa', '⏳'],
-      };
-      const colors = actionColors[sig.action] || actionColors.WAIT;
-      const conf = sig.confidence;
-      const confColor = conf >= 70 ? '#00c853' : conf >= 40 ? '#ffd700' : '#ff3b30';
-      let nextSignalHtml = '';
-      if (sig.nextSignal) {
-        nextSignalHtml = '<div style="margin-top:8px;padding:6px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:11px">📍 Next ' + sig.nextSignal.type + ' signal in ' + sig.nextSignal.distance + ' CCI points</div>';
-      }
-      resultDiv.innerHTML = `
-        <div style="background:linear-gradient(135deg, ${colors[0]}33, ${colors[1]}22);border:1px solid ${colors[0]}66;border-radius:10px;padding:14px;margin-top:6px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div>
-              <div style="font-size:18px;font-weight:900;color:#fff">${esc(r.coin)}</div>
-              <div style="font-size:11px;opacity:0.7">$${parseFloat(r.currentPrice).toFixed(4)} • ${esc(r.interval)} • 24h: ${r.change24h >= 0 ? '+' : ''}${r.change24h}%</div>
-            </div>
-            <div style="text-align:right">
-              <div style="font-size:24px">${colors[2]}</div>
-              <div style="font-size:18px;font-weight:900;color:${colors[0]}">${sig.action.replace('_', ' ')}</div>
-              <div style="font-size:10px;opacity:0.7">${sig.agreement || ''} agree</div>
-            </div>
-          </div>
-          <div style="background:rgba(0,0,0,0.3);padding:8px;border-radius:6px;margin-bottom:8px">
-            <div style="font-size:11px;opacity:0.7">CONFIDENCE (${r.strategies ? r.strategies.length : 5} strategies voting)</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
-              <div style="flex:1;background:rgba(255,255,255,0.1);height:6px;border-radius:3px;overflow:hidden">
-                <div style="width:${conf}%;height:100%;background:${confColor};border-radius:3px"></div>
-              </div>
-              <div style="font-size:14px;font-weight:900;color:${confColor}">${conf}%</div>
-            </div>
-          </div>
-          <div style="font-size:12px;line-height:1.5;margin-bottom:8px">${esc(sig.reason)}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
-            <div style="text-align:center;background:rgba(0,0,0,0.2);padding:6px;border-radius:6px">
-              <div style="font-size:9px;opacity:0.7">ENTRY</div>
-              <div style="font-size:11px;font-weight:700">$${parseFloat(sig.entry).toFixed(4)}</div>
-            </div>
-            <div style="text-align:center;background:rgba(0,200,83,0.15);padding:6px;border-radius:6px">
-              <div style="font-size:9px;opacity:0.7">TARGET</div>
-              <div style="font-size:11px;font-weight:700;color:#00c853">$${sig.target ? parseFloat(sig.target).toFixed(4) : '-'}</div>
-            </div>
-            <div style="text-align:center;background:rgba(255,59,48,0.15);padding:6px;border-radius:6px">
-              <div style="font-size:9px;opacity:0.7">STOP LOSS</div>
-              <div style="font-size:11px;font-weight:700;color:#ff3b30">$${sig.stopLoss ? parseFloat(sig.stopLoss).toFixed(4) : '-'}</div>
-            </div>
-          </div>
-          <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1)">
-            <div style="font-size:10px;opacity:0.7;margin-bottom:6px">📊 ALL INDICATORS</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px">
-              <div style="background:rgba(0,0,0,0.2);padding:4px;border-radius:4px">CCI Sum: <b style="color:${r.indicators.cci.sum > 0 ? '#00c853' : '#ff3b30'}">${r.indicators.cci.sum}</b></div>
-              <div style="background:rgba(0,0,0,0.2);padding:4px;border-radius:4px">RSI: <b style="color:${r.indicators.rsi.value > 70 ? '#ff3b30' : r.indicators.rsi.value < 30 ? '#00c853' : '#fff'}">${r.indicators.rsi.value}</b></div>
-              <div style="background:rgba(0,0,0,0.2);padding:4px;border-radius:4px">MACD: <b style="color:${r.indicators.macd.histogram > 0 ? '#00c853' : '#ff3b30'}">${r.indicators.macd.histogram}</b></div>
-              <div style="background:rgba(0,0,0,0.2);padding:4px;border-radius:4px">Vol: <b>${r.indicators.volume.ratio}x</b></div>
-              <div style="background:rgba(0,0,0,0.2);padding:4px;border-radius:4px">Mom 3: <b style="color:${r.indicators.momentum3 > 0 ? '#00c853' : '#ff3b30'}">${r.indicators.momentum3 > 0 ? '+' : ''}${r.indicators.momentum3}%</b></div>
-              <div style="background:rgba(0,0,0,0.2);padding:4px;border-radius:4px">Volatility: <b>${r.volatility}%</b></div>
-            </div>
-          </div>
-          ${r.strategies ? `
-          <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1)">
-            <div style="font-size:10px;opacity:0.7;margin-bottom:6px">🗳️ STRATEGY VOTES</div>
-            ${r.strategies.map(s => {
-              const emoji = s.action === 'LONG' ? '🟢' : s.action === 'SHORT' ? '🔴' : '⚪';
-              return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;background:rgba(0,0,0,0.15);border-radius:4px;margin-bottom:3px;font-size:11px"><span>' + emoji + ' ' + s.name + '</span><span style="opacity:0.7">' + s.confidence + '%</span></div>';
-            }).join('')}
-          </div>
-          ` : ''}
-          ${nextSignalHtml}
-        </div>
-      `;
-    } else {
-      resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#ff3b30">' + (r.error || 'Analysis failed') + '</div>';
-    }
-  } catch (e) {
-    resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#ff3b30">Network error: ' + e.message + '</div>';
-  }
-}
-
-// ===== Admin Report (Members analytics) =====
-let adminData = null;
-let adminSort = 'joined';
-
-function showAdminModal() {
-  document.getElementById('adminModal').classList.add('active');
-  loadAdminReport();
-}
-
-function closeAdminModal() {
-  document.getElementById('adminModal').classList.remove('active');
-}
-
-function sortAdmin(by) {
-  adminSort = by;
-  document.getElementById('adminSortJoined').classList.toggle('active', by === 'joined');
-  document.getElementById('adminSortLastSeen').classList.toggle('active', by === 'lastSeen');
-  document.getElementById('adminSortActivity').classList.toggle('active', by === 'activity');
-  renderAdminList();
-}
-
-async function loadAdminReport() {
-  const stats = document.getElementById('adminStats');
-  const list = document.getElementById('adminList');
-  list.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading members...</div></div>';
-  try {
-    const r = await fetch(API + '/api/signals/admin/report').then(r => r.json());
-    if (r.success) {
-      adminData = r;
-      const s = r.stats;
-      stats.innerHTML = `
-        <div style="background:rgba(0,200,83,0.1);border:1px solid rgba(0,200,83,0.3);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:18px;font-weight:900;color:#00c853">${s.total}</div>
-          <div style="font-size:9px;opacity:0.7">Total Members</div>
-        </div>
-        <div style="background:rgba(0,200,83,0.05);border:1px solid rgba(0,200,83,0.2);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:18px;font-weight:900;color:#00c853">${s.online}</div>
-          <div style="font-size:9px;opacity:0.7">Online Now</div>
-        </div>
-        <div style="background:rgba(45,142,255,0.1);border:1px solid rgba(45,142,255,0.3);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:18px;font-weight:900;color:#2d8eff">${s.activeToday}</div>
-          <div style="font-size:9px;opacity:0.7">Active Today</div>
-        </div>
-        <div style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:18px;font-weight:900;color:#ffd700">${s.postedSignals}</div>
-          <div style="font-size:9px;opacity:0.7">Posted Signals</div>
-        </div>
-      `;
-      renderAdminList();
-    } else {
-      list.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div>';
-    }
-  } catch (e) {
-    list.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Network error</div></div>';
-  }
-}
-
-function renderAdminList() {
-  if (!adminData) return;
-  const list = document.getElementById('adminList');
-  let members = [...adminData.members];
-  if (adminSort === 'joined') members.sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0));
-  else if (adminSort === 'lastSeen') members.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
-  else if (adminSort === 'activity') members.sort((a, b) => (b.signalsPosted || 0) - (a.signalsPosted || 0));
-  if (members.length === 0) {
-    list.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No members yet</div></div>';
-    return;
-  }
-  list.innerHTML = members.map(m => {
-    const lastSeenAgo = m.lastSeen ? Math.floor((Date.now() - m.lastSeen) / 1000) : null;
-    let agoStr = 'never';
-    if (lastSeenAgo !== null) {
-      if (lastSeenAgo < 60) agoStr = lastSeenAgo + 's ago';
-      else if (lastSeenAgo < 3600) agoStr = Math.floor(lastSeenAgo / 60) + 'm ago';
-      else if (lastSeenAgo < 86400) agoStr = Math.floor(lastSeenAgo / 3600) + 'h ago';
-      else agoStr = Math.floor(lastSeenAgo / 86400) + 'd ago';
-    }
-    const dotColor = m.isOnline ? '#00c853' : m.isRecent ? '#ffd700' : '#888';
-    const joined = m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : '?';
-    return `
-      <div class="member-item">
-        <img src="${esc(m.avatar)}" alt="">
-        <div class="member-info">
-          <div class="member-name">
-            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:4px"></span>
-            ${esc(m.name)}
-          </div>
-          <div class="member-meta">
-            📍 ${esc(m.location || 'Unknown')} • ${m.signalsPosted || 0} signals • Joined ${joined}
-          </div>
-        </div>
-        <div class="member-stats">
-          <div class="member-stat-num" style="font-size:12px">${agoStr}</div>
-          <div class="member-stat-lbl">${m.activity ? m.activity.toUpperCase() : 'INACTIVE'}</div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-// ===== Live ticker tape (analyzed coins) =====
-let tickerRefreshInterval = null;
-
-async function loadTickerTape() {
-  try {
-    const r = await fetch(API + '/api/signals?limit=50').then(r => r.json());
+    const r = await fetch(API + '/api/signals/rotating-coins?limit=10').then(r => r.json());
     if (!r.success) return;
-    const coins = [...new Set(r.signals.map(s => s.coin).filter(c => c && !c.includes('/')))].slice(0, 8);
-    if (coins.length === 0) {
-      document.getElementById('tickerTrack').innerHTML = '<div style="color:rgba(255,255,255,0.5);padding:4px 12px">📡 Waiting for signals...</div>';
-      return;
-    }
-    // Analyze each coin (parallel, with short timeout)
+    const coins = r.coins;
+    // Analyze each in parallel (with timeout)
     const analyses = [];
     for (const coin of coins) {
       try {
         const a = await Promise.race([
           fetch(API + '/api/signals/analyze/' + encodeURIComponent(coin) + '?interval=15m').then(r => r.json()),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
         ]);
         if (a && a.success) analyses.push(a);
-      } catch (e) { /* skip */ }
+        else analyses.push({ coin, error: true });
+      } catch (e) { analyses.push({ coin, error: true }); }
     }
-    if (analyses.length === 0) {
-      document.getElementById('tickerTrack').innerHTML = '<div style="color:rgba(255,255,255,0.5);padding:4px 12px">⏳ Analyzing coins...</div>';
-      return;
-    }
-    // Build ticker items
-    const items = analyses.map(a => {
-      const sig = a.signal;
-      const actionClass = sig.action.toLowerCase();
-      const actionLabel = sig.action.replace('_', ' ');
-      const changeClass = a.change24h >= 0 ? 'up' : 'down';
-      const changeSign = a.change24h >= 0 ? '+' : '';
-      return '<div class="ticker-item">' +
-        '<span class="ticker-coin">' + esc(a.coin) + '</span>' +
-        '<span class="ticker-action ' + actionClass + '">' + esc(actionLabel) + '</span>' +
-        '<span class="ticker-price">$' + formatPrice(a.currentPrice) + '</span>' +
-        '<span class="ticker-change ' + changeClass + '">' + changeSign + a.change24h.toFixed(2) + '%</span>' +
-        '<span class="ticker-conf">💪 ' + sig.confidence + '%</span>' +
-      '</div>';
-    }).join('');
-    document.getElementById('tickerTrack').innerHTML = items + items;
+    renderTop10(analyses);
+    // Update timer
+    const now = Date.now();
+    const nextRotate = Math.ceil(now / 60000) * 60000;
+    const secsLeft = Math.round((nextRotate - now) / 1000);
+    $('top10Timer').textContent = '⏱ ' + secsLeft + 's';
   } catch (e) {
-    console.warn('Ticker load failed:', e);
+    console.error('Top 10 load failed:', e);
   }
 }
 
-function startTickerRefresh() {
-  loadTickerTape();
-  tickerRefreshInterval = setInterval(loadTickerTape, 30000);
+function renderTop10(analyses) {
+  const grid = $('top10Grid');
+  grid.innerHTML = analyses.map(a => {
+    if (a.error) {
+      return '<div class="top10-card" onclick="document.getElementById(\'analyzerCoin\').value=\'' + a.coin + '\';runAnalyzer()">' +
+        '<div class="top10-coin">' + esc(a.coin) + '</div>' +
+        '<div class="top10-price" style="color:#888">Tap to analyze</div>' +
+      '</div>';
+    }
+    const sig = a.signal;
+    const actionClass = sig.action.toLowerCase();
+    const actionLabel = sig.action.replace('_', ' ');
+    const changeClass = a.change24h >= 0 ? 'up' : 'down';
+    const changeSign = a.change24h >= 0 ? '+' : '';
+    return '<div class="top10-card" onclick="document.getElementById(\'analyzerCoin\').value=\'' + a.coin + '\';runAnalyzer();window.scrollTo({top:0,behavior:\'smooth\'})">' +
+      '<div class="top10-coin">' + esc(a.coin) + '</div>' +
+      '<span class="top10-action ' + actionClass + '">' + esc(actionLabel) + '</span> ' +
+      '<span class="top10-conf">' + sig.confidence + '%</span>' +
+      '<div class="top10-price">$' + formatPrice(a.currentPrice) + '</div>' +
+      '<div class="top10-change ' + changeClass + '">' + changeSign + a.change24h.toFixed(2) + '%</div>' +
+    '</div>';
+  }).join('');
 }
 
-// ===== Profit testimonials =====
-const profitMessages = [
-  { name: 'Rajesh Kumar', amount: '$248', coin: 'BTCUSDT', emoji: '🚀' },
-  { name: 'Priya Patel', amount: '$182', coin: 'ETHUSDT', emoji: '💎' },
-  { name: 'Aman Sharma', amount: '$1,420', coin: 'SOLUSDT', emoji: '🔥' },
-  { name: 'Anjali Singh', amount: '$95', coin: 'DOGEUSDT', emoji: '⚡' },
-  { name: 'Vikram Mehta', amount: '$670', coin: 'BTCUSDT', emoji: '💰' },
-  { name: 'Sneha Reddy', amount: '$1,250', coin: 'ETHUSDT', emoji: '🎯' },
-  { name: 'Karan Patel', amount: '$340', coin: 'SOLUSDT', emoji: '📈' },
-  { name: 'Rohit Kumar', amount: '$510', coin: 'BNBUSDT', emoji: '🚀' },
-  { name: 'Anita Verma', amount: '$2,100', coin: 'BTCUSDT', emoji: '💎' },
-  { name: 'Mohit Singh', amount: '$88', coin: 'XRPUSDT', emoji: '⚡' },
-  { name: 'Pooja Gupta', amount: '$620', coin: 'ETHUSDT', emoji: '🔥' },
-  { name: 'Arjun Reddy', amount: '$425', coin: 'SOLUSDT', emoji: '💰' },
-  { name: 'Nisha Joshi', amount: '$155', coin: 'LINKUSDT', emoji: '📈' },
-  { name: 'Sandeep Kumar', amount: '$890', coin: 'BTCUSDT', emoji: '🎯' },
-  { name: 'Kavita Sharma', amount: '$215', coin: 'AVAXUSDT', emoji: '🚀' },
-  { name: 'Rahul Verma', amount: '$1,580', coin: 'ETHUSDT', emoji: '💎' },
-  { name: 'babla', amount: '$348', coin: 'CHIPUSDT', emoji: '🔥' },
-  { name: 'Manish Gupta', amount: '$720', coin: 'SOLUSDT', emoji: '🎯' },
-  { name: 'Sonal Jain', amount: '$1,890', coin: 'BTCUSDT', emoji: '🚀' },
-  { name: 'Deepak Verma', amount: '$275', coin: 'ETHUSDT', emoji: '💎' },
-];
+function startTop10Refresh() {
+  loadTop10();
+  top10RefreshInterval = setInterval(loadTop10, 60000);  // Every 60s
+  // Update timer every second
+  setInterval(() => {
+    const now = Date.now();
+    const nextRotate = Math.ceil(now / 60000) * 60000;
+    const secsLeft = Math.round((nextRotate - now) / 1000);
+    $('top10Timer').textContent = '⏱ ' + secsLeft + 's';
+  }, 1000);
+}
 
-function renderProfitTicker() {
-  const msgs = profitMessages.map(m => {
-    return '<span class="profit-msg">' +
-      '<span class="profit-emoji">' + m.emoji + '</span>' +
-      '<span class="profit-name">' + esc(m.name) + '</span>' +
-      ' ne <span class="profit-amount">' + m.amount + ' profit</span> kamaya ' +
-      '<span class="profit-coin">' + esc(m.coin) + '</span> pe! 🎉' +
-    '</span>';
+// ===== TABS =====
+function switchTab(tabName) {
+  currentTab = tabName;
+  document.querySelectorAll('.tab-nav button').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-tab') === tabName);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === 'tab-' + tabName);
+  });
+  if (tabName === 'community') loadCommunity();
+  if (tabName === 'alerts') loadAlerts();
+}
+document.querySelectorAll('.tab-nav button').forEach(b => {
+  b.addEventListener('click', () => switchTab(b.getAttribute('data-tab')));
+});
+
+// ===== COMMUNITY POSTS =====
+function renderPostForm() {
+  if (!currentUser) return;
+  $('postFormContainer').innerHTML = `
+    <div class="post-input-wrap">
+      <textarea id="postText" class="post-input" placeholder="Share your thoughts, suggestions, or feedback about DainikState Trading..." maxlength="200"></textarea>
+      <div class="post-footer">
+        <span class="post-counter" id="postCounter">0 / 200</span>
+        <button class="post-btn" id="postBtn">Post</button>
+      </div>
+    </div>
+  `;
+  $('postText').addEventListener('input', () => {
+    $('postCounter').textContent = $('postText').value.length + ' / 200';
+    $('postBtn').disabled = $('postText').value.trim().length === 0;
+  });
+  $('postBtn').addEventListener('click', submitPost);
+}
+
+async function submitPost() {
+  const text = $('postText').value.trim();
+  if (!text || !currentUser) return;
+  try {
+    const r = await fetch(API + '/api/signals/feedback', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, name: currentUser.user.name, sessionId: currentUser.sessionId })
+    }).then(r => r.json());
+    if (r.success) {
+      $('postText').value = '';
+      $('postCounter').textContent = '0 / 200';
+      showToast('✅ Posted!', '#00c853');
+      loadCommunity();
+    } else { showToast('Error: ' + r.error, '#ff3b30'); }
+  } catch (e) { showToast('Network error', '#ff3b30'); }
+}
+
+async function loadCommunity() {
+  try {
+    const r = await fetch(API + '/api/signals/feedback?limit=30').then(r => r.json());
+    if (r.success) {
+      communityPosts = r.posts;
+      renderCommunity();
+    }
+  } catch (e) { console.error('Community load failed:', e); }
+}
+
+function renderCommunity() {
+  if (communityPosts.length === 0) {
+    $('communityList').innerHTML = '<div class="empty">💬 No posts yet. Be the first!</div>';
+    return;
+  }
+  $('communityList').innerHTML = communityPosts.map(p => {
+    const liked = currentUser && p.likedBy && p.likedBy.includes(currentUser.sessionId);
+    return '<div class="feedback-card">' +
+      '<div class="feedback-author">' +
+        '<img class="feedback-avatar" src="https://ui-avatars.com/api/?name=' + encodeURIComponent(p.userName) + '&background=667eea&color=fff&bold=true&size=64">' +
+        '<div><div class="feedback-name">' + esc(p.userName) + '</div>' +
+        '<div class="feedback-time">' + timeAgo(p.createdAt) + ' ago</div></div>' +
+      '</div>' +
+      '<div class="feedback-text">' + esc(p.text) + '</div>' +
+      '<div class="feedback-actions">' +
+        '<button class="feedback-like' + (liked ? ' liked' : '') + '" data-id="' + p.id + '">' +
+          (liked ? '❤️' : '🤍') + ' ' + (p.likes || 0) +
+        '</button>' +
+      '</div>' +
+    '</div>';
   }).join('');
-  document.getElementById('profitTickerInner').innerHTML = msgs + msgs;
+  document.querySelectorAll('.feedback-like').forEach(btn => {
+    btn.addEventListener('click', () => likePost(btn.getAttribute('data-id')));
+  });
+}
+
+async function likePost(id) {
+  if (!currentUser) {
+    showAuthModal();
+    return showToast('Login to like posts', '#ff9800');
+  }
+  try {
+    const r = await fetch(API + '/api/signals/feedback/' + id + '/like', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: currentUser.sessionId })
+    }).then(r => r.json());
+    if (r.success) loadCommunity();
+  } catch (e) { console.error('Like failed:', e); }
+}
+
+// ===== ALERTS =====
+function renderAlertForm() {
+  if (!currentUser) return;
+  $('alertFormContainer').innerHTML = `
+    <div class="alert-form">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">🔔 Set Price Alert</div>
+      <div class="alert-form-row">
+        <input type="text" id="alertCoin" placeholder="BTCUSDT" style="text-transform:uppercase">
+        <select id="alertCondition">
+          <option value="above">Above ↑</option>
+          <option value="below">Below ↓</option>
+        </select>
+      </div>
+      <input type="number" id="alertPrice" placeholder="Target price (e.g. 70000)" step="any">
+      <button class="post-btn" style="width:100%" id="alertBtn">Set Alert</button>
+    </div>
+  `;
+  $('alertBtn').addEventListener('click', submitAlert);
+}
+
+async function submitAlert() {
+  const coin = $('alertCoin').value.trim().toUpperCase();
+  const condition = $('alertCondition').value;
+  const targetPrice = parseFloat($('alertPrice').value);
+  if (!coin || isNaN(targetPrice)) return showToast('Fill all fields!', '#ff3b30');
+  if (!currentUser) return showToast('Login first!', '#ff3b30');
+  try {
+    const r = await fetch(API + '/api/signals/alerts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ coin, condition, targetPrice, sessionId: currentUser.sessionId })
+    }).then(r => r.json());
+    if (r.success) {
+      $('alertCoin').value = '';
+      $('alertPrice').value = '';
+      showToast('🔔 Alert set for ' + coin + '!', '#00c853');
+      loadAlerts();
+    } else { showToast('Error: ' + r.error, '#ff3b30'); }
+  } catch (e) { showToast('Network error', '#ff3b30'); }
+}
+
+async function loadAlerts() {
+  if (!currentUser) return;
+  try {
+    const r = await fetch(API + '/api/signals/alerts?sessionId=' + encodeURIComponent(currentUser.sessionId)).then(r => r.json());
+    if (r.success) {
+      userAlerts = r.alerts;
+      renderAlerts();
+    }
+  } catch (e) { console.error('Alerts load failed:', e); }
+}
+
+function renderAlerts() {
+  if (userAlerts.length === 0) {
+    $('alertsList').innerHTML = '<div class="empty">🔔 No alerts yet. Set one above!</div>';
+    return;
+  }
+  $('alertsList').innerHTML = userAlerts.map(a => {
+    const cls = a.status === 'triggered' ? 'triggered' : (a.status === 'cancelled' ? 'cancelled' : '');
+    return '<div class="alert-card ' + cls + '">' +
+      '<div><div class="alert-coin">' + esc(a.coin) + '</div>' +
+      '<div class="alert-detail">' + esc(a.condition) + ' $' + formatPrice(a.targetPrice) +
+      (a.status === 'triggered' ? ' • Triggered at $' + formatPrice(a.triggeredPrice) : '') +
+      '</div></div>' +
+      '<div style="display:flex;gap:6px;align-items:center">' +
+        '<span class="alert-status ' + a.status + '">' + a.status.toUpperCase() + '</span>' +
+        (a.status === 'active' ? '<button class="alert-cancel" data-id="' + a.id + '">✕</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+  document.querySelectorAll('.alert-cancel').forEach(btn => {
+    btn.addEventListener('click', () => cancelAlert(btn.getAttribute('data-id')));
+  });
+}
+
+async function cancelAlert(id) {
+  if (!confirm('Cancel this alert?')) return;
+  try {
+    const r = await fetch(API + '/api/signals/alerts/' + id, { method: 'DELETE' }).then(r => r.json());
+    if (r.success) { showToast('Alert cancelled', '#888'); loadAlerts(); }
+  } catch (e) { showToast('Network error', '#ff3b30'); }
 }
 
 // ===== INIT =====
-function startPolling() {
-  fetchSignals();
-  fetchBestSignal();
-  fetchLivePricesAndUpdatePnl();
-  startTickerRefresh();
-  renderProfitTicker();
-  pollInterval = setInterval(() => {
-    fetchSignals();
-    fetchBestSignal();
-  }, 10000);
-  setInterval(fetchLivePricesAndUpdatePnl, 4000);
-  fetchStats();
-  setInterval(fetchStats, 15000);
+async function init() {
+  startTop10Refresh();
+  loadCommunity();
+  setInterval(loadCommunity, 30000);
+  await checkAuth();
 }
 
-// Initialize on load
-checkAuth().then(() => {
-  trackVisit();
-  startPolling();
-});
+init();
 </script>
 </body>
 </html>
