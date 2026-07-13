@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
+<title>Kirana Express - DainikState</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f5f5; color: #1a1a1a; min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    padding: 14px 16px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  .header-row { display: flex; align-items: center; gap: 10px; }
+  .header-logo { font-size: 20px; font-weight: 900; color: #fff; flex: 1; }
+  .header-badge {
+    background: rgba(255,255,255,0.25);
+    padding: 4px 10px; border-radius: 12px;
+    font-size: 11px; color: #fff; font-weight: 700;
+  }
+  .location-bar {
+    color: #fff;
+    font-size: 12px; margin-top: 6px;
+    display: flex; align-items: center; gap: 4px;
+    opacity: 0.95;
+  }
+  .container { max-width: 480px; margin: 0 auto; padding: 0 12px 80px; }
+
+  /* Search */
+  .search-wrap {
+    background: #fff;
+    border-radius: 12px;
+    padding: 4px;
+    margin: 12px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .search-icon { font-size: 18px; padding: 0 8px; color: #999; }
+  .search-input {
+    flex: 1; border: none; outline: none;
+    padding: 10px 4px; font-size: 15px;
+    background: transparent;
+  }
+  .search-input::placeholder { color: #999; }
+  .search-results {
+    position: absolute; background: #fff; width: calc(100% - 24px);
+    max-width: 456px; border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    z-index: 50; max-height: 300px; overflow-y: auto;
+  }
+  .search-result-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+  }
+  .search-result-item:hover { background: #f8f8f8; }
+  .search-result-name { font-size: 14px; font-weight: 600; }
+  .search-result-meta { font-size: 11px; color: #888; }
+  .search-result-price { font-weight: 700; color: #ff6b35; margin-left: auto; }
+
+  /* Banner */
+  .banner {
+    background: linear-gradient(135deg, #2ed573 0%, #1eb955 100%);
+    color: #fff; padding: 14px;
+    border-radius: 12px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 2px 8px rgba(46,213,115,0.2);
+  }
+  .banner-icon { font-size: 32px; }
+  .banner-text { flex: 1; }
+  .banner-title { font-size: 15px; font-weight: 800; }
+  .banner-sub { font-size: 11px; opacity: 0.95; }
+
+  /* Categories */
+  .section-title {
+    font-size: 16px; font-weight: 800;
+    color: #1a1a1a; margin: 16px 0 10px;
+  }
+  .categories {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 8px; margin-bottom: 16px;
+  }
+  .cat-card {
+    background: #fff; border-radius: 10px;
+    padding: 10px 6px; text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    cursor: pointer; transition: transform 0.15s;
+  }
+  .cat-card:hover { transform: translateY(-2px); }
+  .cat-icon { font-size: 28px; margin-bottom: 4px; }
+  .cat-name { font-size: 10px; font-weight: 600; color: #444; }
+
+  /* Products */
+  .products {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .product-card {
+    background: #fff; border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .product-card:hover { transform: translateY(-2px); }
+  .product-img {
+    width: 100%; aspect-ratio: 1; object-fit: cover;
+    background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 50px;
+    position: relative;
+  }
+  .product-discount {
+    position: absolute; top: 6px; left: 6px;
+    background: #2ed573; color: #fff;
+    padding: 3px 7px; border-radius: 4px;
+    font-size: 10px; font-weight: 800;
+  }
+  .product-info { padding: 10px; }
+  .product-brand {
+    font-size: 10px; color: #888; text-transform: uppercase;
+    letter-spacing: 0.5px; font-weight: 600;
+  }
+  .product-name {
+    font-size: 13px; font-weight: 600; color: #1a1a1a;
+    margin: 3px 0; line-height: 1.3;
+    overflow: hidden; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .product-unit { font-size: 11px; color: #888; margin-bottom: 4px; }
+  .product-prices {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .product-price { font-size: 16px; font-weight: 800; color: #1a1a1a; }
+  .product-mrp { font-size: 11px; color: #999; text-decoration: line-through; }
+  .product-save {
+    font-size: 10px; color: #2ed573; font-weight: 700;
+    background: rgba(46,213,115,0.1); padding: 2px 5px;
+    border-radius: 3px;
+  }
+  .add-btn {
+    width: 100%; padding: 7px;
+    background: #fff; color: #ff6b35;
+    border: 1.5px solid #ff6b35;
+    border-radius: 6px; font-size: 12px;
+    font-weight: 800; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .add-btn:hover { background: #ff6b35; color: #fff; }
+  .add-btn.added {
+    background: #2ed573; border-color: #2ed573; color: #fff;
+  }
+  .qty-control {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #2ed573; color: #fff;
+    border-radius: 6px; padding: 0;
+  }
+  .qty-btn {
+    background: transparent; border: none; color: #fff;
+    width: 32px; height: 30px;
+    font-size: 16px; font-weight: 800; cursor: pointer;
+  }
+  .qty-num { font-size: 13px; font-weight: 800; }
+
+  /* Store banner */
+  .store-banner {
+    background: #fff; border-radius: 12px;
+    padding: 12px; margin-bottom: 12px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .store-avatar {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #fff;
+  }
+  .store-info { flex: 1; }
+  .store-name { font-size: 14px; font-weight: 800; }
+  .store-meta { font-size: 11px; color: #666; margin-top: 2px; }
+  .store-rating {
+    background: #2ed573; color: #fff;
+    padding: 2px 6px; border-radius: 4px;
+    font-size: 11px; font-weight: 700;
+  }
+
+  /* Cart */
+  .cart-fab {
+    position: fixed; bottom: 16px; left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff; padding: 12px 20px;
+    border-radius: 30px; font-weight: 800;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 4px 16px rgba(255,107,53,0.4);
+    cursor: pointer; z-index: 200;
+    width: calc(100% - 24px); max-width: 456px;
+    justify-content: space-between;
+  }
+  .cart-info { display: flex; align-items: center; gap: 10px; }
+  .cart-count {
+    background: #fff; color: #ff6b35;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800;
+  }
+  .cart-amount { font-size: 14px; }
+  .cart-arrow { font-size: 18px; }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.5);
+    display: none;
+  }
+  .modal-bg.active { display: block; }
+  .modal {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    max-width: 480px; margin: 0 auto;
+    background: #fff; border-radius: 16px 16px 0 0;
+    max-height: 85vh; overflow-y: auto;
+    padding: 16px;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .modal-title { font-size: 18px; font-weight: 800; }
+  .modal-close { font-size: 24px; cursor: pointer; color: #888; }
+
+  .cart-item {
+    display: flex; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .cart-item-img {
+    width: 50px; height: 50px;
+    background: #f0f0f0; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+  }
+  .cart-item-info { flex: 1; }
+  .cart-item-name { font-size: 13px; font-weight: 600; }
+  .cart-item-unit { font-size: 11px; color: #888; }
+  .cart-item-price { font-size: 13px; font-weight: 700; margin-top: 4px; }
+
+  .cart-summary {
+    background: #f8f8f8; border-radius: 8px;
+    padding: 12px; margin: 12px 0;
+  }
+  .cart-summary-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; margin-bottom: 6px;
+  }
+  .cart-summary-row.total {
+    font-size: 16px; font-weight: 800; color: #1a1a1a;
+    border-top: 1px solid #e0e0e0; padding-top: 8px; margin-top: 8px;
+  }
+  .free-tag { color: #2ed573; font-weight: 700; }
+
+  .checkout-btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff; border: none;
+    border-radius: 10px; font-size: 15px; font-weight: 800;
+    cursor: pointer;
+  }
+  .address-input {
+    width: 100%; padding: 10px; margin: 8px 0;
+    border: 1px solid #ddd; border-radius: 6px;
+    font-size: 14px; font-family: inherit;
+  }
+  .address-input:focus { outline: none; border-color: #ff6b35; }
+
+  /* Product detail modal */
+  .product-detail {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    max-width: 480px; margin: 0 auto;
+    background: #fff; border-radius: 16px 16px 0 0;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .product-detail-img {
+    width: 100%; aspect-ratio: 1; object-fit: cover;
+    background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 100px;
+  }
+  .product-detail-body { padding: 16px; }
+  .product-detail-name { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+  .product-detail-unit { font-size: 13px; color: #888; margin-bottom: 8px; }
+  .product-detail-prices {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .product-detail-price { font-size: 24px; font-weight: 800; }
+  .product-detail-mrp { font-size: 14px; color: #999; text-decoration: line-through; }
+  .product-detail-save {
+    background: #2ed573; color: #fff;
+    padding: 3px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 700;
+  }
+  .compare-box {
+    background: linear-gradient(135deg, #fff5e6, #ffe9d6);
+    border: 2px dashed #ff6b35;
+    border-radius: 12px; padding: 14px;
+    margin: 12px 0;
+  }
+  .compare-title {
+    font-size: 13px; font-weight: 800; color: #ff6b35;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .compare-row {
+    display: flex; justify-content: space-between;
+    padding: 6px 0; border-bottom: 1px solid rgba(255,107,53,0.15);
+    font-size: 13px;
+  }
+  .compare-row:last-child { border: none; font-weight: 800; color: #ff6b35; }
+  .compare-platform { display: flex; align-items: center; gap: 6px; }
+  .compare-icon { font-size: 16px; }
+  .compare-best {
+    background: rgba(46,213,115,0.15);
+    padding: 2px 6px; border-radius: 4px;
+    color: #2ed573; font-weight: 700; font-size: 10px;
+    margin-left: 6px;
+  }
+
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; color: #fff;
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 13px; font-weight: 600;
+    z-index: 2000;
+  }
+
+  .loading {
+    text-align: center; padding: 40px;
+    color: #888;
+  }
+  .empty {
+    text-align: center; padding: 40px 20px; color: #999;
+  }
+  .empty-icon { font-size: 50px; margin-bottom: 10px; }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 6px; margin: 12px 0;
+  }
+  .stat-box {
+    background: #fff; padding: 10px;
+    border-radius: 8px; text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .stat-num { font-size: 18px; font-weight: 800; color: #ff6b35; }
+  .stat-lbl { font-size: 10px; color: #888; }
+
+  .back-btn {
+    background: none; border: none; color: #fff;
+    font-size: 20px; padding: 0; cursor: pointer;
+  }
+  .cart-empty {
+    text-align: center; padding: 30px 20px; color: #999;
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-row">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="header-logo">🛒 Kirana Express</div>
+    <div class="header-badge">FREE Delivery</div>
+  </div>
+  <div class="location-bar">📍 Hazāribāgh, Jharkhand • 15-30 min delivery</div>
+</div>
+
+<div class="container">
+  <!-- Search -->
+  <div class="search-wrap" style="position:relative">
+    <span class="search-icon">🔍</span>
+    <input type="text" class="search-input" id="searchInput" placeholder="Search rice, dal, oil..." oninput="handleSearch(this.value)">
+    <div class="search-results" id="searchResults" style="display:none"></div>
+  </div>
+
+  <!-- Banner -->
+  <div class="banner">
+    <div class="banner-icon">⚡</div>
+    <div class="banner-text">
+      <div class="banner-title">15-30 Minute Delivery</div>
+      <div class="banner-sub">FREE delivery on ALL orders • Wholesale prices</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-box"><div class="stat-num" id="statStores">0</div><div class="stat-lbl">Local Stores</div></div>
+    <div class="stat-box"><div class="stat-num" id="statProducts">0</div><div class="stat-lbl">Products</div></div>
+    <div class="stat-box"><div class="stat-num" id="statSavings">0%</div><div class="stat-lbl">Avg Savings</div></div>
+  </div>
+
+  <!-- Store info -->
+  <div class="store-banner" id="storeBanner">
+    <div class="store-avatar">🏪</div>
+    <div class="store-info">
+      <div class="store-name" id="storeName">Loading stores...</div>
+      <div class="store-meta" id="storeMeta">Best kirana stores near you</div>
+    </div>
+    <div class="store-rating" id="storeRating">⭐ 4.5</div>
+  </div>
+
+  <!-- Categories -->
+  <div class="section-title">Shop by Category</div>
+  <div class="categories" id="categories">
+    <div class="loading">⏳ Loading categories...</div>
+  </div>
+
+  <!-- Products -->
+  <div class="section-title">⚡ Best Deals (Cheaper than Amazon!)</div>
+  <div class="products" id="products">
+    <div class="loading">⏳ Loading products...</div>
+  </div>
+</div>
+
+<!-- Cart FAB -->
+<div id="cartFab" class="cart-fab" style="display:none" onclick="openCart()">
+  <div class="cart-info">
+    <div class="cart-count" id="cartCount">0</div>
+    <div>items</div>
+  </div>
+  <div class="cart-amount" id="cartAmount">₹0</div>
+  <div class="cart-arrow">→</div>
+</div>
+
+<!-- Cart Modal -->
+<div class="modal-bg" id="cartModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🛒 Your Cart</div>
+      <div class="modal-close" onclick="closeCart()">×</div>
+    </div>
+    <div id="cartItems"></div>
+    <div id="cartCheckout" style="display:none">
+      <input type="text" class="address-input" id="deliveryAddress" placeholder="Delivery address (e.g. House 12, Main Road)">
+      <input type="tel" class="address-input" id="deliveryPhone" placeholder="Phone number for delivery">
+      <div class="cart-summary" id="cartSummary"></div>
+      <button class="checkout-btn" onclick="placeOrder()">🚀 Place Order - COD Available</button>
+    </div>
+  </div>
+</div>
+
+<!-- Product Detail Modal -->
+<div class="modal-bg" id="productModal">
+  <div class="product-detail" id="productDetailContent">
+    <div style="text-align:center;padding:20px">Loading...</div>
+  </div>
+</div>
+
+<script>
+const API = 'https://canyou-uqkp.onrender.com';
+let cart = {};  // { productId: { product, quantity } }
+let currentStore = null;
+let currentCategory = null;
+let searchTimeout = null;
+
+function goHome() { window.location.href = '/trading.html'; }
+function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function showToast(msg, color) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  if (color) t.style.background = color;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ===== INIT =====
+async function init() {
+  await loadStats();
+  await loadStores();
+  await loadCategories();
+  await loadProducts();
+}
+
+// ===== STATS =====
+async function loadStats() {
+  try {
+    const r = await fetch(API + '/api/kirana/stats').then(r => r.json());
+    if (r.success) {
+      document.getElementById('statStores').textContent = r.stats.activeStores;
+      document.getElementById('statProducts').textContent = r.stats.totalProducts;
+      document.getElementById('statSavings').textContent = r.stats.avgSavingsVsJioMart + '%';
+    }
+  } catch (e) {}
+}
+
+// ===== STORES =====
+async function loadStores() {
+  try {
+    const r = await fetch(API + '/api/kirana/stores?status=active').then(r => r.json());
+    if (r.success && r.stores.length > 0) {
+      // Show nearest store (just first for now)
+      const store = r.stores[0];
+      currentStore = store;
+      document.getElementById('storeName').textContent = store.name;
+      document.getElementById('storeMeta').textContent = store.area + (store.city ? ', ' + store.city : '') + ' • ' + store.avgDeliveryMins + ' min';
+      document.getElementById('storeRating').textContent = '⭐ ' + (store.rating || 4.5);
+    }
+  } catch (e) {}
+}
+
+// ===== CATEGORIES =====
+async function loadCategories() {
+  try {
+    const r = await fetch(API + '/api/kirana/categories').then(r => r.json());
+    if (r.success) {
+      const grid = document.getElementById('categories');
+      grid.innerHTML = r.categories.map(c => {
+        return '<div class="cat-card" onclick="filterByCategory(\'' + c.id + '\', \'' + esc(c.name) + '\')">' +
+          '<div class="cat-icon">' + c.icon + '</div>' +
+          '<div class="cat-name">' + esc(c.name.replace(/^.+ /, '')) + '</div>' +
+        '</div>';
+      }).join('');
+    }
+  } catch (e) {}
+}
+
+function filterByCategory(catId, catName) {
+  currentCategory = catId;
+  document.querySelector('.section-title:nth-of-type(2)').textContent = '⚡ ' + catName;
+  loadProducts();
+  window.scrollTo({ top: 600, behavior: 'smooth' });
+}
+
+// ===== PRODUCTS =====
+async function loadProducts() {
+  const grid = document.getElementById('products');
+  grid.innerHTML = '<div class="loading">⏳ Loading products...</div>';
+  try {
+    let url = API + '/api/kirana/products?status=active&limit=20&sort=popular';
+    if (currentCategory) url += '&category=' + currentCategory;
+    if (currentStore) url += '&storeId=' + currentStore.id;
+    const r = await fetch(url).then(r => r.json());
+    if (r.success) {
+      if (r.products.length === 0) {
+        grid.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><div>No products yet</div></div>';
+        return;
+      }
+      grid.innerHTML = r.products.map(p => renderProduct(p)).join('');
+    }
+  } catch (e) {
+    grid.innerHTML = '<div class="empty">Network error</div>';
+  }
+}
+
+function renderProduct(p) {
+  const discount = p.mrp > p.price ? Math.round(((p.mrp - p.price) / p.mrp) * 100) : 0;
+  const inCart = cart[p.id];
+  const emoji = emojiForCategory(p.category);
+  return '<div class="product-card" onclick="openProduct(\'' + p.id + '\')">' +
+    '<div class="product-img">' + emoji +
+      (discount > 0 ? '<div class="product-discount">' + discount + '% OFF</div>' : '') +
+    '</div>' +
+    '<div class="product-info">' +
+      '<div class="product-brand">' + esc(p.brand) + '</div>' +
+      '<div class="product-name">' + esc(p.name) + '</div>' +
+      '<div class="product-unit">' + esc(p.unit) + '</div>' +
+      '<div class="product-prices">' +
+        '<div class="product-price">₹' + p.price + '</div>' +
+        (p.mrp > p.price ? '<div class="product-mrp">₹' + p.mrp + '</div>' : '') +
+        (discount > 0 ? '<div class="product-save">Save ₹' + (p.mrp - p.price) + '</div>' : '') +
+      '</div>' +
+      (inCart ?
+        '<div class="qty-control" onclick="event.stopPropagation()">' +
+          '<button class="qty-btn" onclick="updateCart(\'' + p.id + '\', -1)">−</button>' +
+          '<div class="qty-num">' + inCart.quantity + '</div>' +
+          '<button class="qty-btn" onclick="updateCart(\'' + p.id + '\', 1)">+</button>' +
+        '</div>' :
+        '<button class="add-btn" onclick="event.stopPropagation();addToCart(\'' + p.id + '\')">+ ADD</button>'
+      ) +
+    '</div>' +
+  '</div>';
+}
+
+function emojiForCategory(catId) {
+  const map = {
+    'cat_001': '🍚', 'cat_002': '🫘', 'cat_003': '🛢️', 'cat_004': '🌶️',
+    'cat_005': '🥛', 'cat_006': '🥬', 'cat_007': '🍎', 'cat_008': '🥤',
+    'cat_009': '🧹', 'cat_010': '🧴', 'cat_011': '🍪', 'cat_012': '🍼',
+  };
+  return map[catId] || '📦';
+}
+
+// ===== SEARCH =====
+function handleSearch(q) {
+  clearTimeout(searchTimeout);
+  const resultsDiv = document.getElementById('searchResults');
+  if (!q || q.length < 1) {
+    resultsDiv.style.display = 'none';
+    return;
+  }
+  searchTimeout = setTimeout(async () => {
+    try {
+      const r = await fetch(API + '/api/kirana/search?q=' + encodeURIComponent(q) + '&limit=8').then(r => r.json());
+      if (r.success && r.results.length > 0) {
+        resultsDiv.innerHTML = r.results.map(p => {
+          return '<div class="search-result-item" onclick="openProduct(\'' + p.id + '\')">' +
+            '<div style="font-size:30px">' + emojiForCategory(p.category) + '</div>' +
+            '<div style="flex:1">' +
+              '<div class="search-result-name">' + esc(p.name) + '</div>' +
+              '<div class="search-result-meta">' + esc(p.brand) + ' • ' + esc(p.unit) + '</div>' +
+            '</div>' +
+            '<div class="search-result-price">₹' + p.price + '</div>' +
+          '</div>';
+        }).join('');
+        resultsDiv.style.display = 'block';
+      } else {
+        resultsDiv.innerHTML = '<div class="search-result-item" style="opacity:0.6">No products found</div>';
+        resultsDiv.style.display = 'block';
+      }
+    } catch (e) {}
+  }, 300);
+}
+
+// ===== PRODUCT DETAIL =====
+async function openProduct(productId) {
+  const modal = document.getElementById('productModal');
+  const content = document.getElementById('productDetailContent');
+  content.innerHTML = '<div class="product-detail-img">⏳</div>';
+  modal.classList.add('active');
+  document.getElementById('searchResults').style.display = 'none';
+  try {
+    const r1 = await fetch(API + '/api/kirana/products/' + productId).then(r => r.json());
+    const r2 = await fetch(API + '/api/kirana/compare/' + productId).then(r => r.json());
+    if (r1.success && r2.success) {
+      const p = r1.product;
+      const c = r2.comparison;
+      const inCart = cart[p.id];
+      const emoji = emojiForCategory(p.category);
+      content.innerHTML = '<div class="product-detail-img">' + emoji + '</div>' +
+        '<div class="product-detail-body">' +
+          '<div class="product-detail-name">' + esc(p.name) + '</div>' +
+          '<div class="product-detail-unit">' + esc(p.brand) + ' • ' + esc(p.unit) + '</div>' +
+          '<div class="product-detail-prices">' +
+            '<div class="product-detail-price">₹' + p.price + '</div>' +
+            (p.mrp > p.price ? '<div class="product-detail-mrp">₹' + p.mrp + '</div>' : '') +
+            (p.mrp > p.price ? '<div class="product-detail-save">SAVE ₹' + (p.mrp - p.price) + '</div>' : '') +
+          '</div>' +
+          // LIVE PRICE COMPARISON (the killer feature!)
+          '<div class="compare-box">' +
+            '<div class="compare-title">📊 Live Price Comparison</div>' +
+            Object.entries(c.prices).map(([p2, info]) => {
+              const platformNames = { dainikstate: 'Kirana Express', amazon: 'Amazon', flipkart: 'Flipkart', jiomart: 'JioMart', bigbasket: 'BigBasket' };
+              const platformEmojis = { dainikstate: '🛒', amazon: '📦', flipkart: '🛍️', jiomart: '🟦', bigbasket: '🥬' };
+              const isBest = p2 === 'dainikstate';
+              return '<div class="compare-row">' +
+                '<div class="compare-platform">' + platformEmojis[p2] + ' ' + platformNames[p2] + (isBest ? '<span class="compare-best">BEST</span>' : '') + '</div>' +
+                '<div>₹' + Math.round(info.price) + '</div>' +
+              '</div>';
+            }).join('') +
+            '<div class="compare-row" style="margin-top:8px;border-top:1px solid #ff6b35;padding-top:8px">' +
+              '<div>💰 You save up to</div>' +
+              '<div style="color:#2ed573;font-size:18px">₹' + Math.round(c.bestSavings.perUnit) + '</div>' +
+            '</div>' +
+          '</div>' +
+          // Add to cart button
+          (inCart ?
+            '<div class="qty-control">' +
+              '<button class="qty-btn" onclick="updateCart(\'' + p.id + '\', -1)">−</button>' +
+              '<div class="qty-num">' + inCart.quantity + '</div>' +
+              '<button class="qty-btn" onclick="updateCart(\'' + p.id + '\', 1)">+</button>' +
+            '</div>' :
+            '<button class="checkout-btn" onclick="addToCart(\'' + p.id + '\');openProduct(\'' + p.id + '\')">+ Add to Cart</button>'
+          ) +
+        '</div>';
+    }
+  } catch (e) {
+    content.innerHTML = '<div style="text-align:center;padding:40px">Failed to load</div>';
+  }
+}
+
+// Close product modal on background click
+document.getElementById('productModal').addEventListener('click', (e) => {
+  if (e.target.id === 'productModal') closeProductModal();
+});
+function closeProductModal() {
+  document.getElementById('productModal').classList.remove('active');
+}
+
+// ===== CART =====
+function addToCart(productId) {
+  // Need product details - we'll cache them as we go
+  fetch(API + '/api/kirana/products/' + productId).then(r => r.json()).then(r => {
+    if (r.success) {
+      if (!cart[productId]) cart[productId] = { product: r.product, quantity: 0 };
+      cart[productId].quantity++;
+      updateCartUI();
+      showToast('✅ Added to cart');
+    }
+  });
+}
+
+function updateCart(productId, delta) {
+  if (!cart[productId]) return;
+  cart[productId].quantity += delta;
+  if (cart[productId].quantity <= 0) delete cart[productId];
+  updateCartUI();
+  loadProducts();  // re-render to update buttons
+  if (!document.getElementById('cartModal').classList.contains('active')) return;
+  renderCartItems();
+}
+
+function updateCartUI() {
+  const items = Object.values(cart);
+  const total = items.reduce((s, x) => s + (x.product.price * x.quantity), 0);
+  const count = items.reduce((s, x) => s + x.quantity, 0);
+  const fab = document.getElementById('cartFab');
+  if (items.length > 0) {
+    fab.style.display = 'flex';
+    document.getElementById('cartCount').textContent = count;
+    document.getElementById('cartAmount').textContent = '₹' + total;
+  } else {
+    fab.style.display = 'none';
+  }
+}
+
+function openCart() {
+  document.getElementById('cartModal').classList.add('active');
+  renderCartItems();
+}
+
+function closeCart() {
+  document.getElementById('cartModal').classList.remove('active');
+}
+
+document.getElementById('cartModal').addEventListener('click', (e) => {
+  if (e.target.id === 'cartModal') closeCart();
+});
+
+function renderCartItems() {
+  const items = Object.values(cart);
+  const container = document.getElementById('cartItems');
+  const checkout = document.getElementById('cartCheckout');
+  if (items.length === 0) {
+    container.innerHTML = '<div class="cart-empty"><div class="empty-icon">🛒</div><div>Your cart is empty</div></div>';
+    checkout.style.display = 'none';
+    return;
+  }
+  checkout.style.display = 'block';
+  container.innerHTML = items.map(x => {
+    const emoji = emojiForCategory(x.product.category);
+    return '<div class="cart-item">' +
+      '<div class="cart-item-img">' + emoji + '</div>' +
+      '<div class="cart-item-info">' +
+        '<div class="cart-item-name">' + esc(x.product.name) + '</div>' +
+        '<div class="cart-item-unit">' + esc(x.product.unit) + ' • ₹' + x.product.price + ' each</div>' +
+        '<div class="cart-item-price">₹' + (x.product.price * x.quantity) + '</div>' +
+      '</div>' +
+      '<div class="qty-control" style="background:#f0f0f0">' +
+        '<button class="qty-btn" style="color:#333" onclick="updateCart(\'' + x.product.id + '\', -1)">−</button>' +
+        '<div class="qty-num" style="color:#333">' + x.quantity + '</div>' +
+        '<button class="qty-btn" style="color:#333" onclick="updateCart(\'' + x.product.id + '\', 1)">+</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  // Summary
+  const subtotal = items.reduce((s, x) => s + x.product.price * x.quantity, 0);
+  document.getElementById('cartSummary').innerHTML = '<div class="cart-summary-row"><span>Subtotal</span><span>₹' + subtotal + '</span></div>' +
+    '<div class="cart-summary-row"><span>Delivery</span><span class="free-tag">FREE</span></div>' +
+    '<div class="cart-summary-row total"><span>Total</span><span>₹' + subtotal + '</span></div>';
+}
+
+// ===== CHECKOUT =====
+async function placeOrder() {
+  const items = Object.values(cart);
+  if (items.length === 0) return;
+  const address = document.getElementById('deliveryAddress').value.trim();
+  const phone = document.getElementById('deliveryPhone').value.trim();
+  if (!address) return showToast('Enter delivery address!', '#ff3b30');
+  if (!phone) return showToast('Enter phone number!', '#ff3b30');
+  // Get user ID (login or guest)
+  let customerId = localStorage.getItem('ds_user_session') || 'guest_' + Date.now();
+  try {
+    const orderItems = items.map(x => ({ productId: x.product.id, quantity: x.quantity }));
+    const r = await fetch(API + '/api/kirana/orders', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerId, storeId: currentStore.id, items: orderItems,
+        address, phone, paymentMethod: 'cod', notes: ''
+      })
+    }).then(r => r.json());
+    if (r.success) {
+      cart = {};
+      updateCartUI();
+      closeCart();
+      showToast('🎉 Order placed! Delivery in 15-30 min');
+    } else {
+      showToast('Error: ' + r.error, '#ff3b30');
+    }
+  } catch (e) {
+    showToast('Network error', '#ff3b30');
+  }
+}
+
+// ===== SEED DEMO DATA (for testing) =====
+async function seedDemo() {
+  showToast('🌱 Seeding demo data...');
+  await fetch(API + '/api/kirana/seed-demo', { method: 'POST' });
+  setTimeout(() => location.reload(), 1500);
+}
+
+// Initialize
+init();
+</script>
+</body>
+</html>
