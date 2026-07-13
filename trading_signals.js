@@ -356,7 +356,7 @@ module.exports = function(app, db, usersCol) {
     });
   });
 
-  // List of all unique coins with stats
+  // Get unique coins from all signals
   app.get('/api/signals/coins', async (req, res) => {
     if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
     const allSignals = await signalsCol.find({ status: 'active', visibility: { $in: ['public', null] } })
@@ -381,6 +381,38 @@ module.exports = function(app, db, usersCol) {
       totalPnL: Number(c.totalPnL.toFixed(2)),
     })).sort((a, b) => b.lastSignal - a.lastSignal);
     res.json({ success: true, count: coins.length, coins });
+  });
+
+  // Get live prices from Binance for given coins (for frontend live pnl calc)
+  app.get('/api/signals/live-prices', async (req, res) => {
+    try {
+      const { coins } = req.query;
+      if (!coins) return res.status(400).json({ error: 'coins param required (comma-separated)' });
+      const coinList = coins.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+      if (coinList.length === 0) return res.json({ success: true, prices: {} });
+      if (coinList.length > 50) return res.status(400).json({ error: 'Too many coins (max 50)' });
+      // Normalize: handle BTCUSDT vs BTC/USDT vs BTCUSDT.P etc.
+      const symbols = coinList.map(c => {
+        // Convert BTC/USDT to BTCUSDT (Binance format)
+        if (c.includes('/')) {
+          return c.replace('/', '').toUpperCase();
+        }
+        return c;
+      });
+      // Fetch from Binance
+      const symbolsParam = encodeURIComponent(JSON.stringify(symbols));
+      const url = `https://fapi.binance.com/fapi/v1/ticker/price?symbols=${symbolsParam}`;
+      const r = await axios.get(url, { timeout: 5000 });
+      const priceMap = {};
+      if (Array.isArray(r.data)) {
+        r.data.forEach(t => {
+          priceMap[t.symbol] = parseFloat(t.price);
+        });
+      }
+      res.json({ success: true, prices: priceMap, ts: Date.now() });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // Increment view count
