@@ -135,6 +135,33 @@
   .signal-prices {
     display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;
   }
+  .mini-chart-wrap {
+    position: relative;
+    width: 100%; height: 50px;
+    margin-bottom: 8px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .mini-chart-wrap canvas {
+    width: 100%; height: 100%;
+    display: block;
+  }
+  .mini-chart-overlay {
+    position: absolute;
+    top: 4px; right: 6px;
+    font-size: 10px; font-weight: 800;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .mini-chart-overlay.up { color: #00c853; }
+  .mini-chart-overlay.down { color: #ff3b30; }
+  .price-now-overlay {
+    position: absolute;
+    bottom: 4px; left: 6px;
+    font-size: 11px; font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  }
   .price-item {
     background: rgba(255,255,255,0.03);
     border-radius: 6px; padding: 6px 8px; text-align: center;
@@ -1113,6 +1140,140 @@ async function trackSignalView(signalId) {
   } catch (e) {}
 }
 
+// ===== Mini chart cache & drawing =====
+const miniChartCache = {};
+const miniChartDrawing = {};
+
+async function loadAndDrawMiniCharts() {
+  // Get all mini-chart-wrappers
+  const wraps = document.querySelectorAll('.mini-chart-wrap');
+  if (wraps.length === 0) return;
+  // Collect unique coins
+  const coins = new Set();
+  wraps.forEach(w => {
+    const c = w.getAttribute('data-coin');
+    if (c) coins.add(c);
+  });
+  // Fetch data for each (cached for 60s)
+  const fetchPromises = [];
+  for (const coin of coins) {
+    if (miniChartCache[coin] && (Date.now() - miniChartCache[coin].ts) < 60000) {
+      drawAllChartsForCoin(coin, miniChartCache[coin].data);
+    } else {
+      fetchPromises.push(
+        fetch(API + '/api/signals/sparkline/' + encodeURIComponent(coin) + '?interval=15m&limit=96')
+          .then(r => r.json())
+          .then(data => {
+            if (data.success) {
+              miniChartCache[coin] = { ts: Date.now(), data: data };
+              drawAllChartsForCoin(coin, data);
+            }
+          }).catch(() => {})
+      );
+    }
+  }
+  await Promise.all(fetchPromises);
+}
+
+function drawAllChartsForCoin(coin, data) {
+  const wraps = document.querySelectorAll('.mini-chart-wrap[data-coin="' + coin + '"]');
+  wraps.forEach(w => {
+    const id = w.getAttribute('data-canvas-id');
+    const entry = parseFloat(w.getAttribute('data-entry')) || 0;
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    drawMiniChart(canvas, data, entry);
+    // Add overlay text
+    const wrap = canvas.parentElement;
+    let overlay = wrap.querySelector('.mini-chart-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'mini-chart-overlay ' + (data.change24h >= 0 ? 'up' : 'down');
+      wrap.appendChild(overlay);
+    }
+    overlay.textContent = (data.change24h >= 0 ? '▲ ' : '▼ ') + Math.abs(data.change24h).toFixed(2) + '%';
+    let priceOverlay = wrap.querySelector('.price-now-overlay');
+    if (!priceOverlay) {
+      priceOverlay = document.createElement('div');
+      priceOverlay.className = 'price-now-overlay';
+      wrap.appendChild(priceOverlay);
+    }
+    priceOverlay.textContent = '$' + formatPrice(data.currentPrice);
+  });
+}
+
+function formatPrice(p) {
+  if (p >= 1000) return p.toFixed(2);
+  if (p >= 1) return p.toFixed(3);
+  if (p >= 0.01) return p.toFixed(4);
+  return p.toFixed(6);
+}
+
+function drawMiniChart(canvas, data, entryPrice) {
+  if (!canvas || !data || !data.prices || data.prices.length < 2) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+  const prices = data.prices;
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const isUp = data.change24h >= 0;
+  const lineColor = isUp ? '#00c853' : '#ff3b30';
+  // Draw gradient fill
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, isUp ? 'rgba(0,200,83,0.3)' : 'rgba(255,59,48,0.3)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  // Build path
+  ctx.beginPath();
+  for (let i = 0; i < prices.length; i++) {
+    const x = (i / (prices.length - 1)) * w;
+    const y = h - ((prices[i] - min) / range) * (h - 4) - 2;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  // Fill area
+  ctx.lineTo(w, h);
+  ctx.lineTo(0, h);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  // Draw line
+  ctx.beginPath();
+  for (let i = 0; i < prices.length; i++) {
+    const x = (i / (prices.length - 1)) * w;
+    const y = h - ((prices[i] - min) / range) * (h - 4) - 2;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // Draw entry price line if available
+  if (entryPrice && entryPrice > 0) {
+    if (entryPrice >= min && entryPrice <= max) {
+      const y = h - ((entryPrice - min) / range) * (h - 4) - 2;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.strokeStyle = '#ffd700';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Label
+      ctx.fillStyle = '#ffd700';
+      ctx.font = 'bold 9px monospace';
+      ctx.fillText('Entry $' + formatPrice(entryPrice), 4, y - 2);
+    }
+  }
+}
+
 // ===== Render signal =====
 function renderSignal(s, isNew = false) {
   const pnlClass = s.pnl > 0 ? 'positive' : s.pnl < 0 ? 'negative' : '';
@@ -1128,6 +1289,9 @@ function renderSignal(s, isNew = false) {
           ${s.views > 0 ? `<span class="view-count">👁 ${s.views}</span>` : ''}
         </div>
         <span class="signal-badge ${signalClass}">${esc(s.signal)}</span>
+      </div>
+      <div class="mini-chart-wrap" data-coin="${esc(s.coin)}" data-entry="${s.entry || 0}" data-canvas-id="chart-${esc(s.id)}">
+        <canvas id="chart-${esc(s.id)}"></canvas>
       </div>
       ${s.entry || s.target || s.stopLoss ? `
       <div class="signal-prices">
@@ -1262,6 +1426,8 @@ async function fetchSignals() {
         list.innerHTML = filteredSignals.map(s => renderSignal(s, newIds.includes(s.id))).join('');
         filteredSignals.forEach(s => trackSignalView(s.id));
         lastSignals = filteredSignals;
+        // Draw mini charts (async, non-blocking)
+        setTimeout(loadAndDrawMiniCharts, 100);
       }
 
       // Update pagination
