@@ -720,6 +720,45 @@
   .incoming-call-modal .accept { background: #4caf50; }
   .incoming-call-modal .decline { background: #ff3b30; }
 
+  /* === JITSI CALL MODAL === */
+  .jitsi-modal-overlay {
+    position: fixed; inset: 0; background: #000;
+    z-index: 500; display: none;
+  }
+  .jitsi-modal-overlay.show { display: block; }
+  .jitsi-modal-header {
+    position: absolute; top: 0; left: 0; right: 0;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px;
+    z-index: 2;
+  }
+  .jitsi-modal-header .info { flex: 1; }
+  .jitsi-modal-header .title { font-weight: 800; font-size: 16px; }
+  .jitsi-modal-header .timer { font-size: 12px; opacity: 0.9; }
+  .jitsi-modal-header button {
+    background: #ff3b30; color: #fff; border: none;
+    padding: 8px 16px; border-radius: 8px; font-weight: 700;
+    cursor: pointer; font-size: 13px;
+  }
+  .jitsi-modal-header .minimize {
+    background: rgba(255,255,255,0.2); color: #fff; border: none;
+    width: 36px; height: 36px; border-radius: 50%;
+    cursor: pointer; font-size: 16px;
+  }
+  .jitsi-frame {
+    width: 100%; height: 100%; border: 0;
+    position: absolute; top: 0; left: 0;
+    padding-top: 56px; box-sizing: border-box;
+  }
+
+  /* === RING PULSE ANIMATION === */
+  @keyframes ring-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+    50% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(76, 175, 80, 0); }
+  }
+  .ring-pulse { animation: ring-pulse 1.5s infinite; }
+
   /* === INVITE LANDING === */
   .invite-landing {
     text-align: center; padding: 40px 20px;
@@ -941,17 +980,32 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- INCOMING CALL NOTIFICATION -->
-<div class="incoming-call-modal" id="incomingCallModal">
-  <div class="avatar" id="callerAvatar">📞</div>
-  <div class="info">
-    <div class="caller-name" id="callerName">Caller</div>
-    <div class="call-type" id="callerType">Incoming voice call</div>
+<!-- INCOMING CALL NOTIFICATION (Jitsi Ring System) -->
+<div class="incoming-call-modal" id="incomingCallModal" style="flex-direction:column;text-align:center;padding:24px 16px;">
+  <div style="display:flex;align-items:center;gap:12px;width:100%;margin-bottom:12px;">
+    <div class="avatar ring-pulse" id="callerAvatar" style="width:64px;height:64px;font-size:28px;">📞</div>
+    <div class="info" style="text-align:left;">
+      <div class="caller-name" id="callerName" style="font-size:18px;">Caller</div>
+      <div class="call-type" id="callerType">Incoming call</div>
+    </div>
   </div>
-  <div class="actions">
-    <button class="decline" onclick="declineCall()">✕</button>
-    <button class="accept" onclick="acceptCall()">📞</button>
+  <div class="actions" style="justify-content:center;gap:24px;width:100%;">
+    <button class="decline" onclick="declineCall()" style="width:64px;height:64px;font-size:24px;border-radius:50%;">✕</button>
+    <button class="accept" onclick="acceptCall()" style="width:64px;height:64px;font-size:24px;border-radius:50%;">📞</button>
   </div>
+</div>
+
+<!-- JITSI CALL MODAL (full-screen video call) -->
+<div class="jitsi-modal-overlay" id="jitsiCallModal">
+  <div class="jitsi-modal-header">
+    <div class="info">
+      <div class="title" id="jitsiCallTitle">📞 Calling...</div>
+      <div class="timer" id="jitsiCallTimer">00:00</div>
+    </div>
+    <button class="minimize" onclick="minimizeJitsiCall()" title="Minimize">▼</button>
+    <button onclick="endJitsiCall()">📞 End</button>
+  </div>
+  <iframe id="jitsiFrame" class="jitsi-frame" allow="camera; microphone; fullscreen; display-capture; autoplay" allowfullscreen></iframe>
 </div>
 
 <!-- CALL SCREEN -->
@@ -3603,17 +3657,29 @@ async function loadIceServers() {
   }
 }
 
+// ============================================================
+// JITSI CALL SYSTEM (replaces custom WebRTC)
+// ============================================================
+let jitsiCall = null;  // Active call object
+let jitsiCallTimerInterval = null;
+let jitsiCallStartTime = null;
+let ringtoneAudio = null;
+let ringtonePlaying = false;
+let callStatusPollInterval = null;
+
+// Initiate a call using Jitsi
 async function startCall(type, targetUserId, groupId = null) {
   if (!currentUser) { toast('Please register first'); return; }
-  if (currentCall) { toast('❌ You are already in a call'); return; }
-  // Pre-check: if group call, verify user is not blocked
+  if (jitsiCall) { toast('❌ You are already in a call'); return; }
+
+  // Group call permissions check
   if (groupId && currentGroup) {
     try {
       const gr = await fetch(API + '/api/groups/' + currentGroup).then(r => r.json());
       if (gr.success) {
         const g = gr.group;
         if (g.blockedMembers?.includes(currentUser.id)) {
-          toast('🚫 Admin ने आपको block किया है — आप call नहीं कर सकते');
+          toast('🚫 Admin ने आपको block किया है');
           return;
         }
         if (!g.members.includes(currentUser.id)) {
@@ -3623,7 +3689,7 @@ async function startCall(type, targetUserId, groupId = null) {
         const whoCanCall = g.whoCanCall || 'everyone';
         const isAdmin = g.admins?.includes(currentUser.id);
         if (whoCanCall === 'admins_only' && !isAdmin) {
-          toast('🚫 सिर्फ admin ही call कर सकते हैं इस group में');
+          toast('🚫 सिर्फ admin ही call कर सकते हैं');
           return;
         }
         if (whoCanCall === 'specific' && !(g.allowedCallers || []).includes(currentUser.id) && !isAdmin) {
@@ -3633,53 +3699,179 @@ async function startCall(type, targetUserId, groupId = null) {
       }
     } catch (e) { /* continue */ }
   }
-  // Request media FIRST - if denied, don't start call
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: type === 'video',
-      audio: true,
-    });
-  } catch (e) {
-    console.error('Media error:', e);
-    toast('❌ Camera/Mic access denied - call not started');
-    return;
-  }
-  // Now create the call on backend
-  const res = await fetch(API + '/api/calls', {
+
+  // Initiate call via new Jitsi endpoint
+  const res = await fetch(API + '/api/calls/initiate', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, fromUserId: currentUser.id, toUserId: targetUserId, groupId }),
+    body: JSON.stringify({ fromUserId: currentUser.id, toUserId: targetUserId, groupId, type }),
   }).then(r => r.json());
   if (!res.success) {
-    // Release media if backend fails
-    if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-    // Better error messages for common cases
-    if (res.error && res.error.includes('blocked')) {
-      toast('🚫 Admin ने आपको block किया है');
-    } else if (res.error && res.error.includes('admin')) {
-      toast('🚫 ' + res.error);
-    } else if (res.error && res.error.includes('allowed')) {
-      toast('🚫 आपको call permission नहीं है');
-    } else {
-      toast('❌ ' + (res.error || 'Failed to start call'));
-    }
+    if (res.error && res.error.includes('blocked')) toast('🚫 ' + res.error);
+    else if (res.error && res.error.includes('admin')) toast('🚫 ' + res.error);
+    else if (res.error && res.error.includes('allowed')) toast('🚫 ' + res.error);
+    else toast('❌ ' + (res.error || 'Failed to start call'));
     return;
   }
-  currentCall = res.call;
-  showCallScreen(currentCall, type);
-  if (type === 'video' && localStream) {
-    const lv = document.getElementById('callLocalVideo');
-    lv.srcObject = localStream;
-    lv.classList.remove('hide');
+
+  jitsiCall = res.call;
+  // Open Jitsi call modal immediately (caller joins the room)
+  openJitsiCall(jitsiCall.jitsiUrl, targetUserId ? res.call.calleeName : (groupId ? 'Group Call' : 'User'), jitsiCall.callId);
+  toast(targetUserId ? '📞 Calling...' : '📞 Group call started');
+
+  // Poll call status to detect when receiver accepts (for 1-on-1) or if call was declined
+  if (callStatusPollInterval) clearInterval(callStatusPollInterval);
+  let pollCount = 0;
+  callStatusPollInterval = setInterval(async () => {
+    pollCount++;
+    try {
+      const statusRes = await fetch(API + '/api/calls/' + jitsiCall.callId + '/status').then(r => r.json());
+      if (statusRes.success && statusRes.call) {
+        const c = statusRes.call;
+        if (c.status === 'declined') {
+          toast('❌ Call was declined');
+          endJitsiCall();
+        } else if (c.status === 'ended' && c.endedBy !== currentUser.id) {
+          // Someone else ended the call
+          toast('Call ended');
+          endJitsiCall();
+        } else if (c.status === 'active') {
+          // Call accepted - keep going
+          if (pollCount > 1) toast('✅ Call connected!');
+        }
+        // Stop polling after 60 seconds (auto-miss)
+        if (pollCount > 60 && c.status === 'ringing') {
+          toast('📞 No answer');
+          endJitsiCall();
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }, 1000);
+}
+
+// Open Jitsi iframe modal
+function openJitsiCall(jitsiUrl, title, callId) {
+  const modal = document.getElementById('jitsiCallModal');
+  const frame = document.getElementById('jitsiFrame');
+  document.getElementById('jitsiCallTitle').textContent = '📞 ' + (title || 'Call');
+  // Add user display name as Jitsi prejoin config
+  const userName = currentUser?.name || 'Guest';
+  // Jitsi meet URL with prejoin config
+  const hashParams = `#userInfo.displayName=${encodeURIComponent(userName)}&config.prejoinPageEnabled=false&config.startWithAudioMuted=true&config.startWithVideoMuted=${jitsiCall?.type === 'voice' ? 'true' : 'false'}`;
+  frame.src = jitsiUrl + hashParams;
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  // Start timer
+  jitsiCallStartTime = Date.now();
+  if (jitsiCallTimerInterval) clearInterval(jitsiCallTimerInterval);
+  jitsiCallTimerInterval = setInterval(() => {
+    const seconds = Math.floor((Date.now() - jitsiCallStartTime) / 1000);
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    const timerEl = document.getElementById('jitsiCallTimer');
+    if (timerEl) timerEl.textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function minimizeJitsiCall() {
+  const modal = document.getElementById('jitsiCallModal');
+  modal.classList.remove('show');
+  document.body.style.overflow = '';
+  toast('Call minimized. You can return by clicking the floating button.');
+  // Show floating button
+  showFloatingCallButton();
+}
+
+function showFloatingCallButton() {
+  // Remove existing if any
+  const existing = document.getElementById('floatingCallBtn');
+  if (existing) existing.remove();
+  if (!jitsiCall) return;
+  const btn = document.createElement('button');
+  btn.id = 'floatingCallBtn';
+  btn.style.cssText = 'position:fixed;bottom:80px;right:12px;z-index:600;width:56px;height:56px;border-radius:50%;background:#4caf50;color:#fff;border:none;box-shadow:0 4px 16px rgba(76,175,80,0.5);font-size:24px;cursor:pointer;';
+  btn.innerHTML = '📞';
+  btn.onclick = () => {
+    btn.remove();
+    document.getElementById('jitsiCallModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  };
+  document.body.appendChild(btn);
+}
+
+// End the active Jitsi call
+async function endJitsiCall() {
+  // Notify backend
+  if (jitsiCall) {
+    try {
+      await fetch(API + '/api/calls/' + jitsiCall.callId + '/end', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id }),
+      });
+    } catch (e) { /* ignore */ }
   }
-  startCallTimer();
-  startSignaling();
-  // IMMEDIATELY poll to detect when receiver accepts
-  setTimeout(() => pollSignals(), 200);
-  if (targetUserId) {
-    toast('📞 Calling...');
-  } else if (groupId) {
-    toast('📞 Group call started');
+  // Stop ringtone if playing
+  stopRingtone();
+  // Close modal
+  const modal = document.getElementById('jitsiCallModal');
+  modal.classList.remove('show');
+  document.body.style.overflow = '';
+  // Clear iframe src to stop media
+  document.getElementById('jitsiFrame').src = 'about:blank';
+  // Stop timer
+  if (jitsiCallTimerInterval) {
+    clearInterval(jitsiCallTimerInterval);
+    jitsiCallTimerInterval = null;
   }
+  if (callStatusPollInterval) {
+    clearInterval(callStatusPollInterval);
+    callStatusPollInterval = null;
+  }
+  // Remove floating button
+  const floatingBtn = document.getElementById('floatingCallBtn');
+  if (floatingBtn) floatingBtn.remove();
+  jitsiCall = null;
+  toast('📞 Call ended');
+}
+
+// Ringtone using Web Audio API (no audio file needed)
+function playRingtone() {
+  if (ringtonePlaying) return;
+  ringtonePlaying = true;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    let note = 0;
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    function playNote() {
+      if (!ringtonePlaying) { ctx.close(); return; }
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = notes[note % notes.length];
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+      note++;
+      if (ringtonePlaying) setTimeout(playNote, 500);
+    }
+    playNote();
+    ringtoneAudio = { ctx };
+  } catch (e) { console.warn('Ringtone failed:', e); }
+}
+
+function stopRingtone() {
+  ringtonePlaying = false;
+  if (ringtoneAudio && ringtoneAudio.ctx) {
+    try { ringtoneAudio.ctx.close(); } catch (e) { /* ignore */ }
+  }
+  ringtoneAudio = null;
+  // Vibrate stop
+  if (navigator.vibrate) navigator.vibrate(0);
 }
 
 function showCallScreen(call, type) {
@@ -3942,73 +4134,88 @@ async function cleanupCall() {
 // === INCOMING CALL DETECTION ===
 let lastCallCheck = 0;
 async function checkForIncomingCall() {
-  if (!currentUser || currentCall) return;
-  // Throttle: only check every 10 seconds
+  if (!currentUser || jitsiCall) return;
+  // Throttle: only check every 5 seconds (faster for better ring experience)
   const now = Date.now();
-  if (now - lastCallCheck < 10000) return;
+  if (now - lastCallCheck < 5000) return;
   lastCallCheck = now;
   try {
     const res = await fetch(API + '/api/calls/active/' + currentUser.id).then(r => r.json());
     if (res.calls && res.calls.length > 0) {
+      // Find a ringing call addressed to current user
       const ringing = res.calls.find(c => c.status === 'ringing' && c.toUserId === currentUser.id);
-      if (ringing) showIncomingCall(ringing);
+      if (ringing) {
+        // Get full call details (new schema has callerName etc.)
+        const detail = await fetch(API + '/api/calls/' + ringing.callId + '/status').then(r => r.json());
+        if (detail.success && detail.call) {
+          showIncomingCall(detail.call);
+        }
+      }
     }
   } catch (e) {}
 }
 
 function showIncomingCall(call) {
   const modal = document.getElementById('incomingCallModal');
-  document.getElementById('callerName').textContent = call.participants[0]?.name || 'Unknown';
-  document.getElementById('callerType').textContent = call.type === 'video' ? '📹 Incoming video call' : '📞 Incoming voice call';
+  // Use callerName from the new Jitsi call schema (fallback for old format)
+  const callerName = call.callerName || call.participants[0]?.name || 'Unknown';
+  const callType = call.type === 'video' ? '📹 Incoming video call' : '📞 Incoming voice call';
+  document.getElementById('callerName').textContent = callerName;
+  document.getElementById('callerType').textContent = callType;
+  // Update avatar with caller's initial
+  const initial = (callerName[0] || '?').toUpperCase();
+  document.getElementById('callerAvatar').textContent = initial;
   modal.classList.add('show');
   modal.dataset.callId = call.callId;
+  // Play ringtone
+  playRingtone();
+  // Vibrate (mobile)
+  if (navigator.vibrate) {
+    const vibratePattern = [500, 200, 500, 200, 500];
+    navigator.vibrate(vibratePattern);
+  }
   // Auto-hide after 30s if not answered
-  setTimeout(() => modal.classList.remove('show'), 30000);
+  setTimeout(() => {
+    if (modal.classList.contains('show') && modal.dataset.callId === call.callId) {
+      modal.classList.remove('show');
+      stopRingtone();
+    }
+  }, 30000);
 }
 
 async function acceptCall() {
   const modal = document.getElementById('incomingCallModal');
   const callId = modal.dataset.callId;
   modal.classList.remove('show');
+  stopRingtone();
   if (!callId) return;
-  // Get media first
-  try {
-    const callRes = await fetch(API + '/api/calls/' + callId).then(r => r.json());
-    const type = callRes.call?.type || 'voice';
-    currentCall = callRes.call;  // Set currentCall BEFORE getting media
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: type === 'video', audio: true,
-    });
-  } catch (e) { toast('Camera/Mic denied'); return; }
-  // Answer on backend
-  await fetch(API + '/api/calls/' + callId + '/answer', {
+  // Accept on backend - get Jitsi URL
+  const res = await fetch(API + '/api/calls/' + callId + '/accept', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId: currentUser.id }),
-  });
-  const res = await fetch(API + '/api/calls/' + callId).then(r => r.json());
-  currentCall = res.call;
-  showCallScreen(currentCall, currentCall.type);
-  if (currentCall.type === 'video' && localStream) {
-    const lv = document.getElementById('callLocalVideo');
-    lv.srcObject = localStream;
-    lv.classList.remove('hide');
-  }
-  startCallTimer();
-  startSignaling();
-  // IMMEDIATELY poll once so the caller can send us an offer without waiting 800ms
-  setTimeout(() => pollSignals(), 200);
+  }).then(r => r.json());
+  if (!res.success) { toast('❌ ' + (res.error || 'Failed to accept')); return; }
+  // Set jitsiCall and open
+  jitsiCall = { callId, jitsiUrl: res.jitsiUrl, type: 'video' };
+  // Get call info for title
+  const statusRes = await fetch(API + '/api/calls/' + callId + '/status').then(r => r.json());
+  const title = statusRes.call?.callerName || 'Call';
+  openJitsiCall(res.jitsiUrl, title, callId);
+  toast('✅ Call accepted');
 }
 
 async function declineCall() {
   const modal = document.getElementById('incomingCallModal');
   const callId = modal.dataset.callId;
+  stopRingtone();
   if (callId) {
-    await fetch(API + '/api/calls/' + callId + '/end', {
+    await fetch(API + '/api/calls/' + callId + '/decline', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUser.id }),
     });
   }
   modal.classList.remove('show');
+  toast('❌ Call declined');
 }
 
 // === CALL BUTTON IN GROUP (initiate group call) ===
@@ -4109,16 +4316,22 @@ loadNotifications = async function() {
 };
 
 async function acceptCallById(callId) {
-  // Find the call and accept
-  const res = await fetch(API + '/api/calls/' + callId).then(r => r.json());
-  if (!res.success) { toast('Call not found'); return; }
-  const call = res.call;
-  // Show incoming modal
-  document.getElementById('incomingCallModal').classList.add('show');
-  document.getElementById('incomingCallModal').dataset.callId = callId;
-  document.getElementById('callerName').textContent = call.participants[0]?.name || 'Unknown';
-  document.getElementById('callerType').textContent = call.type === 'video' ? '📹 Incoming video call' : '📞 Incoming voice call';
-  nav('notifications');
+  // Use the new accept endpoint to get Jitsi URL
+  const res = await fetch(API + '/api/calls/' + callId + '/accept', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id }),
+  }).then(r => r.json());
+  if (!res.success) { toast('❌ ' + (res.error || 'Failed')); return; }
+  // Get call info for title
+  const statusRes = await fetch(API + '/api/calls/' + callId + '/status').then(r => r.json());
+  const title = statusRes.call?.callerName || 'Call';
+  jitsiCall = { callId, jitsiUrl: res.jitsiUrl, type: statusRes.call?.type || 'video' };
+  // Hide incoming modal
+  document.getElementById('incomingCallModal').classList.remove('show');
+  stopRingtone();
+  // Open Jitsi
+  openJitsiCall(res.jitsiUrl, title, callId);
+  toast('✅ Call accepted');
 }
 </script>
 
