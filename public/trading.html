@@ -175,6 +175,38 @@
     0%, 100% { box-shadow: 0 0 0 0 rgba(0,200,83,0.5); }
     50% { box-shadow: 0 0 0 8px rgba(0,200,83,0); }
   }
+  .visitor-bar {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 6px; margin-bottom: 12px;
+    background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+    border: 1px solid rgba(102,126,234,0.2);
+    border-radius: 10px;
+    padding: 10px 6px;
+  }
+  .visitor-item {
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .visitor-icon { font-size: 16px; }
+  .visitor-num {
+    font-size: 18px; font-weight: 900; color: #1de9b6;
+    font-variant-numeric: tabular-nums;
+  }
+  .visitor-lbl {
+    font-size: 9px; opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .view-count {
+    display: inline-block;
+    background: rgba(29,233,182,0.15);
+    color: #1de9b6;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    margin-left: 4px;
+  }
 </style>
 </head>
 <body>
@@ -211,6 +243,29 @@
     </div>
   </div>
 
+  <div class="visitor-bar">
+    <div class="visitor-item">
+      <span class="visitor-icon">👥</span>
+      <span class="visitor-num" id="vTotal">0</span>
+      <span class="visitor-lbl">Total Visitors</span>
+    </div>
+    <div class="visitor-item">
+      <span class="visitor-icon">🟢</span>
+      <span class="visitor-num" id="vActive">0</span>
+      <span class="visitor-lbl">Active Now</span>
+    </div>
+    <div class="visitor-item">
+      <span class="visitor-icon">📅</span>
+      <span class="visitor-num" id="vToday">0</span>
+      <span class="visitor-lbl">Today</span>
+    </div>
+    <div class="visitor-item">
+      <span class="visitor-icon">👁️</span>
+      <span class="visitor-num" id="vViews">0</span>
+      <span class="visitor-lbl">Views</span>
+    </div>
+  </div>
+
   <div class="signals-list" id="signalsList">
     <div class="empty">
       <div class="empty-icon">⏳</div>
@@ -223,6 +278,56 @@
 const API = 'https://canyou-uqkp.onrender.com';
 let lastSignals = [];
 let pollInterval = null;
+let viewedSignals = new Set();  // signal IDs already counted in this session
+
+// Get or create session ID for visitor tracking (stored in localStorage)
+function getSessionId() {
+  let sid = localStorage.getItem('ds_signal_sid');
+  if (!sid) {
+    sid = 'sid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('ds_signal_sid', sid);
+  }
+  return sid;
+}
+
+// Track this page visit on load
+async function trackVisit() {
+  try {
+    const sid = getSessionId();
+    const r = await fetch(API + '/api/signals/track-visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: sid, referrer: document.referrer || '' })
+    }).then(r => r.json());
+    if (r.success) {
+      console.log('👋 Visit tracked. Total visitors:', r.totalVisitors, 'New:', r.unique);
+    }
+  } catch (e) {
+    console.warn('Visit track failed:', e);
+  }
+}
+
+// Track view on a specific signal (once per session per signal)
+async function trackSignalView(signalId) {
+  if (!signalId || viewedSignals.has(signalId)) return;
+  viewedSignals.add(signalId);
+  try {
+    await fetch(API + '/api/signals/' + encodeURIComponent(signalId) + '/view', { method: 'POST' });
+  } catch (e) { /* silent */ }
+}
+
+// Fetch and display visitor stats
+async function fetchStats() {
+  try {
+    const r = await fetch(API + '/api/signals/stats').then(r => r.json());
+    if (r.success) {
+      document.getElementById('vTotal').textContent = r.visitors.total || 0;
+      document.getElementById('vActive').textContent = r.visitors.activeNow || 0;
+      document.getElementById('vToday').textContent = r.visitors.today || 0;
+      document.getElementById('vViews').textContent = r.visitors.totalViews || 0;
+    }
+  } catch (e) { /* silent */ }
+}
 
 function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -244,6 +349,7 @@ function renderSignal(s, isNew = false) {
         <div class="coin-name">
           ${esc(s.coin)}
           ${s.status === 'active' ? '<span class="live-indicator">LIVE</span>' : ''}
+          ${s.views > 0 ? `<span class="view-count">👁 ${s.views}</span>` : ''}
         </div>
         <span class="signal-badge ${signalClass}">${esc(s.signal)}</span>
       </div>
@@ -296,6 +402,8 @@ async function fetchSignals() {
         // Detect new signals for animation
         const newIds = res.signals.filter(s => !lastSignals.find(ls => ls.id === s.id)).map(s => s.id);
         list.innerHTML = res.signals.map(s => renderSignal(s, newIds.includes(s.id))).join('');
+        // Track a view for each visible signal (once per session)
+        res.signals.forEach(s => trackSignalView(s.id));
         lastSignals = res.signals;
       }
       // Update last refresh time
@@ -311,8 +419,13 @@ async function fetchSignals() {
 function startPolling() {
   fetchSignals();
   pollInterval = setInterval(fetchSignals, 5000);
+  // Visitor stats refresh every 15s
+  fetchStats();
+  setInterval(fetchStats, 15000);
 }
 
+// Track this visit on page load
+trackVisit();
 startPolling();
 </script>
 </body>
