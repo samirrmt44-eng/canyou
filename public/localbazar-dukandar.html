@@ -393,23 +393,14 @@
     <div class="modal-body">
       <div class="form-group">
         <div class="form-label">Product का नाम *</div>
-        <input type="text" class="form-input" id="prodName" placeholder="जैसे: बासमती चावल 5kg">
+        <input type="text" class="form-input" id="prodName" placeholder="जैसे: बासमती चावल 5kg" oninput="autoDetectCategory()">
       </div>
       <div class="form-group">
-        <div class="form-label">Category</div>
+        <div class="form-label">Category (auto-detect bhi hota hai)</div>
         <select class="form-select" id="prodCategory">
-          <option value="cat_001">🍚 चावल / आटा</option>
-          <option value="cat_002">🫘 दाल / दलहन</option>
-          <option value="cat_003">🛢️ तेल / घी</option>
-          <option value="cat_004">🌶️ मसाले</option>
-          <option value="cat_005">🥛 डेयरी / ब्रेड</option>
-          <option value="cat_006">🥬 सब्जियां</option>
-          <option value="cat_007">🍎 फल</option>
-          <option value="cat_008">🥤 पेय पदार्थ</option>
-          <option value="cat_009">🧹 घरेलू सामान</option>
-          <option value="cat_010">🧴 Personal Care</option>
-          <option value="cat_011">🍪 Snacks / Biscuits</option>
+          <option value="">⏳ Categories load ho rahi hain...</option>
         </select>
+        <div style="font-size:11px;color:#888;margin-top:4px">💡 Tip: Naam likhne par category khud detect ho jayegi</div>
       </div>
       <div class="form-group">
         <div class="form-label">Brand (optional)</div>
@@ -505,6 +496,8 @@ function showToast(msg, color) {
 async function init() {
   currentUser = JSON.parse(localStorage.getItem('ds_user') || 'null');
   const savedStore = JSON.parse(localStorage.getItem('ds_my_store') || 'null');
+  // Preload categories so the Add Product modal always has them ready
+  loadCategories();
   if (savedStore && savedStore.id) {
     currentStore = savedStore;
     document.getElementById('wizardOverlay').style.display = 'none';
@@ -637,26 +630,19 @@ function exitWizard() {
 
 // Save & Exit button - exit wizard at any point, save progress
 async function saveAndExitWizard() {
-  if (!confirm('✅ अभी के लिए बस! आपकी progress save हो गई है।\n\nDashboard पर जाकर बाद में continue कर सकते हैं।\n\nजाना है?')) return;
+  // Use a custom Hindi-friendly modal-like confirm
+  const confirmed = confirm('✅ अभी के लिए बस? (या "पूरा हो गया")\n\nआपकी progress SAVE हो गई है।\n\n📌 आपने जो भी भरा है वो save है।\n🏠 Dashboard पर जाकर बाद में continue कर सकते हैं।\n\n👌 जाना है?');
+  if (!confirmed) return;
   try {
-    // Mark wizard as complete on server
+    // Mark wizard as complete on server (saves whatever we have)
     await fetch(API + '/api/localbazar/wizard/complete', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId: wizardSessionId })
     });
-    // Hide wizard, show dashboard
-    document.getElementById('wizardOverlay').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    // If store was created, load it
-    if (wizardMessages.length > 0) {
-      const lastAssistantWithStore = wizardMessages.filter(m => m.role === 'assistant' && m.text.includes('बन गई')).pop();
-      if (lastAssistantWithStore) {
-        // Find storeId from data
-        // We need to fetch stores
-      }
-    }
-    // Reload to get fresh store data
-    setTimeout(() => location.reload(), 500);
+    // If a store was being created in this session, the server has its ID
+    // Just reload to fetch fresh state
+    showToast('✅ Save हो गया! Dashboard load हो रहा है...');
+    setTimeout(() => location.reload(), 600);
   } catch (e) {
     showToast('Network error - try again', '#ff3b30');
   }
@@ -804,8 +790,24 @@ async function updateOrderStatus(orderId, status, btn) {
 }
 
 // ===== ADD PRODUCT =====
+let allCategories = [];
+
+async function loadCategories() {
+  try {
+    const r = await fetch(API + '/api/localbazar/categories').then(r => r.json());
+    if (r.success && r.categories) {
+      allCategories = r.categories;
+      const sel = document.getElementById('prodCategory');
+      if (sel) {
+        sel.innerHTML = r.categories.map(c => '<option value="' + c.id + '">' + esc(c.name) + '</option>').join('');
+      }
+    }
+  } catch (e) { console.error('Category load error:', e); }
+}
+
 function openAddProduct() {
   document.getElementById('addProductModal').classList.add('active');
+  if (allCategories.length === 0) loadCategories();
 }
 
 function closeAddProduct() {
@@ -843,6 +845,54 @@ async function saveProduct() {
       loadDashboard();
     } else { showToast('Error: ' + r.error, '#ff3b30'); }
   } catch (e) { showToast('Network error', '#ff3b30'); }
+}
+
+// Auto-detect category as user types product name
+let categoryDebounce = null;
+async function autoDetectCategory() {
+  const name = document.getElementById('prodName').value.trim();
+  const sel = document.getElementById('prodCategory');
+  if (!name || name.length < 3 || allCategories.length === 0) return;
+  clearTimeout(categoryDebounce);
+  categoryDebounce = setTimeout(async () => {
+    // Simple keyword matching client-side (mirrors backend detectCategory)
+    const lower = name.toLowerCase();
+    const keywordMap = {
+      'चावल': 'cat_grocery_rice', 'आटा': 'cat_grocery_rice', 'दाल': 'cat_grocery_rice', 'rice': 'cat_grocery_rice', 'atta': 'cat_grocery_rice', 'dal': 'cat_grocery_rice',
+      'तेल': 'cat_grocery_oil', 'मसाला': 'cat_grocery_oil', 'चीनी': 'cat_grocery_oil', 'नमक': 'cat_grocery_oil', 'oil': 'cat_grocery_oil', 'sugar': 'cat_grocery_oil', 'salt': 'cat_grocery_oil',
+      'बिस्किट': 'cat_grocery_snacks', 'नूडल्स': 'cat_grocery_snacks', 'maggi': 'cat_grocery_snacks', 'चिप्स': 'cat_grocery_snacks', 'biscuit': 'cat_grocery_snacks', 'chips': 'cat_grocery_snacks',
+      'कोल्ड': 'cat_grocery_beverages', 'ड्रिंक': 'cat_grocery_beverages', 'coke': 'cat_grocery_beverages', 'pepsi': 'cat_grocery_beverages', 'juice': 'cat_grocery_beverages', 'water': 'cat_grocery_beverages',
+      'दूध': 'cat_grocery_dairy', 'ब्रेड': 'cat_grocery_dairy', 'अंडे': 'cat_grocery_dairy', 'milk': 'cat_grocery_dairy', 'bread': 'cat_grocery_dairy', 'egg': 'cat_grocery_dairy',
+      'सब्जी': 'cat_fresh_vegetables', 'प्याज': 'cat_fresh_vegetables', 'आलू': 'cat_fresh_vegetables', 'टमाटर': 'cat_fresh_vegetables', 'onion': 'cat_fresh_vegetables', 'potato': 'cat_fresh_vegetables', 'tomato': 'cat_fresh_vegetables',
+      'फल': 'cat_fresh_fruits', 'सेब': 'cat_fresh_fruits', 'केला': 'cat_fresh_fruits', 'apple': 'cat_fresh_fruits', 'banana': 'cat_fresh_fruits', 'fruit': 'cat_fresh_fruits',
+      'फूल': 'cat_fresh_flowers', 'पूजा': 'cat_fresh_flowers', 'puja': 'cat_fresh_flowers', 'flower': 'cat_fresh_flowers',
+      'सफाई': 'cat_home_cleaning', 'झाड़ू': 'cat_home_cleaning', 'detergent': 'cat_home_cleaning', 'cleaning': 'cat_home_cleaning',
+      'बर्तन': 'cat_home_kitchen', 'किचन': 'cat_home_kitchen', 'पैन': 'cat_home_kitchen', 'kitchen': 'cat_home_kitchen', 'pan': 'cat_home_kitchen',
+      'बिजली': 'cat_home_electronics', 'बल्ब': 'cat_home_electronics', 'बैटरी': 'cat_home_electronics', 'bulb': 'cat_home_electronics', 'battery': 'cat_home_electronics', 'wire': 'cat_home_electronics',
+      'हार्डवेयर': 'cat_home_hardware', 'पाइप': 'cat_home_hardware', 'हथौड़ा': 'cat_home_hardware', 'pipe': 'cat_home_hardware', 'hammer': 'cat_home_hardware', 'hardware': 'cat_home_hardware',
+      'शैम्पू': 'cat_personal_care', 'क्रीम': 'cat_personal_care', 'cream': 'cat_personal_care', 'shampoo': 'cat_personal_care',
+      'दवाई': 'cat_personal_health', 'दवा': 'cat_personal_health', 'tablet': 'cat_personal_health', 'capsule': 'cat_personal_health', 'syrup': 'cat_personal_health', 'medicine': 'cat_personal_health', 'paracetamol': 'cat_personal_health', 'crocin': 'cat_personal_health', 'dolo': 'cat_personal_health',
+      'कपड़ा': 'cat_fashion_clothes', 'शर्ट': 'cat_fashion_clothes', 'पैंट': 'cat_fashion_clothes', 'साड़ी': 'cat_fashion_clothes', 'कुर्ता': 'cat_fashion_clothes', 'shirt': 'cat_fashion_clothes', 'cloth': 'cat_fashion_clothes', 'saree': 'cat_fashion_clothes',
+      'जूता': 'cat_fashion_footwear', 'चप्पल': 'cat_fashion_footwear', 'सैंडल': 'cat_fashion_footwear', 'shoe': 'cat_fashion_footwear', 'sandal': 'cat_fashion_footwear',
+      'बैग': 'cat_fashion_accessories', 'बेल्ट': 'cat_fashion_accessories', 'घड़ी': 'cat_fashion_accessories', 'bag': 'cat_fashion_accessories', 'watch': 'cat_fashion_accessories', 'belt': 'cat_fashion_accessories',
+      'बच्चा': 'cat_baby', 'डायपर': 'cat_baby', 'फीड': 'cat_baby', 'baby': 'cat_baby', 'diaper': 'cat_baby', 'toy': 'cat_baby', 'खिलौना': 'cat_baby',
+      'pet': 'cat_pet', 'dog': 'cat_pet', 'कुत्ता': 'cat_pet', 'बिल्ली': 'cat_pet', 'cat food': 'cat_pet',
+      'किताब': 'cat_stationery', 'पेन': 'cat_stationery', 'पेंसिल': 'cat_stationery', 'book': 'cat_stationery', 'pen': 'cat_stationery', 'pencil': 'cat_stationery',
+    };
+    let detected = null;
+    for (const [kw, catId] of Object.entries(keywordMap)) {
+      if (lower.includes(kw.toLowerCase())) { detected = catId; break; }
+    }
+    if (detected) {
+      sel.value = detected;
+      // Visual feedback
+      sel.style.background = '#e8f5e9';
+      sel.style.borderColor = '#2ed573';
+      setTimeout(() => { sel.style.background = ''; sel.style.borderColor = ''; }, 1500);
+      const cat = allCategories.find(c => c.id === detected);
+      if (cat) showToast('✨ Auto-detected: ' + cat.name);
+    }
+  }, 600);  // Wait 600ms after typing stops
 }
 
 // ===== STORE SETTINGS =====
