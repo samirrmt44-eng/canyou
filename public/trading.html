@@ -275,6 +275,34 @@
   .tab-switch button.active {
     background: rgba(255,255,255,0.1); color: #fff;
   }
+  .members-bar {
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .members-bar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+  }
+  .member-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .member-item {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .member-item img { width: 40px; height: 40px; border-radius: 50%; }
+  .member-info { flex: 1; min-width: 0; }
+  .member-name { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .member-meta { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+  .member-stats { text-align: right; }
+  .member-stat-num { font-size: 16px; font-weight: 800; color: #1de9b6; }
+  .member-stat-lbl { font-size: 9px; opacity: 0.7; }
+  .online-dot {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; background: #00c853;
+    box-shadow: 0 0 4px #00c853;
+  }
 </style>
 </head>
 <body>
@@ -313,8 +341,16 @@
   <div class="visitor-bar">
     <div class="visitor-item"><span class="visitor-icon">👥</span><span class="visitor-num" id="vTotal">0</span><span class="visitor-lbl">Visitors</span></div>
     <div class="visitor-item"><span class="visitor-icon">🟢</span><span class="visitor-num" id="vActive">0</span><span class="visitor-lbl">Active</span></div>
-    <div class="visitor-item"><span class="visitor-icon">📅</span><span class="visitor-num" id="vToday">0</span><span class="visitor-lbl">Today</span></div>
+    <div class="visitor-item"><span class="visitor-icon">🆕</span><span class="visitor-num" id="vToday">0</span><span class="visitor-lbl">Visits Today</span></div>
     <div class="visitor-item"><span class="visitor-icon">👁️</span><span class="visitor-num" id="vViews">0</span><span class="visitor-lbl">Views</span></div>
+  </div>
+
+  <!-- Members bar -->
+  <div class="visitor-bar members-bar" onclick="showMembersModal()">
+    <div class="visitor-item"><span class="visitor-icon">🏆</span><span class="visitor-num" id="mTotal">0</span><span class="visitor-lbl">Members</span></div>
+    <div class="visitor-item"><span class="visitor-icon">🟢</span><span class="visitor-num" id="mOnline">0</span><span class="visitor-lbl">Online</span></div>
+    <div class="visitor-item"><span class="visitor-icon">📅</span><span class="visitor-num" id="mNew">0</span><span class="visitor-lbl">New Today</span></div>
+    <div class="visitor-item"><span class="visitor-icon">➡️</span><span class="visitor-num" style="font-size:13px;opacity:0.7">View All</span><span class="visitor-lbl">Leaderboard</span></div>
   </div>
 
   <!-- Filter bar -->
@@ -408,6 +444,28 @@ curl -X POST "WEBHOOK_URL" \
 
     <div class="modal-buttons">
       <button class="btn-secondary" onclick="closeWebhookModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Members modal -->
+<div class="modal-bg" id="membersModal">
+  <div class="modal">
+    <h2>🏆 Signal Members</h2>
+    <p style="font-size:12px;opacity:0.7;margin-bottom:8px;">All registered members of the DainikState trading community.</p>
+
+    <div class="tab-switch">
+      <button id="memberSortRecent" class="active" onclick="sortMembers('recent')">🕐 Recent</button>
+      <button id="memberSortSignals" onclick="sortMembers('signals')">📊 Top Signals</button>
+      <button id="memberSortName" onclick="sortMembers('name')">🔤 A-Z</button>
+    </div>
+
+    <div class="member-list" id="memberList">
+      <div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading members...</div></div>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn-secondary" onclick="closeMembersModal()">Close</button>
     </div>
   </div>
 </div>
@@ -816,8 +874,67 @@ async function fetchStats() {
       document.getElementById('vActive').textContent = r.visitors.activeNow || 0;
       document.getElementById('vToday').textContent = r.visitors.today || 0;
       document.getElementById('vViews').textContent = r.visitors.totalViews || 0;
+      // Members
+      if (r.members) {
+        document.getElementById('mTotal').textContent = r.members.total || 0;
+        document.getElementById('mOnline').textContent = r.members.online || 0;
+        document.getElementById('mNew').textContent = r.members.newToday || 0;
+      }
     }
   } catch (e) {}
+}
+
+// ===== Members =====
+let currentMemberSort = 'recent';
+
+async function showMembersModal() {
+  document.getElementById('membersModal').classList.add('active');
+  await loadMembers();
+}
+
+function closeMembersModal() {
+  document.getElementById('membersModal').classList.remove('active');
+}
+
+async function sortMembers(sortBy) {
+  currentMemberSort = sortBy;
+  document.getElementById('memberSortRecent').classList.toggle('active', sortBy === 'recent');
+  document.getElementById('memberSortSignals').classList.toggle('active', sortBy === 'signals');
+  document.getElementById('memberSortName').classList.toggle('active', sortBy === 'name');
+  await loadMembers();
+}
+
+async function loadMembers() {
+  const list = document.getElementById('memberList');
+  list.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading members...</div></div>';
+  try {
+    const r = await fetch(API + '/api/signals/members?sort=' + currentMemberSort + '&limit=50').then(r => r.json());
+    if (r.success && r.members.length > 0) {
+      list.innerHTML = r.members.map(m => {
+        const isOnline = m.online || (m.lastSeen && (Date.now() - m.lastSeen) < 5 * 60 * 1000);
+        return `
+          <div class="member-item">
+            <img src="${esc(m.avatar)}" alt="">
+            <div class="member-info">
+              <div class="member-name">
+                ${esc(m.name)}
+                ${isOnline ? '<span class="online-dot" title="Online"></span>' : ''}
+              </div>
+              <div class="member-meta">📍 ${esc(m.location || 'Unknown')} • ${m.signalsPosted || 0} signals</div>
+            </div>
+            <div class="member-stats">
+              <div class="member-stat-num">${m.signalsPosted || 0}</div>
+              <div class="member-stat-lbl">SIGNALS</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      list.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No members yet</div><div class="empty-sub">Be the first to join!</div></div>';
+    }
+  } catch (e) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div>';
+  }
 }
 
 // ===== INIT =====
