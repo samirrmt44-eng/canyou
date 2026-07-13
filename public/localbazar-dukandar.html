@@ -104,6 +104,15 @@
     cursor: pointer;
   }
   .wizard-send:disabled { opacity: 0.4; }
+  .wizard-save-exit {
+    background: rgba(255,107,53,0.15);
+    color: #ff6b35;
+    border: 2px solid #ff6b35;
+    padding: 14px 16px; border-radius: 10px;
+    font-size: 18px; font-weight: 800;
+    cursor: pointer;
+  }
+  .wizard-save-exit:hover { background: #ff6b35; color: #fff; }
 
   /* Dashboard */
   .welcome-card {
@@ -298,6 +307,7 @@
     <div class="wizard-input-wrap" id="wizardInputWrap">
       <input type="text" class="wizard-input" id="wizardInput" placeholder="अपना जवाब लिखें..." onkeypress="if(event.key==='Enter')sendWizardMessage()">
       <button class="wizard-send" id="wizardSend" onclick="sendWizardMessage()">भेजें</button>
+      <button class="wizard-save-exit" id="wizardSaveExit" onclick="saveAndExitWizard()" title="बाद में करेंगे">⏹️</button>
     </div>
   </div>
 </div>
@@ -477,6 +487,7 @@ let currentUser = null;
 let wizardSessionId = null;
 let wizardMessages = [];
 let wizardStep = 0;
+let wizardData = { storeId: null };
 
 function goHome() { window.location.href = '/localbazar.html'; }
 function goCustomer() { window.location.href = '/localbazar.html'; }
@@ -526,6 +537,7 @@ async function startWizard() {
     if (r.success) {
       wizardMessages = [r.wizard.message];
       wizardStep = r.wizard.step;
+      wizardData = r.wizard.data || wizardData;
       renderWizard();
     }
   } catch (e) {
@@ -603,6 +615,7 @@ async function processWizardMessage(text) {
       wizardMessages.push({ role: 'user', text: text });
       wizardMessages.push({ role: 'assistant', text: r.response.text });
       wizardStep = r.response.step || wizardStep + 1;
+      wizardData = r.data || wizardData;
       // Check if store was created
       if (r.response.storeId) {
         currentStore = { id: r.response.storeId, name: r.response.storeName };
@@ -619,6 +632,33 @@ function exitWizard() {
   if (confirm('Setup बाद में करेंगे?')) {
     document.getElementById('wizardOverlay').style.display = 'none';
     window.location.href = '/localbazar.html';
+  }
+}
+
+// Save & Exit button - exit wizard at any point, save progress
+async function saveAndExitWizard() {
+  if (!confirm('✅ अभी के लिए बस! आपकी progress save हो गई है।\n\nDashboard पर जाकर बाद में continue कर सकते हैं।\n\nजाना है?')) return;
+  try {
+    // Mark wizard as complete on server
+    await fetch(API + '/api/localbazar/wizard/complete', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: wizardSessionId })
+    });
+    // Hide wizard, show dashboard
+    document.getElementById('wizardOverlay').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    // If store was created, load it
+    if (wizardMessages.length > 0) {
+      const lastAssistantWithStore = wizardMessages.filter(m => m.role === 'assistant' && m.text.includes('बन गई')).pop();
+      if (lastAssistantWithStore) {
+        // Find storeId from data
+        // We need to fetch stores
+      }
+    }
+    // Reload to get fresh store data
+    setTimeout(() => location.reload(), 500);
+  } catch (e) {
+    showToast('Network error - try again', '#ff3b30');
   }
 }
 
