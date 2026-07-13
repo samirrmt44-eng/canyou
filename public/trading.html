@@ -2,30 +2,23 @@
 <html lang="hi">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
 <title>Trading Signals - DainikState</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #0a0e1a;
-    color: #fff;
-    min-height: 100vh;
+    background: #0a0e1a; color: #fff; min-height: 100vh;
   }
   .header {
     background: linear-gradient(135deg, #00c853 0%, #1de9b6 100%);
-    padding: 16px;
-    position: sticky; top: 0; z-index: 100;
+    padding: 16px; position: sticky; top: 0; z-index: 100;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   }
-  .header h1 {
-    font-size: 22px; font-weight: 900;
-    display: flex; align-items: center; gap: 8px;
-  }
+  .header h1 { font-size: 22px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
   .header .live-dot {
     width: 10px; height: 10px; border-radius: 50%;
-    background: #ff3b30;
-    animation: pulse 1.5s infinite;
+    background: #ff3b30; animation: pulse 1.5s infinite;
   }
   @keyframes pulse {
     0%, 100% { opacity: 1; transform: scale(1); }
@@ -33,35 +26,88 @@
   }
   .header p { font-size: 12px; opacity: 0.9; margin-top: 4px; }
   .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+
+  /* User profile bar */
+  .user-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 12px;
+  }
+  .user-bar img { width: 36px; height: 36px; border-radius: 50%; }
+  .user-bar-info { flex: 1; min-width: 0; }
+  .user-bar-name { font-size: 14px; font-weight: 700; }
+  .user-bar-sub { font-size: 11px; opacity: 0.7; }
+  .user-bar button {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; padding: 6px 12px; border-radius: 6px;
+    font-size: 12px; cursor: pointer;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex; gap: 6px; margin-bottom: 12px;
+    overflow-x: auto; padding-bottom: 4px;
+  }
+  .filter-bar::-webkit-scrollbar { height: 0; }
+  .filter-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff; padding: 6px 12px; border-radius: 6px;
+    font-size: 12px; cursor: pointer; white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .filter-btn.active {
+    background: linear-gradient(135deg, #00c853, #1de9b6);
+    border-color: transparent; font-weight: 700;
+  }
+  .add-coin-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none; color: #fff; padding: 6px 12px; border-radius: 6px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    flex-shrink: 0;
+  }
+
   .stats-bar {
     display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 6px; margin-bottom: 16px;
+    gap: 6px; margin-bottom: 12px;
   }
   .stat {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px;
-    padding: 10px 6px;
-    text-align: center;
+    border-radius: 8px; padding: 10px 6px; text-align: center;
   }
-  .stat-value {
-    font-size: 16px; font-weight: 900;
-    color: #00c853;
-  }
-  .stat-label {
-    font-size: 10px; opacity: 0.7;
-    margin-top: 2px;
-  }
+  .stat-value { font-size: 16px; font-weight: 900; color: #00c853; }
+  .stat-label { font-size: 10px; opacity: 0.7; margin-top: 2px; }
   .stat.buy .stat-value { color: #00c853; }
   .stat.sell .stat-value { color: #ff3b30; }
   .stat.pnl .stat-value { color: #ffd700; }
+
+  .visitor-bar {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 6px; margin-bottom: 12px;
+    background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+    border: 1px solid rgba(102,126,234,0.2);
+    border-radius: 10px; padding: 10px 6px;
+  }
+  .visitor-item {
+    text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .visitor-icon { font-size: 16px; }
+  .visitor-num {
+    font-size: 18px; font-weight: 900; color: #1de9b6;
+    font-variant-numeric: tabular-nums;
+  }
+  .visitor-lbl { font-size: 9px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.3px; }
+
   .signals-list { display: flex; flex-direction: column; gap: 10px; }
   .signal-card {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     border-left: 4px solid #00c853;
-    border-radius: 12px;
-    padding: 14px;
+    border-radius: 12px; padding: 14px;
     animation: slideIn 0.3s ease;
   }
   @keyframes slideIn {
@@ -69,143 +115,165 @@
     to { transform: translateX(0); opacity: 1; }
   }
   .signal-card.sell { border-left-color: #ff3b30; }
-  .signal-card.close { border-left-color: #888; opacity: 0.7; }
+  .signal-card.close { border-left-color: #888; opacity: 0.85; }
   .signal-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
   }
   .coin-name {
     font-size: 16px; font-weight: 800;
     display: flex; align-items: center; gap: 8px;
   }
   .signal-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 11px; font-weight: 800;
-    letter-spacing: 0.5px;
+    display: inline-block; padding: 4px 10px;
+    border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
   }
   .signal-badge.buy { background: linear-gradient(135deg, #00c853, #1de9b6); color: #fff; }
   .signal-badge.sell { background: linear-gradient(135deg, #ff3b30, #ff6b6b); color: #fff; }
   .signal-badge.long { background: linear-gradient(135deg, #00c853, #1de9b6); color: #fff; }
   .signal-badge.short { background: linear-gradient(135deg, #ff3b30, #ff6b6b); color: #fff; }
-  .signal-badge.close { background: rgba(255,255,255,0.1); color: #888; }
+  .signal-badge.close { background: rgba(255,255,255,0.1); color: #aaa; }
   .signal-prices {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
-    margin-bottom: 8px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px;
   }
   .price-item {
     background: rgba(255,255,255,0.03);
-    border-radius: 6px;
-    padding: 6px 8px;
-    text-align: center;
+    border-radius: 6px; padding: 6px 8px; text-align: center;
   }
-  .price-label {
-    font-size: 9px; opacity: 0.7;
-    text-transform: uppercase;
-  }
-  .price-value {
-    font-size: 13px; font-weight: 700;
-    margin-top: 2px;
-  }
+  .price-label { font-size: 9px; opacity: 0.7; text-transform: uppercase; }
+  .price-value { font-size: 13px; font-weight: 700; margin-top: 2px; }
   .pnl-display {
     display: flex; justify-content: space-between; align-items: center;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05);
   }
-  .pnl-value {
-    font-size: 18px; font-weight: 900;
-  }
+  .pnl-value { font-size: 18px; font-weight: 900; }
   .pnl-value.positive { color: #00c853; }
   .pnl-value.negative { color: #ff3b30; }
-  .pnl-label {
-    font-size: 11px; opacity: 0.7;
-  }
-  .signal-meta {
-    display: flex; gap: 6px; flex-wrap: wrap;
-    margin-top: 6px;
-  }
+  .pnl-label { font-size: 11px; opacity: 0.7; }
+  .signal-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
   .meta-tag {
     background: rgba(255,255,255,0.05);
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-size: 10px;
-    opacity: 0.7;
+    border-radius: 4px; padding: 2px 6px; font-size: 10px; opacity: 0.7;
   }
-  .signal-time {
-    font-size: 11px; opacity: 0.6;
-    margin-top: 4px;
-  }
+  .signal-time { font-size: 11px; opacity: 0.6; margin-top: 4px; }
   .live-indicator {
     display: inline-block;
-    background: rgba(0,200,83,0.2);
-    color: #00c853;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    margin-left: 6px;
+    background: rgba(0,200,83,0.2); color: #00c853;
+    padding: 2px 6px; border-radius: 4px; font-size: 9px;
+    font-weight: 800; letter-spacing: 0.5px; margin-left: 6px;
   }
-  .live-indicator::before {
-    content: '●';
-    margin-right: 3px;
-    animation: pulse 1s infinite;
+  .live-indicator::before { content: '●'; margin-right: 3px; animation: pulse 1s infinite; }
+  .view-count {
+    display: inline-block;
+    background: rgba(29,233,182,0.15); color: #1de9b6;
+    padding: 1px 5px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-left: 4px;
   }
   .empty {
-    text-align: center;
-    padding: 40px 20px;
-    color: rgba(255,255,255,0.5);
+    text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.5);
   }
   .empty-icon { font-size: 50px; margin-bottom: 12px; }
   .empty-text { font-size: 14px; }
   .empty-sub { font-size: 11px; margin-top: 4px; }
   .refresh-bar {
     background: rgba(255,255,255,0.05);
-    border-radius: 8px;
-    padding: 8px 12px;
-    margin-bottom: 12px;
-    display: flex; justify-content: space-between; align-items: center;
-    font-size: 11px; opacity: 0.7;
+    border-radius: 8px; padding: 8px 12px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center; font-size: 11px; opacity: 0.7;
   }
-  .pulse-new {
-    animation: glow 1s ease;
-  }
+  .pulse-new { animation: glow 1s ease; }
   @keyframes glow {
     0%, 100% { box-shadow: 0 0 0 0 rgba(0,200,83,0.5); }
     50% { box-shadow: 0 0 0 8px rgba(0,200,83,0); }
   }
-  .visitor-bar {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 6px; margin-bottom: 12px;
-    background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
-    border: 1px solid rgba(102,126,234,0.2);
-    border-radius: 10px;
-    padding: 10px 6px;
+  .pagination {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 16px; gap: 8px;
   }
-  .visitor-item {
-    text-align: center;
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  .pagination button {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff; padding: 10px;
+    border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
   }
-  .visitor-icon { font-size: 16px; }
-  .visitor-num {
-    font-size: 18px; font-weight: 900; color: #1de9b6;
-    font-variant-numeric: tabular-nums;
+  .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pagination button:not(:disabled):hover { background: rgba(255,255,255,0.1); }
+  .page-info { font-size: 12px; opacity: 0.7; text-align: center; }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.8);
+    display: none; align-items: center; justify-content: center;
+    padding: 16px;
   }
-  .visitor-lbl {
-    font-size: 9px; opacity: 0.7;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+  .modal-bg.active { display: flex; }
+  .modal {
+    background: #151a20;
+    border: 1px solid #2b3139;
+    border-radius: 12px; padding: 20px;
+    max-width: 400px; width: 100%;
+    max-height: 90vh; overflow-y: auto;
   }
-  .view-count {
-    display: inline-block;
-    background: rgba(29,233,182,0.15);
-    color: #1de9b6;
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 9px;
-    font-weight: 700;
-    margin-left: 4px;
+  .modal h2 { font-size: 18px; margin-bottom: 12px; }
+  .modal label {
+    display: block; font-size: 12px; opacity: 0.7;
+    margin-top: 10px; margin-bottom: 4px;
+  }
+  .modal input, .modal select, .modal textarea {
+    width: 100%; padding: 10px;
+    background: #1b2129; border: 1px solid #2b3139;
+    border-radius: 6px; color: #fff; font-size: 14px;
+    font-family: inherit;
+  }
+  .modal-buttons {
+    display: flex; gap: 8px; margin-top: 16px;
+  }
+  .modal-buttons button {
+    flex: 1; padding: 10px; border: none;
+    border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #00c853, #1de9b6); color: #000;
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.1); color: #fff;
+  }
+  .webhook-box {
+    background: #0d1117; padding: 10px;
+    border-radius: 6px; font-family: monospace; font-size: 11px;
+    word-break: break-all; color: #1de9b6;
+    margin-top: 8px; position: relative;
+  }
+  .copy-btn {
+    position: absolute; top: 6px; right: 6px;
+    background: rgba(255,255,255,0.1); border: none;
+    color: #fff; padding: 4px 8px; border-radius: 4px;
+    font-size: 11px; cursor: pointer;
+  }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #00c853; color: #000;
+    padding: 10px 20px; border-radius: 8px;
+    font-size: 14px; font-weight: 600;
+    z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translate(-50%, 20px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+  }
+  .tab-switch {
+    display: flex; background: rgba(255,255,255,0.05);
+    border-radius: 8px; padding: 3px; margin-bottom: 12px;
+  }
+  .tab-switch button {
+    flex: 1; background: transparent; border: none;
+    color: rgba(255,255,255,0.6); padding: 8px;
+    border-radius: 6px; font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+  .tab-switch button.active {
+    background: rgba(255,255,255,0.1); color: #fff;
   }
 </style>
 </head>
@@ -215,55 +283,44 @@
     <span class="live-dot"></span>
     📈 Live Trading Signals
   </h1>
-  <p>Real-time signals from your trading bot</p>
+  <p>Real-time signals from DainikState traders</p>
 </div>
 
 <div class="container">
+  <!-- User bar (auto-shown when logged in) -->
+  <div id="userBar" class="user-bar" style="display:none">
+    <img id="userAvatar" src="" alt="">
+    <div class="user-bar-info">
+      <div class="user-bar-name" id="userName">User</div>
+      <div class="user-bar-sub" id="userSub">Loading...</div>
+    </div>
+    <button onclick="showWebhookModal()">🔑 Webhook</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
   <div class="refresh-bar">
     <span id="lastUpdate">Loading...</span>
     <span id="connectionStatus">● Connected</span>
   </div>
 
   <div class="stats-bar" id="statsBar">
-    <div class="stat buy">
-      <div class="stat-value" id="statBuy">0</div>
-      <div class="stat-label">BUY</div>
-    </div>
-    <div class="stat sell">
-      <div class="stat-value" id="statSell">0</div>
-      <div class="stat-label">SELL</div>
-    </div>
-    <div class="stat pnl">
-      <div class="stat-value" id="statPnL">0%</div>
-      <div class="stat-label">Total PnL</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value" id="statWinRate">0%</div>
-      <div class="stat-label">Win Rate</div>
-    </div>
+    <div class="stat buy"><div class="stat-value" id="statBuy">0</div><div class="stat-label">BUY</div></div>
+    <div class="stat sell"><div class="stat-value" id="statSell">0</div><div class="stat-label">SELL</div></div>
+    <div class="stat pnl"><div class="stat-value" id="statPnL">0%</div><div class="stat-label">Total PnL</div></div>
+    <div class="stat"><div class="stat-value" id="statWinRate">0%</div><div class="stat-label">Win Rate</div></div>
   </div>
 
   <div class="visitor-bar">
-    <div class="visitor-item">
-      <span class="visitor-icon">👥</span>
-      <span class="visitor-num" id="vTotal">0</span>
-      <span class="visitor-lbl">Total Visitors</span>
-    </div>
-    <div class="visitor-item">
-      <span class="visitor-icon">🟢</span>
-      <span class="visitor-num" id="vActive">0</span>
-      <span class="visitor-lbl">Active Now</span>
-    </div>
-    <div class="visitor-item">
-      <span class="visitor-icon">📅</span>
-      <span class="visitor-num" id="vToday">0</span>
-      <span class="visitor-lbl">Today</span>
-    </div>
-    <div class="visitor-item">
-      <span class="visitor-icon">👁️</span>
-      <span class="visitor-num" id="vViews">0</span>
-      <span class="visitor-lbl">Views</span>
-    </div>
+    <div class="visitor-item"><span class="visitor-icon">👥</span><span class="visitor-num" id="vTotal">0</span><span class="visitor-lbl">Visitors</span></div>
+    <div class="visitor-item"><span class="visitor-icon">🟢</span><span class="visitor-num" id="vActive">0</span><span class="visitor-lbl">Active</span></div>
+    <div class="visitor-item"><span class="visitor-icon">📅</span><span class="visitor-num" id="vToday">0</span><span class="visitor-lbl">Today</span></div>
+    <div class="visitor-item"><span class="visitor-icon">👁️</span><span class="visitor-num" id="vViews">0</span><span class="visitor-lbl">Views</span></div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all">All Coins</button>
+    <button class="add-coin-btn" onclick="showAddSignalModal()">➕ Add My Coin</button>
   </div>
 
   <div class="signals-list" id="signalsList">
@@ -272,15 +329,134 @@
       <div class="empty-text">Loading signals...</div>
     </div>
   </div>
+
+  <!-- Pagination -->
+  <div class="pagination" id="pagination" style="display:none">
+    <button id="prevBtn" onclick="changePage(-1)">← Prev</button>
+    <span class="page-info" id="pageInfo">Page 1</span>
+    <button id="nextBtn" onclick="changePage(1)">Next →</button>
+  </div>
+</div>
+
+<!-- Auto-register / Login modal -->
+<div class="modal-bg" id="authModal">
+  <div class="modal">
+    <h2>👋 Welcome to DainikState Trading!</h2>
+    <p style="font-size:13px;opacity:0.7;margin-bottom:12px;">Sign in to share your coin signals with the community.</p>
+
+    <div class="tab-switch">
+      <button id="registerTab" class="active" onclick="switchAuthTab('register')">New Account</button>
+      <button id="loginTab" onclick="switchAuthTab('login')">Returning User</button>
+    </div>
+
+    <div id="registerForm">
+      <label>Your Name *</label>
+      <input type="text" id="regName" placeholder="e.g. Rajesh Kumar">
+
+      <label>Phone Number</label>
+      <input type="tel" id="regPhone" placeholder="+91 9876543210">
+
+      <label>Location</label>
+      <input type="text" id="regLocation" placeholder="e.g. Delhi, India">
+
+      <div class="modal-buttons">
+        <button class="btn-secondary" onclick="skipAuth()">Skip for now</button>
+        <button class="btn-primary" onclick="doRegister()">Create Account</button>
+      </div>
+    </div>
+
+    <div id="loginForm" style="display:none">
+      <label>Phone Number *</label>
+      <input type="tel" id="loginPhone" placeholder="+91 9876543210">
+
+      <div class="modal-buttons">
+        <button class="btn-secondary" onclick="skipAuth()">Cancel</button>
+        <button class="btn-primary" onclick="doLogin()">Login</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Webhook URL modal -->
+<div class="modal-bg" id="webhookModal">
+  <div class="modal">
+    <h2>🔑 Your Webhook URL</h2>
+    <p style="font-size:12px;opacity:0.7;margin-bottom:8px;">Send POST requests to this URL from your trading bot. Each member has a unique API key.</p>
+
+    <label>Webhook URL (with your API key)</label>
+    <div class="webhook-box" id="webhookUrl">Loading...
+      <button class="copy-btn" onclick="copyWebhook()">Copy</button>
+    </div>
+
+    <h2 style="margin-top:18px">📤 Send Signal Example</h2>
+    <div class="webhook-box" style="color:#ffd700">
+curl -X POST "WEBHOOK_URL" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "coin": "BTCUSDT",
+    "signal": "LONG",
+    "pnl": 0,
+    "entry": 67500,
+    "leverage": "10x",
+    "timeframe": "15m"
+  }'
+    </div>
+
+    <p style="font-size:11px;opacity:0.6;margin-top:8px;">
+      Signals: LONG, SHORT, CLOSE_LONG, CLOSE_SHORT
+    </p>
+
+    <div class="modal-buttons">
+      <button class="btn-secondary" onclick="closeWebhookModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add My Signal modal (for manual entry) -->
+<div class="modal-bg" id="addSignalModal">
+  <div class="modal">
+    <h2>➕ Add Your Coin Signal</h2>
+    <p style="font-size:12px;opacity:0.7;margin-bottom:8px;">Post a signal manually for your favorite coin.</p>
+
+    <label>Coin *</label>
+    <input type="text" id="addCoin" placeholder="e.g. BTCUSDT, ETHUSDT, SOLUSDT" style="text-transform:uppercase;">
+
+    <label>Signal *</label>
+    <select id="addSignal">
+      <option value="LONG">🟢 LONG (Buy)</option>
+      <option value="SHORT">🔴 SHORT (Sell)</option>
+      <option value="CLOSE_LONG">⚪ CLOSE LONG</option>
+      <option value="CLOSE_SHORT">⚪ CLOSE SHORT</option>
+    </select>
+
+    <label>Entry Price</label>
+    <input type="number" id="addEntry" placeholder="67500" step="any">
+
+    <label>PnL % (for CLOSE signals)</label>
+    <input type="number" id="addPnl" placeholder="e.g. 5.2 or -3.1" step="0.01">
+
+    <label>Note (optional)</label>
+    <input type="text" id="addNote" placeholder="e.g. Breakout confirmed">
+
+    <div class="modal-buttons">
+      <button class="btn-secondary" onclick="closeAddSignalModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitMySignal()">Post Signal</button>
+    </div>
+  </div>
 </div>
 
 <script>
 const API = 'https://canyou-uqkp.onrender.com';
+let currentUser = null;
+let currentPage = 1;
+const pageSize = 50;
+let totalPages = 1;
 let lastSignals = [];
 let pollInterval = null;
-let viewedSignals = new Set();  // signal IDs already counted in this session
+let viewedSignals = new Set();
+let currentFilter = 'all';
 
-// Get or create session ID for visitor tracking (stored in localStorage)
+// Session ID
 function getSessionId() {
   let sid = localStorage.getItem('ds_signal_sid');
   if (!sid) {
@@ -288,45 +464,6 @@ function getSessionId() {
     localStorage.setItem('ds_signal_sid', sid);
   }
   return sid;
-}
-
-// Track this page visit on load
-async function trackVisit() {
-  try {
-    const sid = getSessionId();
-    const r = await fetch(API + '/api/signals/track-visit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: sid, referrer: document.referrer || '' })
-    }).then(r => r.json());
-    if (r.success) {
-      console.log('👋 Visit tracked. Total visitors:', r.totalVisitors, 'New:', r.unique);
-    }
-  } catch (e) {
-    console.warn('Visit track failed:', e);
-  }
-}
-
-// Track view on a specific signal (once per session per signal)
-async function trackSignalView(signalId) {
-  if (!signalId || viewedSignals.has(signalId)) return;
-  viewedSignals.add(signalId);
-  try {
-    await fetch(API + '/api/signals/' + encodeURIComponent(signalId) + '/view', { method: 'POST' });
-  } catch (e) { /* silent */ }
-}
-
-// Fetch and display visitor stats
-async function fetchStats() {
-  try {
-    const r = await fetch(API + '/api/signals/stats').then(r => r.json());
-    if (r.success) {
-      document.getElementById('vTotal').textContent = r.visitors.total || 0;
-      document.getElementById('vActive').textContent = r.visitors.activeNow || 0;
-      document.getElementById('vToday').textContent = r.visitors.today || 0;
-      document.getElementById('vViews').textContent = r.visitors.totalViews || 0;
-    }
-  } catch (e) { /* silent */ }
 }
 
 function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -339,10 +476,216 @@ function timeAgo(ts) {
   return Math.floor(d / 86400000) + 'd ago';
 }
 
+function showToast(msg, color) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  if (color) t.style.background = color;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ===== AUTH =====
+async function checkAuth() {
+  const sessionId = localStorage.getItem('ds_user_session');
+  if (!sessionId) {
+    showAuthModal();
+    return;
+  }
+  try {
+    const r = await fetch(API + '/api/signals/me?sessionId=' + encodeURIComponent(sessionId)).then(r => r.json());
+    if (r.success) {
+      currentUser = r;
+      showUserBar();
+    } else {
+      showAuthModal();
+    }
+  } catch (e) {
+    showAuthModal();
+  }
+}
+
+function showAuthModal() {
+  document.getElementById('authModal').classList.add('active');
+}
+
+function closeAuthModal() {
+  document.getElementById('authModal').classList.remove('active');
+}
+
+function switchAuthTab(tab) {
+  document.getElementById('registerTab').classList.toggle('active', tab === 'register');
+  document.getElementById('loginTab').classList.toggle('active', tab === 'login');
+  document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+}
+
+function skipAuth() {
+  closeAuthModal();
+  showToast('Viewing as guest. Some features limited.', '#ff9800');
+}
+
+async function doRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const phone = document.getElementById('regPhone').value.trim();
+  const location = document.getElementById('regLocation').value.trim();
+  if (!name) return showToast('Name is required!', '#ff3b30');
+  try {
+    const r = await fetch(API + '/api/signals/auto-register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, location, country: 'India' })
+    }).then(r => r.json());
+    if (r.success) {
+      currentUser = r;
+      localStorage.setItem('ds_user_session', r.sessionId);
+      localStorage.setItem('ds_user_api_key', r.apiKey);
+      closeAuthModal();
+      showUserBar();
+      showToast('✅ Account created! Your webhook is ready.', '#00c853');
+    } else {
+      showToast('Error: ' + r.error, '#ff3b30');
+    }
+  } catch (e) {
+    showToast('Network error: ' + e.message, '#ff3b30');
+  }
+}
+
+async function doLogin() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  if (!phone) return showToast('Phone required!', '#ff3b30');
+  try {
+    const r = await fetch(API + '/api/signals/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    }).then(r => r.json());
+    if (r.success) {
+      currentUser = r;
+      localStorage.setItem('ds_user_session', r.sessionId);
+      localStorage.setItem('ds_user_api_key', r.apiKey);
+      closeAuthModal();
+      showUserBar();
+      showToast('✅ Welcome back, ' + r.user.name + '!', '#00c853');
+    } else {
+      showToast('No account found with this phone', '#ff3b30');
+    }
+  } catch (e) {
+    showToast('Network error: ' + e.message, '#ff3b30');
+  }
+}
+
+function logout() {
+  localStorage.removeItem('ds_user_session');
+  localStorage.removeItem('ds_user_api_key');
+  currentUser = null;
+  document.getElementById('userBar').style.display = 'none';
+  showAuthModal();
+  showToast('Logged out', '#888');
+}
+
+function showUserBar() {
+  if (!currentUser) return;
+  const u = currentUser.user;
+  document.getElementById('userBar').style.display = 'flex';
+  document.getElementById('userAvatar').src = u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=667eea&color=fff`;
+  document.getElementById('userName').textContent = u.name;
+  document.getElementById('userSub').textContent = `📍 ${u.location || 'Unknown'} • Signals: ${u.signalsPosted || 0}`;
+}
+
+// ===== Webhook modal =====
+function showWebhookModal() {
+  if (!currentUser) return showToast('Please login first!', '#ff3b30');
+  document.getElementById('webhookUrl').innerHTML = currentUser.webhookUrl + '<button class="copy-btn" onclick="copyWebhook()">Copy</button>';
+  document.getElementById('webhookModal').classList.add('active');
+}
+
+function closeWebhookModal() {
+  document.getElementById('webhookModal').classList.remove('active');
+}
+
+function copyWebhook() {
+  if (!currentUser) return;
+  navigator.clipboard.writeText(currentUser.webhookUrl).then(() => {
+    showToast('📋 Webhook URL copied!', '#00c853');
+  });
+}
+
+// ===== Add my signal modal =====
+function showAddSignalModal() {
+  if (!currentUser) {
+    showAuthModal();
+    return showToast('Login to post your own signals', '#ff9800');
+  }
+  document.getElementById('addSignalModal').classList.add('active');
+}
+
+function closeAddSignalModal() {
+  document.getElementById('addSignalModal').classList.remove('active');
+}
+
+async function submitMySignal() {
+  const coin = document.getElementById('addCoin').value.trim();
+  const signal = document.getElementById('addSignal').value;
+  const entry = document.getElementById('addEntry').value;
+  const pnl = document.getElementById('addPnl').value;
+  const note = document.getElementById('addNote').value;
+  if (!coin) return showToast('Coin required!', '#ff3b30');
+  try {
+    const r = await fetch(API + '/api/signals/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        coin, signal,
+        entry: entry || null,
+        pnl: pnl || 0,
+        note: note,
+        sessionId: currentUser.sessionId
+      })
+    }).then(r => r.json());
+    if (r.success) {
+      closeAddSignalModal();
+      showToast('✅ Signal posted!', '#00c853');
+      // Clear form
+      document.getElementById('addCoin').value = '';
+      document.getElementById('addEntry').value = '';
+      document.getElementById('addPnl').value = '';
+      document.getElementById('addNote').value = '';
+      currentPage = 1;
+      fetchSignals();
+    } else {
+      showToast('Error: ' + r.error, '#ff3b30');
+    }
+  } catch (e) {
+    showToast('Network error: ' + e.message, '#ff3b30');
+  }
+}
+
+// ===== Track visit =====
+async function trackVisit() {
+  try {
+    await fetch(API + '/api/signals/track-visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: getSessionId(), referrer: document.referrer || '' })
+    });
+  } catch (e) {}
+}
+
+// ===== View tracking =====
+async function trackSignalView(signalId) {
+  if (!signalId || viewedSignals.has(signalId)) return;
+  viewedSignals.add(signalId);
+  try {
+    await fetch(API + '/api/signals/' + encodeURIComponent(signalId) + '/view', { method: 'POST' });
+  } catch (e) {}
+}
+
+// ===== Render signal =====
 function renderSignal(s, isNew = false) {
   const pnlClass = s.pnl > 0 ? 'positive' : s.pnl < 0 ? 'negative' : '';
   const signalClass = s.signal.toLowerCase();
-  const cardClass = signalClass.includes('sell') || signalClass.includes('short') ? 'sell' : (s.status === 'closed' ? 'close' : '');
+  const cardClass = signalClass.includes('sell') || signalClass.includes('short') ? 'sell' : (s.signal.includes('CLOSE') ? 'close' : '');
   return `
     <div class="signal-card ${cardClass} ${isNew ? 'pulse-new' : ''}" data-id="${s.id}">
       <div class="signal-header">
@@ -368,7 +711,7 @@ function renderSignal(s, isNew = false) {
         <div class="signal-meta">
           ${s.leverage ? `<span class="meta-tag">⚡ ${esc(s.leverage)}</span>` : ''}
           ${s.timeframe ? `<span class="meta-tag">⏱ ${esc(s.timeframe)}</span>` : ''}
-          ${s.source ? `<span class="meta-tag">📡 ${esc(s.source).slice(0, 15)}</span>` : ''}
+          ${s.userName ? `<span class="meta-tag">👤 ${esc(s.userName)}</span>` : ''}
         </div>
       </div>
       ${s.note ? `<div style="font-size:12px;margin-top:6px;opacity:0.7;">${esc(s.note)}</div>` : ''}
@@ -377,37 +720,50 @@ function renderSignal(s, isNew = false) {
   `;
 }
 
+// ===== Fetch signals (paginated) =====
 async function fetchSignals() {
   try {
-    const res = await fetch(API + '/api/signals/widget?count=20').then(r => r.json());
-    if (res.success) {
+    const params = new URLSearchParams({
+      page: currentPage,
+      limit: pageSize,
+    });
+    if (currentFilter !== 'all') params.set('coin', currentFilter);
+    const r = await fetch(API + '/api/signals?' + params).then(r => r.json());
+    if (r.success) {
       // Update stats
-      document.getElementById('statBuy').textContent = res.stats.buy || 0;
-      document.getElementById('statSell').textContent = res.stats.sell || 0;
+      document.getElementById('statBuy').textContent = r.signals.filter(s => s.signal === 'LONG' || s.signal === 'BUY').length;
+      document.getElementById('statSell').textContent = r.signals.filter(s => s.signal === 'SHORT' || s.signal === 'SELL').length;
+      const totalPnl = r.signals.reduce((s, x) => s + (x.pnl || 0), 0);
       const pnlEl = document.getElementById('statPnL');
-      pnlEl.textContent = (res.stats.totalPnL > 0 ? '+' : '') + res.stats.totalPnL + '%';
-      pnlEl.style.color = res.stats.totalPnL > 0 ? '#00c853' : res.stats.totalPnL < 0 ? '#ff3b30' : '#ffd700';
-      document.getElementById('statWinRate').textContent = res.stats.winRate + '%';
-      // Render signals
+      pnlEl.textContent = (totalPnl > 0 ? '+' : '') + totalPnl.toFixed(2) + '%';
+      pnlEl.style.color = totalPnl > 0 ? '#00c853' : totalPnl < 0 ? '#ff3b30' : '#ffd700';
+      const winners = r.signals.filter(s => s.pnl > 0).length;
+      const winRate = r.signals.length > 0 ? Math.round((winners / r.signals.length) * 100) : 0;
+      document.getElementById('statWinRate').textContent = winRate + '%';
+
+      // Render list
       const list = document.getElementById('signalsList');
-      if (!res.signals || res.signals.length === 0) {
-        list.innerHTML = `
-          <div class="empty">
-            <div class="empty-icon">📊</div>
-            <div class="empty-text">No signals yet</div>
-            <div class="empty-sub">Waiting for your bot to send signals...</div>
-          </div>
-        `;
+      if (!r.signals || r.signals.length === 0) {
+        list.innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">No signals ${currentFilter !== 'all' ? 'for ' + currentFilter : 'yet'}</div><div class="empty-sub">Be the first to post!</div></div>`;
       } else {
-        // Detect new signals for animation
-        const newIds = res.signals.filter(s => !lastSignals.find(ls => ls.id === s.id)).map(s => s.id);
-        list.innerHTML = res.signals.map(s => renderSignal(s, newIds.includes(s.id))).join('');
-        // Track a view for each visible signal (once per session)
-        res.signals.forEach(s => trackSignalView(s.id));
-        lastSignals = res.signals;
+        const newIds = r.signals.filter(s => !lastSignals.find(ls => ls.id === s.id)).map(s => s.id);
+        list.innerHTML = r.signals.map(s => renderSignal(s, newIds.includes(s.id))).join('');
+        r.signals.forEach(s => trackSignalView(s.id));
+        lastSignals = r.signals;
       }
-      // Update last refresh time
+
+      // Update pagination
+      totalPages = r.totalPages || 1;
+      document.getElementById('pagination').style.display = r.total > pageSize ? 'flex' : 'none';
+      document.getElementById('pageInfo').textContent = `Page ${r.page} / ${r.totalPages} (${r.total} total)`;
+      document.getElementById('prevBtn').disabled = !r.hasPrev;
+      document.getElementById('nextBtn').disabled = !r.hasNext;
       document.getElementById('lastUpdate').textContent = '🕐 Updated ' + new Date().toLocaleTimeString();
+      document.getElementById('connectionStatus').innerHTML = '● Connected';
+      document.getElementById('connectionStatus').style.color = '#00c853';
+
+      // Update filter buttons with unique coins
+      updateFilterButtons(r);
     }
   } catch (e) {
     document.getElementById('connectionStatus').innerHTML = '● Disconnected';
@@ -415,18 +771,68 @@ async function fetchSignals() {
   }
 }
 
-// Auto-refresh every 5 seconds
+// ===== Filter buttons =====
+function updateFilterButtons(currentResponse) {
+  const uniqueCoins = [...new Set(currentResponse.signals.map(s => s.coin))].sort();
+  const filterBar = document.querySelector('.filter-bar');
+  // Keep first (All) and last (Add) buttons, refresh middle ones
+  const allBtn = filterBar.querySelector('[data-filter="all"]');
+  const addBtn = filterBar.querySelector('.add-coin-btn');
+  filterBar.innerHTML = '';
+  filterBar.appendChild(allBtn);
+  uniqueCoins.slice(0, 12).forEach(coin => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (currentFilter === coin ? ' active' : '');
+    btn.setAttribute('data-filter', coin);
+    btn.textContent = coin;
+    btn.onclick = () => {
+      currentFilter = coin;
+      currentPage = 1;
+      fetchSignals();
+    };
+    filterBar.appendChild(btn);
+  });
+  // Update active states
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-filter') === currentFilter);
+  });
+  filterBar.appendChild(addBtn);
+}
+
+function changePage(delta) {
+  const newPage = currentPage + delta;
+  if (newPage < 1 || newPage > totalPages) return;
+  currentPage = newPage;
+  fetchSignals();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ===== Stats =====
+async function fetchStats() {
+  try {
+    const r = await fetch(API + '/api/signals/stats').then(r => r.json());
+    if (r.success) {
+      document.getElementById('vTotal').textContent = r.visitors.total || 0;
+      document.getElementById('vActive').textContent = r.visitors.activeNow || 0;
+      document.getElementById('vToday').textContent = r.visitors.today || 0;
+      document.getElementById('vViews').textContent = r.visitors.totalViews || 0;
+    }
+  } catch (e) {}
+}
+
+// ===== INIT =====
 function startPolling() {
   fetchSignals();
-  pollInterval = setInterval(fetchSignals, 5000);
-  // Visitor stats refresh every 15s
+  pollInterval = setInterval(fetchSignals, 10000);  // Refresh every 10s
   fetchStats();
   setInterval(fetchStats, 15000);
 }
 
-// Track this visit on page load
-trackVisit();
-startPolling();
+// Initialize on load
+checkAuth().then(() => {
+  trackVisit();
+  startPolling();
+});
 </script>
 </body>
 </html>
