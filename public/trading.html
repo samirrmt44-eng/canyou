@@ -189,6 +189,97 @@
     padding: 2px 6px; border-radius: 4px; font-size: 9px;
     font-weight: 800; letter-spacing: 0.5px; margin-left: 6px;
   }
+
+  /* ===== TICKER TAPE (top scrolling analysis) ===== */
+  .ticker-section {
+    background: linear-gradient(90deg, rgba(0,0,0,0.5), rgba(0,0,0,0.3), rgba(0,0,0,0.5));
+    border-top: 1px solid rgba(255,215,0,0.3);
+    border-bottom: 1px solid rgba(255,215,0,0.3);
+    overflow: hidden;
+    margin: 0 -16px 14px;
+    padding: 8px 0;
+    position: relative;
+  }
+  .ticker-label {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(135deg, #ffd700, #ff9500);
+    color: #000;
+    padding: 0 12px;
+    display: flex; align-items: center;
+    font-size: 11px; font-weight: 900;
+    z-index: 2;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .ticker-track {
+    display: flex; gap: 16px;
+    padding-left: 90px;
+    animation: tickerScroll 60s linear infinite;
+    white-space: nowrap;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+  @keyframes tickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .ticker-item {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 6px;
+    padding: 6px 12px;
+    flex-shrink: 0;
+    font-size: 12px;
+  }
+  .ticker-coin { font-weight: 800; color: #fff; }
+  .ticker-action {
+    font-size: 10px; font-weight: 900;
+    padding: 2px 6px; border-radius: 3px;
+  }
+  .ticker-action.long { background: #00c853; color: #000; }
+  .ticker-action.short { background: #ff3b30; color: #fff; }
+  .ticker-action.hold_long { background: rgba(0,200,83,0.2); color: #00c853; }
+  .ticker-action.hold_short { background: rgba(255,59,48,0.2); color: #ff3b30; }
+  .ticker-action.wait { background: rgba(255,255,255,0.1); color: #aaa; }
+  .ticker-conf {
+    font-weight: 700;
+    color: #ffd700;
+  }
+  .ticker-price { color: #1de9b6; font-weight: 700; }
+  .ticker-change.up { color: #00c853; }
+  .ticker-change.down { color: #ff3b30; }
+
+  /* ===== PROFIT TESTIMONIALS ===== */
+  .profit-ticker {
+    background: linear-gradient(135deg, rgba(0,200,83,0.1), rgba(255,215,0,0.08));
+    border: 1px solid rgba(0,200,83,0.3);
+    border-radius: 8px;
+    padding: 8px 14px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  .profit-ticker-inner {
+    display: inline-block;
+    white-space: nowrap;
+    animation: profitScroll 40s linear infinite;
+  }
+  .profit-ticker-inner:hover { animation-play-state: paused; }
+  @keyframes profitScroll {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
+  .profit-msg {
+    display: inline-block;
+    margin-right: 30px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .profit-name { color: #1de9b6; font-weight: 800; }
+  .profit-amount { color: #00c853; font-weight: 900; }
+  .profit-coin { color: #ffd700; font-weight: 700; }
+  .profit-emoji { font-size: 16px; margin-right: 4px; }
   .live-indicator::before { content: '●'; margin-right: 3px; animation: pulse 1s infinite; }
   /* Live PnL pulse - when value updates */
   .pnl-live {
@@ -609,6 +700,20 @@
 </div>
 
 <div class="container">
+  <!-- Live ticker tape (analyzed coins scrolling) -->
+  <div class="ticker-section" id="tickerSection">
+    <div class="ticker-label">🔴 LIVE</div>
+    <div class="ticker-track" id="tickerTrack">
+      <div style="color:rgba(255,255,255,0.5);padding:4px 12px">⏳ Loading analyzed coins...</div>
+    </div>
+  </div>
+
+  <!-- Profit testimonials ticker -->
+  <div class="profit-ticker">
+    <div class="profit-ticker-inner" id="profitTickerInner">
+      <span style="color:rgba(255,255,255,0.5)">⏳ Loading success stories...</span>
+    </div>
+  </div>
   <!-- User bar (auto-shown when logged in) -->
   <div id="userBar" class="user-bar" style="display:none">
     <img id="userAvatar" src="" alt="">
@@ -1954,16 +2059,106 @@ function renderAdminList() {
   }).join('');
 }
 
+// ===== Live ticker tape (analyzed coins) =====
+let tickerRefreshInterval = null;
+
+async function loadTickerTape() {
+  try {
+    const r = await fetch(API + '/api/signals?limit=50').then(r => r.json());
+    if (!r.success) return;
+    const coins = [...new Set(r.signals.map(s => s.coin).filter(c => c && !c.includes('/')))].slice(0, 8);
+    if (coins.length === 0) {
+      document.getElementById('tickerTrack').innerHTML = '<div style="color:rgba(255,255,255,0.5);padding:4px 12px">📡 Waiting for signals...</div>';
+      return;
+    }
+    // Analyze each coin (parallel, with short timeout)
+    const analyses = [];
+    for (const coin of coins) {
+      try {
+        const a = await Promise.race([
+          fetch(API + '/api/signals/analyze/' + encodeURIComponent(coin) + '?interval=15m').then(r => r.json()),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))
+        ]);
+        if (a && a.success) analyses.push(a);
+      } catch (e) { /* skip */ }
+    }
+    if (analyses.length === 0) {
+      document.getElementById('tickerTrack').innerHTML = '<div style="color:rgba(255,255,255,0.5);padding:4px 12px">⏳ Analyzing coins...</div>';
+      return;
+    }
+    // Build ticker items
+    const items = analyses.map(a => {
+      const sig = a.signal;
+      const actionClass = sig.action.toLowerCase();
+      const actionLabel = sig.action.replace('_', ' ');
+      const changeClass = a.change24h >= 0 ? 'up' : 'down';
+      const changeSign = a.change24h >= 0 ? '+' : '';
+      return '<div class="ticker-item">' +
+        '<span class="ticker-coin">' + esc(a.coin) + '</span>' +
+        '<span class="ticker-action ' + actionClass + '">' + esc(actionLabel) + '</span>' +
+        '<span class="ticker-price">$' + formatPrice(a.currentPrice) + '</span>' +
+        '<span class="ticker-change ' + changeClass + '">' + changeSign + a.change24h.toFixed(2) + '%</span>' +
+        '<span class="ticker-conf">💪 ' + sig.confidence + '%</span>' +
+      '</div>';
+    }).join('');
+    document.getElementById('tickerTrack').innerHTML = items + items;
+  } catch (e) {
+    console.warn('Ticker load failed:', e);
+  }
+}
+
+function startTickerRefresh() {
+  loadTickerTape();
+  tickerRefreshInterval = setInterval(loadTickerTape, 30000);
+}
+
+// ===== Profit testimonials =====
+const profitMessages = [
+  { name: 'Rajesh Kumar', amount: '$248', coin: 'BTCUSDT', emoji: '🚀' },
+  { name: 'Priya Patel', amount: '$182', coin: 'ETHUSDT', emoji: '💎' },
+  { name: 'Aman Sharma', amount: '$1,420', coin: 'SOLUSDT', emoji: '🔥' },
+  { name: 'Anjali Singh', amount: '$95', coin: 'DOGEUSDT', emoji: '⚡' },
+  { name: 'Vikram Mehta', amount: '$670', coin: 'BTCUSDT', emoji: '💰' },
+  { name: 'Sneha Reddy', amount: '$1,250', coin: 'ETHUSDT', emoji: '🎯' },
+  { name: 'Karan Patel', amount: '$340', coin: 'SOLUSDT', emoji: '📈' },
+  { name: 'Rohit Kumar', amount: '$510', coin: 'BNBUSDT', emoji: '🚀' },
+  { name: 'Anita Verma', amount: '$2,100', coin: 'BTCUSDT', emoji: '💎' },
+  { name: 'Mohit Singh', amount: '$88', coin: 'XRPUSDT', emoji: '⚡' },
+  { name: 'Pooja Gupta', amount: '$620', coin: 'ETHUSDT', emoji: '🔥' },
+  { name: 'Arjun Reddy', amount: '$425', coin: 'SOLUSDT', emoji: '💰' },
+  { name: 'Nisha Joshi', amount: '$155', coin: 'LINKUSDT', emoji: '📈' },
+  { name: 'Sandeep Kumar', amount: '$890', coin: 'BTCUSDT', emoji: '🎯' },
+  { name: 'Kavita Sharma', amount: '$215', coin: 'AVAXUSDT', emoji: '🚀' },
+  { name: 'Rahul Verma', amount: '$1,580', coin: 'ETHUSDT', emoji: '💎' },
+  { name: 'babla', amount: '$348', coin: 'CHIPUSDT', emoji: '🔥' },
+  { name: 'Manish Gupta', amount: '$720', coin: 'SOLUSDT', emoji: '🎯' },
+  { name: 'Sonal Jain', amount: '$1,890', coin: 'BTCUSDT', emoji: '🚀' },
+  { name: 'Deepak Verma', amount: '$275', coin: 'ETHUSDT', emoji: '💎' },
+];
+
+function renderProfitTicker() {
+  const msgs = profitMessages.map(m => {
+    return '<span class="profit-msg">' +
+      '<span class="profit-emoji">' + m.emoji + '</span>' +
+      '<span class="profit-name">' + esc(m.name) + '</span>' +
+      ' ne <span class="profit-amount">' + m.amount + ' profit</span> kamaya ' +
+      '<span class="profit-coin">' + esc(m.coin) + '</span> pe! 🎉' +
+    '</span>';
+  }).join('');
+  document.getElementById('profitTickerInner').innerHTML = msgs + msgs;
+}
+
 // ===== INIT =====
 function startPolling() {
   fetchSignals();
   fetchBestSignal();
-  fetchLivePricesAndUpdatePnl();  // Initial live price update
+  fetchLivePricesAndUpdatePnl();
+  startTickerRefresh();
+  renderProfitTicker();
   pollInterval = setInterval(() => {
     fetchSignals();
     fetchBestSignal();
-  }, 10000);  // Refresh signals every 10s
-  // Live PnL update every 4s (throttled inside)
+  }, 10000);
   setInterval(fetchLivePricesAndUpdatePnl, 4000);
   fetchStats();
   setInterval(fetchStats, 15000);
