@@ -1659,7 +1659,41 @@ app.get('/api/odysee/live', async (req, res) => {
   }
 });
 
-// Add Odysee stream by URL (manual)
+// Track Odysee view (called after 5+ sec watch)
+app.post('/api/odysee/view', async (req, res) => {
+  try {
+    const { userId, streamName, watchSeconds } = req.body;
+    if (!userId || !streamName) return res.status(400).json({ error: 'userId and streamName required' });
+    // Store view in odyseeViews collection
+    const viewsCol = db.collection('odyseeViews');
+    await viewsCol.insertOne({
+      _id: 'ov_' + Date.now() + '_' + crypto.randomBytes(2).toString('hex'),
+      userId, streamName, watchSeconds: watchSeconds || 0,
+      createdAt: Date.now(),
+    });
+    // Update user's total views
+    await usersCol.updateOne({ id: userId }, { $inc: { odyseeViews: 1 } });
+    res.json({ success: true, message: 'View tracked' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Get Odysee analytics
+app.get('/api/odysee/analytics/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const viewsCol = db.collection('odyseeViews');
+    const totalViews = await viewsCol.countDocuments({ userId });
+    const recentViews = await viewsCol.find({ userId }).sort({ createdAt: -1 }).limit(20).toArray();
+    const { _id, ...result } = { totalViews, recentViews };
+    res.json({ success: true, ...result });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
 app.post('/api/odysee/streams/add', async (req, res) => {
   const { url, name, userId } = req.body;
   if (!url) return res.status(400).json({ error: 'url required' });
