@@ -383,6 +383,53 @@ module.exports = function(app, db, usersCol) {
     res.json({ success: true, count: coins.length, coins });
   });
 
+  // Get 24h mini chart data for a coin (for sparkline visualization)
+  app.get('/api/signals/sparkline/:coin', async (req, res) => {
+    try {
+      const rawCoin = req.params.coin.toUpperCase();
+      const coin = rawCoin.includes('/') ? rawCoin.replace('/', '') : rawCoin;
+      const interval = req.query.interval || '15m';
+      const limit = parseInt(req.query.limit) || 96;  // 24h with 15m
+      // Try Binance spot first, then futures
+      const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${coin}&interval=${interval}&limit=${limit}`;
+      const r = await axios.get(url, { timeout: 8000 });
+      if (!Array.isArray(r.data)) return res.status(400).json({ error: 'No data' });
+      const candles = r.data.map(k => ({
+        t: k[0],
+        o: parseFloat(k[1]),
+        h: parseFloat(k[2]),
+        l: parseFloat(k[3]),
+        c: parseFloat(k[4]),
+        v: parseFloat(k[5]),
+      }));
+      const first = candles[0]?.c || 0;
+      const last = candles[candles.length - 1]?.c || 0;
+      const change24h = first > 0 ? ((last - first) / first) * 100 : 0;
+      // Resample to ~50 points for smooth chart
+      const target = 50;
+      const step = Math.max(1, Math.floor(candles.length / target));
+      const sampled = [];
+      for (let i = 0; i < candles.length; i += step) sampled.push(candles[i].c);
+      if (sampled[sampled.length - 1] !== candles[candles.length - 1].c) {
+        sampled.push(candles[candles.length - 1].c);
+      }
+      res.json({
+        success: true,
+        coin: coin,
+        interval: interval,
+        currentPrice: last,
+        change24h: Number(change24h.toFixed(2)),
+        high24h: Math.max(...candles.map(c => c.h)),
+        low24h: Math.min(...candles.map(c => c.l)),
+        volume24h: candles.reduce((s, c) => s + c.v, 0),
+        prices: sampled,
+        candles: candles,
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Calculate live PnL% for given signal IDs using current Binance prices
   // Useful for signals with pnl=0 (no stored pnl) - we compute unrealized PnL from entry + leverage
   app.get('/api/signals/live-pnl', async (req, res) => {
