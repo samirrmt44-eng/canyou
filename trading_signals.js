@@ -383,6 +383,82 @@ module.exports = function(app, db, usersCol) {
     res.json({ success: true, count: coins.length, coins });
   });
 
+  // Calculate live PnL% for given signal IDs using current Binance prices
+  // Useful for signals with pnl=0 (no stored pnl) - we compute unrealized PnL from entry + leverage
+  app.get('/api/signals/live-pnl', async (req, res) => {
+    try {
+      const { signalIds, defaultLeverage } = req.query;
+      if (!signalIds) return res.status(400).json({ error: 'signalIds param required (comma-separated)' });
+      const idList = signalIds.split(',').filter(Boolean);
+      if (idList.length === 0) return res.json({ success: true, pnl: {} });
+      if (idList.length > 100) return res.status(400).json({ error: 'Too many signals (max 100)' });
+      const defLev = parseFloat(defaultLeverage) || 3;  // Default 3x if not specified
+      // Fetch signals from DB
+      const signals = await signalsCol.find({ id: { $in: idList } }).toArray();
+      // Collect unique coins
+      const coins = [...new Set(signals.map(s => s.coin).filter(Boolean))];
+      if (coins.length === 0) return res.json({ success: true, pnl: {} });
+      // Normalize coins (BTC/USDT -> BTCUSDT)
+      const symbols = coins.map(c => c.includes('/') ? c.replace('/', '').toUpperCase() : c.toUpperCase());
+      // Fetch prices (use cache if fresh)
+      const now = Date.now();
+      let allTickers;
+      if (global._binanceCache && (now - global._binanceCache.ts) < 5000) {
+        allTickers = global._binanceCache.data;
+      } else {
+        const r = await axios.get('https://fapi.binance.com/fapi/v1/ticker/price', { timeout: 5000 });
+        allTickers = r.data;
+        global._binanceCache = { ts: now, data: allTickers };
+      }
+      // Build price map
+      const priceMap = {};
+      const wantedSet = new Set(symbols);
+      allTickers.forEach(t => { if (wantedSet.has(t.symbol)) priceMap[t.symbol] = parseFloat(t.price); });
+      // Calculate pnl for each signal
+      const pnlMap = {};
+      signals.forEach(s => {
+        let pnl = 0;
+        // Extract leverage from string like "10x"
+        let lev = defLev;
+        if (s.leverage) {
+          const m = String(s.leverage).match(/(\d+(?:\.\d+)?)/);
+          if (m) lev = parseFloat(m[1]);
+        }
+        // Determine side from signal
+        const isShort = s.signal === 'SHORT' || s.signal === 'CLOSE_SHORT' ||
+                       s.signal === 'SELL' || s.signal === 'CLOSE_SELL';
+        const isLong = s.signal === 'LONG' || s.signal === 'CLOSE_LONG' ||
+                      s.signal === 'BUY' || s.signal === 'CLOSE_BUY';
+        // For CLOSE signals, prefer stored pnl if available and >0
+        if (s.signal.includes('CLOSE') && s.pnl && Math.abs(s.pnl) > 0.0001) {
+          pnl = s.pnl;
+        } else {
+          // Calculate unrealized PnL from entry + current price
+          const coinNorm = (s.coin || '').includes('/') ? s.coin.replace('/', '').toUpperCase() : (s.coin || '').toUpperCase();
+          const mark = priceMap[coinNorm] || 0;
+          const entry = parseFloat(s.entry) || 0;
+          if (mark > 0 && entry > 0) {
+            if (isLong) {
+              pnl = ((mark - entry) / entry) * 100 * lev;
+            } else if (isShort) {
+              pnl = ((entry - mark) / entry) * 100 * lev;
+            }
+          }
+        }
+        pnlMap[s.id] = {
+          pnl: Number(pnl.toFixed(2)),
+          mark: priceMap[(s.coin || '').includes('/') ? s.coin.replace('/', '').toUpperCase() : (s.coin || '').toUpperCase()] || null,
+          entry: parseFloat(s.entry) || null,
+          leverage: lev,
+          side: isShort ? 'SHORT' : (isLong ? 'LONG' : null),
+        };
+      });
+      res.json({ success: true, pnl: pnlMap, prices: priceMap, ts: now });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Get live prices from Binance for given coins (for frontend live pnl calc)
   app.get('/api/signals/live-prices', async (req, res) => {
     try {
