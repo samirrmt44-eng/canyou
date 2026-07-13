@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
+<title>🏪 दुकान Dashboard - दैनिकस्टेट किराना</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f4f8; color: #1a1a1a; min-height: 100vh;
+    padding-bottom: 80px;
+  }
+  .header {
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    padding: 14px 16px;
+    position: sticky; top: 0; z-index: 100;
+    color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
+  .header h1 { font-size: 18px; font-weight: 900; }
+  .header-sub { font-size: 11px; opacity: 0.95; margin-top: 2px; }
+  .container { max-width: 480px; margin: 0 auto; padding: 12px; }
+
+  /* Wizard / Onboarding */
+  .wizard-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .wizard-card {
+    background: #fff; border-radius: 16px;
+    max-width: 480px; width: 100%;
+    height: 90vh; max-height: 700px;
+    display: flex; flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  }
+  .wizard-header {
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    color: #fff; padding: 16px;
+    border-radius: 16px 16px 0 0;
+    text-align: center;
+  }
+  .wizard-step-indicator {
+    display: flex; justify-content: center; gap: 4px;
+    margin-top: 8px;
+  }
+  .wizard-step-dot {
+    width: 24px; height: 4px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+  }
+  .wizard-step-dot.active { background: #fff; }
+  .wizard-step-dot.done { background: rgba(255,255,255,0.7); }
+  .wizard-body {
+    flex: 1; overflow-y: auto;
+    padding: 16px;
+    background: #f8f8f8;
+  }
+  .wizard-message {
+    background: #fff; padding: 12px 14px;
+    border-radius: 12px 12px 12px 4px;
+    margin-bottom: 10px;
+    font-size: 15px; line-height: 1.5;
+    white-space: pre-wrap;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .wizard-message.user {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff; border-radius: 12px 12px 4px 12px;
+    margin-left: 30px;
+  }
+  .wizard-options {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 12px;
+  }
+  .wizard-option {
+    background: #fff; border: 2px solid #ff6b35;
+    color: #ff6b35; padding: 10px 16px;
+    border-radius: 20px; font-size: 14px;
+    font-weight: 700; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .wizard-option:hover {
+    background: #ff6b35; color: #fff;
+  }
+  .wizard-input-wrap {
+    padding: 12px;
+    background: #fff; border-top: 1px solid #eee;
+    border-radius: 0 0 16px 16px;
+    display: flex; gap: 8px;
+  }
+  .wizard-input {
+    flex: 1; padding: 14px;
+    border: 2px solid #ff6b35;
+    border-radius: 10px; font-size: 16px;
+    font-family: inherit; outline: none;
+  }
+  .wizard-send {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff; border: none;
+    padding: 14px 24px; border-radius: 10px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+  }
+  .wizard-send:disabled { opacity: 0.4; }
+
+  /* Dashboard */
+  .welcome-card {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff; padding: 16px;
+    border-radius: 12px; margin-bottom: 14px;
+  }
+  .welcome-title { font-size: 16px; font-weight: 800; }
+  .welcome-sub { font-size: 12px; opacity: 0.95; margin-top: 4px; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 8px; margin-bottom: 14px;
+  }
+  .stat-card {
+    background: #fff; border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .stat-num { font-size: 24px; font-weight: 900; color: #ff6b35; }
+  .stat-lbl { font-size: 11px; color: #888; margin-top: 2px; }
+  .stat-trend { font-size: 10px; color: #2ed573; margin-top: 2px; }
+
+  .action-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 10px; margin-bottom: 16px;
+  }
+  .action-btn {
+    background: #fff; padding: 18px 12px;
+    border-radius: 12px; text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    cursor: pointer; transition: transform 0.15s;
+  }
+  .action-btn:hover { transform: translateY(-2px); }
+  .action-icon { font-size: 32px; margin-bottom: 6px; }
+  .action-label { font-size: 13px; font-weight: 700; }
+  .action-sub { font-size: 10px; color: #888; margin-top: 2px; }
+
+  .section-title {
+    font-size: 14px; font-weight: 800;
+    color: #1a1a1a; margin: 14px 0 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .see-all { font-size: 11px; color: #ff6b35; cursor: pointer; }
+
+  .order-card {
+    background: #fff; border-radius: 12px;
+    padding: 12px; margin-bottom: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .order-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .order-id { font-size: 13px; font-weight: 800; }
+  .order-status {
+    font-size: 10px; font-weight: 800;
+    padding: 3px 8px; border-radius: 10px;
+    text-transform: uppercase;
+  }
+  .status-placed { background: #fff3e0; color: #ff6b35; }
+  .status-accepted { background: #e3f2fd; color: #2196f3; }
+  .status-preparing { background: #f3e5f5; color: #9c27b0; }
+  .status-out_for_delivery { background: #e0f7fa; color: #00bcd4; }
+  .status-delivered { background: #e8f5e9; color: #2ed573; }
+  .status-cancelled { background: #ffebee; color: #f44336; }
+  .order-items { font-size: 12px; color: #555; margin-bottom: 4px; }
+  .order-bottom {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: #888;
+    padding-top: 6px; border-top: 1px solid #f0f0f0;
+  }
+  .order-total { font-weight: 800; color: #ff6b35; font-size: 14px; }
+
+  .order-actions {
+    display: flex; gap: 6px; margin-top: 8px;
+  }
+  .order-action-btn {
+    flex: 1; padding: 8px;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff; border: none;
+    border-radius: 6px; font-size: 12px;
+    font-weight: 700; cursor: pointer;
+  }
+  .order-action-btn.secondary {
+    background: #f0f0f0; color: #555;
+  }
+
+  .empty {
+    text-align: center; padding: 40px 20px;
+    color: #999;
+  }
+  .empty-icon { font-size: 50px; margin-bottom: 10px; }
+  .empty-text { font-size: 14px; }
+
+  /* FAB */
+  .fab {
+    position: fixed; bottom: 16px; right: 16px;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff; width: 56px; height: 56px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(255,107,53,0.4);
+    z-index: 50;
+  }
+
+  /* Add Product Modal */
+  .modal-bg {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.5);
+    display: none;
+  }
+  .modal-bg.active { display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal {
+    background: #fff; border-radius: 16px;
+    max-width: 480px; width: 100%;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    padding: 16px; border-bottom: 1px solid #eee;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-title { font-size: 16px; font-weight: 800; }
+  .modal-close { font-size: 24px; cursor: pointer; color: #888; }
+  .modal-body { padding: 16px; }
+  .form-group { margin-bottom: 12px; }
+  .form-label {
+    font-size: 12px; font-weight: 700;
+    color: #555; margin-bottom: 4px;
+  }
+  .form-input, .form-select {
+    width: 100%; padding: 12px;
+    border: 1.5px solid #e0e0e0; border-radius: 8px;
+    font-size: 15px; font-family: inherit;
+    outline: none;
+  }
+  .form-input:focus, .form-select:focus { border-color: #ff6b35; }
+  .form-btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 800;
+    cursor: pointer;
+  }
+
+  /* Tabs */
+  .tab-nav {
+    display: flex; gap: 4px; margin-bottom: 12px;
+    background: #fff; padding: 4px; border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .tab-nav button {
+    flex: 1; background: transparent; border: none;
+    color: #666; padding: 10px;
+    border-radius: 8px; font-size: 13px;
+    font-weight: 700; cursor: pointer;
+  }
+  .tab-nav button.active {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff;
+  }
+
+  .loading { text-align: center; padding: 40px; color: #888; }
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; color: #fff;
+    padding: 12px 20px; border-radius: 8px;
+    font-size: 14px; font-weight: 600;
+    z-index: 2000;
+  }
+  .back-home {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    display: flex; align-items: center; padding: 0 12px;
+    color: #fff; font-size: 18px; cursor: pointer;
+  }
+  .header { padding-left: 40px; position: relative; }
+</style>
+</head>
+<body>
+
+<!-- Onboarding Wizard (shown first time) -->
+<div class="wizard-overlay" id="wizardOverlay" style="display:none">
+  <div class="wizard-card">
+    <div class="wizard-header">
+      <button class="back-home" onclick="exitWizard()">←</button>
+      <div style="font-size:18px">🏪 दुकान बनाएं</div>
+      <div style="font-size:11px;opacity:0.95;margin-top:4px">मैं आपकी मदद करूँगा - सिर्फ सवालों के जवाब दें</div>
+      <div class="wizard-step-indicator" id="stepIndicator"></div>
+    </div>
+    <div class="wizard-body" id="wizardBody"></div>
+    <div class="wizard-input-wrap" id="wizardInputWrap">
+      <input type="text" class="wizard-input" id="wizardInput" placeholder="अपना जवाब लिखें..." onkeypress="if(event.key==='Enter')sendWizardMessage()">
+      <button class="wizard-send" id="wizardSend" onclick="sendWizardMessage()">भेजें</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main Dashboard -->
+<div id="dashboard" style="display:none">
+  <div class="header">
+    <button class="back-home" onclick="goHome()">←</button>
+    <div style="display:flex;flex-direction:column;line-height:1.1;flex:1">
+      <h1 id="storeNameDisplay" style="font-size:17px">🏪 दुकान</h1>
+      <div class="header-sub" id="storeSubDisplay" style="font-size:10px;opacity:0.95;margin-top:2px">Local Bazar • अपनी दुकान को ऑनलाइन लाएं</div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="welcome-card">
+      <div class="welcome-title" id="welcomeName">🙏 नमस्ते!</div>
+      <div class="welcome-sub">आज आपकी दुकान कैसी चल रही है?</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num" id="statOrders">0</div>
+        <div class="stat-lbl">📦 आज के Orders</div>
+        <div class="stat-trend">+0%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statRevenue">₹0</div>
+        <div class="stat-lbl">💰 आज की कमाई</div>
+        <div class="stat-trend">↑</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statProducts">0</div>
+        <div class="stat-lbl">📦 Total Products</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statDelivered">0</div>
+        <div class="stat-lbl">✅ Delivered</div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <span>⚡ जल्दी काम करें</span>
+    </div>
+    <div class="action-grid">
+      <div class="action-btn" onclick="openAddProduct()">
+        <div class="action-icon">📦</div>
+        <div class="action-label">Product जोड़ें</div>
+        <div class="action-sub">नया सामान add करें</div>
+      </div>
+      <div class="action-btn" onclick="openOrders()">
+        <div class="action-icon">📋</div>
+        <div class="action-label">Orders देखें</div>
+        <div class="action-sub">नए orders accept करें</div>
+      </div>
+      <div class="action-btn" onclick="openStoreSettings()">
+        <div class="action-icon">⚙️</div>
+        <div class="action-label">दुकान Settings</div>
+        <div class="action-sub">Timing, address, आदि</div>
+      </div>
+      <div class="action-btn" onclick="goCustomer()">
+        <div class="action-icon">🛒</div>
+        <div class="action-label">Customer View</div>
+        <div class="action-sub">देखें ग्राहक क्या देखते हैं</div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <span>📋 नए Orders</span>
+      <span class="see-all" onclick="openOrders()">सभी देखें →</span>
+    </div>
+    <div id="recentOrders">
+      <div class="loading">⏳ Orders लोड हो रहे हैं...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal-bg" id="addProductModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📦 नया Product जोड़ें</div>
+      <div class="modal-close" onclick="closeAddProduct()">×</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <div class="form-label">Product का नाम *</div>
+        <input type="text" class="form-input" id="prodName" placeholder="जैसे: बासमती चावल 5kg">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Category</div>
+        <select class="form-select" id="prodCategory">
+          <option value="cat_001">🍚 चावल / आटा</option>
+          <option value="cat_002">🫘 दाल / दलहन</option>
+          <option value="cat_003">🛢️ तेल / घी</option>
+          <option value="cat_004">🌶️ मसाले</option>
+          <option value="cat_005">🥛 डेयरी / ब्रेड</option>
+          <option value="cat_006">🥬 सब्जियां</option>
+          <option value="cat_007">🍎 फल</option>
+          <option value="cat_008">🥤 पेय पदार्थ</option>
+          <option value="cat_009">🧹 घरेलू सामान</option>
+          <option value="cat_010">🧴 Personal Care</option>
+          <option value="cat_011">🍪 Snacks / Biscuits</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Brand (optional)</div>
+        <input type="text" class="form-input" id="prodBrand" placeholder="जैसे: India Gate, Amul">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Weight/Size *</div>
+        <input type="text" class="form-input" id="prodUnit" placeholder="जैसे: 1 kg, 5 लीटर, 1 dozen">
+      </div>
+      <div class="form-group">
+        <div class="form-label">बिक्री मूल्य (₹) *</div>
+        <input type="number" class="form-input" id="prodPrice" placeholder="150">
+      </div>
+      <div class="form-group">
+        <div class="form-label">MRP / अंकित मूल्य (₹) (optional)</div>
+        <input type="number" class="form-input" id="prodMrp" placeholder="180 (खाली छोड़ें तो auto 1.2x)">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Stock कितना है? *</div>
+        <input type="number" class="form-input" id="prodStock" placeholder="50">
+      </div>
+      <button class="form-btn" onclick="saveProduct()">✅ Product जोड़ें</button>
+    </div>
+  </div>
+</div>
+
+<!-- Store Settings Modal -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ दुकान Settings</div>
+      <div class="modal-close" onclick="closeSettings()">×</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <div class="form-label">दुकान का नाम</div>
+        <input type="text" class="form-input" id="setName">
+      </div>
+      <div class="form-group">
+        <div class="form-label">फ़ोन नंबर</div>
+        <input type="tel" class="form-input" id="setPhone">
+      </div>
+      <div class="form-group">
+        <div class="form-label">पता</div>
+        <input type="text" class="form-input" id="setAddress">
+      </div>
+      <div class="form-group">
+        <div class="form-label">खुलने का समय</div>
+        <input type="time" class="form-input" id="setOpenTime">
+      </div>
+      <div class="form-group">
+        <div class="form-label">बंद होने का समय</div>
+        <input type="time" class="form-input" id="setCloseTime">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Delivery Radius (km)</div>
+        <input type="number" class="form-input" id="setRadius" min="1" max="20">
+      </div>
+      <button class="form-btn" onclick="saveSettings()">💾 Save करें</button>
+    </div>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-bg" id="orderModal">
+  <div class="modal" id="orderModalContent">
+    <!-- filled by JS -->
+  </div>
+</div>
+
+<script>
+const API = 'https://canyou-uqkp.onrender.com';
+let currentStore = null;
+let currentUser = null;
+let wizardSessionId = null;
+let wizardMessages = [];
+let wizardStep = 0;
+
+function goHome() { window.location.href = '/localbazar.html'; }
+function goCustomer() { window.location.href = '/localbazar.html'; }
+function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function showToast(msg, color) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  if (color) t.style.background = color;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ===== INIT =====
+async function init() {
+  currentUser = JSON.parse(localStorage.getItem('ds_user') || 'null');
+  const savedStore = JSON.parse(localStorage.getItem('ds_my_store') || 'null');
+  if (savedStore && savedStore.id) {
+    currentStore = savedStore;
+    document.getElementById('wizardOverlay').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    await loadDashboard();
+  } else {
+    // Show wizard
+    document.getElementById('wizardOverlay').style.display = 'flex';
+    startWizard();
+  }
+}
+
+// ===== WIZARD =====
+async function startWizard() {
+  // Get or create session ID
+  let sid = localStorage.getItem('ds_wizard_sid');
+  if (!sid) {
+    sid = 'wiz_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('ds_wizard_sid', sid);
+  }
+  wizardSessionId = sid;
+  // Get user name from registration
+  const user = JSON.parse(localStorage.getItem('ds_user') || 'null');
+  const payload = { sessionId: sid, name: user?.name || '', phone: user?.phone || '' };
+  try {
+    const r = await fetch(API + '/api/localbazar/wizard/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(r => r.json());
+    if (r.success) {
+      wizardMessages = [r.wizard.message];
+      wizardStep = r.wizard.step;
+      renderWizard();
+    }
+  } catch (e) {
+    showToast('Network error', '#ff3b30');
+  }
+}
+
+function renderWizard() {
+  const body = document.getElementById('wizardBody');
+  let html = '';
+  for (const msg of wizardMessages) {
+    html += '<div class="wizard-message ' + (msg.role === 'user' ? 'user' : '') + '">' + esc(msg.text) + '</div>';
+  }
+  // Find last assistant message with options
+  const lastAssistant = [...wizardMessages].reverse().find(m => m.role === 'assistant');
+  if (lastAssistant && lastAssistant.options && lastAssistant.options.length > 0) {
+    html += '<div class="wizard-options">';
+    for (const opt of lastAssistant.options) {
+      html += '<button class="wizard-option" onclick="sendOption(\'' + esc(opt) + '\')">' + esc(opt) + '</button>';
+    }
+    html += '</div>';
+  }
+  body.innerHTML = html;
+  body.scrollTop = body.scrollHeight;
+  // Update step indicator
+  const stepInd = document.getElementById('stepIndicator');
+  let dots = '';
+  const totalSteps = 10;
+  for (let i = 0; i < totalSteps; i++) {
+    if (i < wizardStep) dots += '<div class="wizard-step-dot done"></div>';
+    else if (i === wizardStep) dots += '<div class="wizard-step-dot active"></div>';
+    else dots += '<div class="wizard-step-dot"></div>';
+  }
+  stepInd.innerHTML = dots;
+  // Show/hide input
+  const inputWrap = document.getElementById('wizardInputWrap');
+  const lastMsg = lastAssistant;
+  if (lastMsg && lastMsg.options && lastMsg.options.length > 0) {
+    inputWrap.style.display = 'none';
+  } else {
+    inputWrap.style.display = 'flex';
+    document.getElementById('wizardInput').focus();
+  }
+  // Handle redirect
+  if (lastAssistant && lastAssistant.redirect) {
+    setTimeout(() => {
+      if (lastAssistant.storeId) {
+        // Save store info
+        localStorage.setItem('ds_my_store', JSON.stringify({ id: lastAssistant.storeId, name: lastAssistant.storeName }));
+        window.location.reload();
+      }
+    }, 2000);
+  }
+}
+
+async function sendWizardMessage() {
+  const input = document.getElementById('wizardInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  await processWizardMessage(text);
+}
+
+async function sendOption(option) {
+  await processWizardMessage(option);
+}
+
+async function processWizardMessage(text) {
+  try {
+    const r = await fetch(API + '/api/localbazar/wizard/message', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: wizardSessionId, message: text })
+    }).then(r => r.json());
+    if (r.success) {
+      wizardMessages.push({ role: 'user', text: text });
+      wizardMessages.push({ role: 'assistant', text: r.response.text });
+      wizardStep = r.response.step || wizardStep + 1;
+      // Check if store was created
+      if (r.response.storeId) {
+        currentStore = { id: r.response.storeId, name: r.response.storeName };
+        localStorage.setItem('ds_my_store', JSON.stringify(currentStore));
+      }
+      renderWizard();
+    }
+  } catch (e) {
+    showToast('Network error', '#ff3b30');
+  }
+}
+
+function exitWizard() {
+  if (confirm('Setup बाद में करेंगे?')) {
+    document.getElementById('wizardOverlay').style.display = 'none';
+    window.location.href = '/localbazar.html';
+  }
+}
+
+// ===== DASHBOARD =====
+async function loadDashboard() {
+  if (!currentStore) return;
+  document.getElementById('storeNameDisplay').textContent = '🏪 ' + (currentStore.name || 'मेरी दुकान');
+  document.getElementById('storeSubDisplay').textContent = currentStore.area || '';
+  // Welcome
+  const user = JSON.parse(localStorage.getItem('ds_user') || 'null');
+  if (user && user.name) {
+    document.getElementById('welcomeName').textContent = '🙏 नमस्ते ' + user.name + ' जी!';
+  }
+  // Stats
+  try {
+    const r = await fetch(API + '/api/localbazar/store/' + currentStore.id + '/orders?limit=200').then(r => r.json());
+    if (r.success) {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const todayMs = today.getTime();
+      const todayOrders = r.orders.filter(o => o.createdAt >= todayMs);
+      const todayRevenue = todayOrders.filter(o => o.status === 'delivered').reduce((s, o) => s + o.total, 0);
+      const delivered = r.orders.filter(o => o.status === 'delivered').length;
+      document.getElementById('statOrders').textContent = todayOrders.length;
+      document.getElementById('statRevenue').textContent = '₹' + Math.round(todayRevenue);
+      document.getElementById('statDelivered').textContent = delivered;
+      // Render recent orders (3 most recent)
+      const recent = r.orders.slice(0, 3);
+      const container = document.getElementById('recentOrders');
+      if (recent.length === 0) {
+        container.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">अभी तक कोई order नहीं</div></div>';
+      } else {
+        container.innerHTML = recent.map(o => renderOrderCard(o)).join('');
+      }
+    }
+  } catch (e) { console.error(e); }
+  // Product count
+  try {
+    const p = await fetch(API + '/api/localbazar/products?storeId=' + currentStore.id + '&limit=1').then(r => r.json());
+    if (p.success) {
+      document.getElementById('statProducts').textContent = p.count;
+    }
+  } catch (e) {}
+}
+
+function renderOrderCard(o) {
+  const items = (o.items || []).map(i => i.name).join(', ');
+  return '<div class="order-card" onclick="openOrderDetail(\'' + o.id + '\')">' +
+    '<div class="order-top">' +
+      '<div class="order-id">#' + o.id.slice(-6) + '</div>' +
+      '<div class="order-status status-' + o.status + '">' + o.status.replace('_', ' ') + '</div>' +
+    '</div>' +
+    '<div class="order-items">' + esc(items) + '</div>' +
+    '<div class="order-bottom">' +
+      '<span>' + new Date(o.createdAt).toLocaleTimeString() + '</span>' +
+      '<span class="order-total">₹' + Math.round(o.total) + '</span>' +
+    '</div>' +
+  '</div>';
+}
+
+// ===== ORDERS =====
+function openOrders() {
+  // In a real app, this would be a separate page
+  // For now, just show all in modal
+  showToast('Orders dashboard load हो रहा है...');
+}
+
+async function openOrderDetail(orderId) {
+  try {
+    const r = await fetch(API + '/api/localbazar/orders/' + orderId).then(r => r.json());
+    if (!r.success) return;
+    const o = r.order;
+    const items = (o.items || []).map(i => '<div style="display:flex;justify-content:space-between;padding:4px 0"><span>' + esc(i.name) + ' x' + i.quantity + '</span><span>₹' + Math.round(i.subtotal) + '</span></div>').join('');
+    const nextStatus = getNextStatus(o.status);
+    const statusActions = {
+      'placed': '<button class="form-btn" onclick="updateOrderStatus(\'' + o.id + '\', \'accepted\')">✅ Accept Order</button>',
+      'accepted': '<button class="form-btn" onclick="updateOrderStatus(\'' + o.id + '\', \'preparing\')">🍳 तैयार कर रहे हैं</button>',
+      'preparing': '<button class="form-btn" onclick="updateOrderStatus(\'' + o.id + '\', \'out_for_delivery\')">🚚 Delivery पर निकले</button>',
+      'out_for_delivery': '<button class="form-btn" onclick="updateOrderStatus(\'' + o.id + '\', \'delivered\', this)">✅ Delivered (OTP verify)</button>',
+    };
+    document.getElementById('orderModalContent').innerHTML = '<div class="modal-header">' +
+      '<div class="modal-title">Order #' + o.id.slice(-6) + '</div>' +
+      '<div class="modal-close" onclick="closeOrderModal()">×</div>' +
+    '</div>' +
+    '<div class="modal-body">' +
+      '<div style="text-align:center;padding:8px;background:' + getStatusBg(o.status) + ';border-radius:8px;margin-bottom:12px">' +
+        '<div class="order-status status-' + o.status + '">' + o.status.replace('_', ' ').toUpperCase() + '</div>' +
+      '</div>' +
+      '<div style="background:#f8f8f8;padding:10px;border-radius:8px;margin-bottom:12px">' +
+        '<div style="font-size:11px;color:#888">📍 DELIVERY ADDRESS</div>' +
+        '<div style="font-size:14px;font-weight:600;margin-top:4px">' + esc(o.address || 'N/A') + '</div>' +
+      '</div>' +
+      '<div style="background:#fff3e0;padding:10px;border-radius:8px;margin-bottom:12px">' +
+        '<div style="font-size:11px;color:#888">📞 CUSTOMER</div>' +
+        '<div style="font-size:14px;font-weight:600;margin-top:4px">' + esc(o.address || 'N/A') + '</div>' +
+      '</div>' +
+      '<div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">ITEMS:</div>' +
+      '<div style="background:#f8f8f8;padding:10px;border-radius:8px;margin-bottom:12px">' + items + '</div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;border-top:2px solid #eee;padding-top:8px">' +
+        '<span>TOTAL</span><span style="color:#ff6b35">₹' + Math.round(o.total) + '</span>' +
+      '</div>' +
+      '<div style="margin-top:12px">' +
+        (statusActions[o.status] || '<div style="text-align:center;color:#888;padding:10px">Order ' + o.status + '</div>') +
+        (o.status !== 'cancelled' && o.status !== 'delivered' ? '<button class="form-btn" style="background:#f0f0f0;color:#f44336;margin-top:6px" onclick="updateOrderStatus(\'' + o.id + '\', \'cancelled\')">❌ Cancel Order</button>' : '') +
+      '</div>' +
+    '</div>';
+    document.getElementById('orderModal').classList.add('active');
+  } catch (e) { showToast('Failed to load', '#ff3b30'); }
+}
+
+function getNextStatus(current) {
+  const flow = { 'placed': 'accepted', 'accepted': 'preparing', 'preparing': 'out_for_delivery', 'out_for_delivery': 'delivered' };
+  return flow[current];
+}
+
+function getStatusBg(status) {
+  const map = {
+    'placed': '#fff3e0', 'accepted': '#e3f2fd', 'preparing': '#f3e5f5',
+    'out_for_delivery': '#e0f7fa', 'delivered': '#e8f5e9', 'cancelled': '#ffebee',
+  };
+  return map[status] || '#f0f0f0';
+}
+
+function closeOrderModal() { document.getElementById('orderModal').classList.remove('active'); }
+
+async function updateOrderStatus(orderId, status, btn) {
+  let otp = '';
+  if (status === 'delivered') {
+    otp = prompt('✅ Customer से OTP पूछें (उनके phone पर भेजा गया था):', '');
+    if (!otp) return;
+  }
+  const notes = status === 'cancelled' ? prompt('Cancel reason:', '') || '' : '';
+  try {
+    const r = await fetch(API + '/api/localbazar/orders/' + orderId + '/delivery', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, deliveryNotes: notes, otp })
+    }).then(r => r.json());
+    if (r.success) {
+      showToast('✅ Order ' + status.replace('_', ' '));
+      closeOrderModal();
+      loadDashboard();
+    } else { showToast('Error: ' + r.error, '#ff3b30'); }
+  } catch (e) { showToast('Network error', '#ff3b30'); }
+}
+
+// ===== ADD PRODUCT =====
+function openAddProduct() {
+  document.getElementById('addProductModal').classList.add('active');
+}
+
+function closeAddProduct() {
+  document.getElementById('addProductModal').classList.remove('active');
+}
+
+async function saveProduct() {
+  const name = document.getElementById('prodName').value.trim();
+  const unit = document.getElementById('prodUnit').value.trim();
+  const price = parseFloat(document.getElementById('prodPrice').value);
+  const mrp = parseFloat(document.getElementById('prodMrp').value) || (price * 1.2);
+  const stock = parseInt(document.getElementById('prodStock').value) || 10;
+  const category = document.getElementById('prodCategory').value;
+  const brand = document.getElementById('prodBrand').value.trim();
+  if (!name || !unit || !price) {
+    showToast('⚠️ कृपया सभी ज़रूरी field भरें!', '#ff3b30');
+    return;
+  }
+  try {
+    const r = await fetch(API + '/api/localbazar/products', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storeId: currentStore.id, name, unit, price, mrp, stock, category, brand
+      })
+    }).then(r => r.json());
+    if (r.success) {
+      showToast('✅ Product "' + name + '" added!');
+      closeAddProduct();
+      document.getElementById('prodName').value = '';
+      document.getElementById('prodUnit').value = '';
+      document.getElementById('prodPrice').value = '';
+      document.getElementById('prodMrp').value = '';
+      document.getElementById('prodStock').value = '';
+      document.getElementById('prodBrand').value = '';
+      loadDashboard();
+    } else { showToast('Error: ' + r.error, '#ff3b30'); }
+  } catch (e) { showToast('Network error', '#ff3b30'); }
+}
+
+// ===== STORE SETTINGS =====
+async function openStoreSettings() {
+  try {
+    const r = await fetch(API + '/api/localbazar/stores/' + currentStore.id).then(r => r.json());
+    if (r.success) {
+      const s = r.store;
+      document.getElementById('setName').value = s.name;
+      document.getElementById('setPhone').value = s.phone;
+      document.getElementById('setAddress').value = s.address;
+      document.getElementById('setOpenTime').value = s.openTime;
+      document.getElementById('setCloseTime').value = s.closeTime;
+      document.getElementById('setRadius').value = s.deliveryRadius;
+    }
+  } catch (e) {}
+  document.getElementById('settingsModal').classList.add('active');
+}
+
+function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+
+async function saveSettings() {
+  const update = {
+    name: document.getElementById('setName').value,
+    phone: document.getElementById('setPhone').value,
+    address: document.getElementById('setAddress').value,
+    openTime: document.getElementById('setOpenTime').value,
+    closeTime: document.getElementById('setCloseTime').value,
+    deliveryRadius: parseFloat(document.getElementById('setRadius').value) || 5,
+  };
+  try {
+    const r = await fetch(API + '/api/localbazar/stores/' + currentStore.id, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(update)
+    }).then(r => r.json());
+    if (r.success) {
+      showToast('✅ Settings saved!');
+      currentStore.name = update.name;
+      localStorage.setItem('ds_my_store', JSON.stringify(currentStore));
+      closeSettings();
+      loadDashboard();
+    }
+  } catch (e) { showToast('Network error', '#ff3b30'); }
+}
+
+// Initialize
+init();
+</script>
+</body>
+</html>
