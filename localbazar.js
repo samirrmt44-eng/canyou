@@ -608,14 +608,53 @@ module.exports = function(app, db, usersCol, notificationsCol) {
     let nextStep = step;
     let complete = false;
 
-    // Universal STOP keywords - exit anytime
-    const stopKeywords = ['बस', 'बस!', 'रुको', 'stop', 'exit', 'बाद में', 'save', 'done', 'ho gaya', 'पूरा', 'खत्म', 'khatam', 'bas'];
-    if (step >= 9 && stopKeywords.some(kw => input.toLowerCase().includes(kw.toLowerCase()))) {
+    // ===== Universal STOP keywords - exit ANYTIME (even before store created) =====
+    const stopKeywords = [
+      'बस', 'बस!', 'रुको', 'रुक', 'stop', 'exit', 'बाद में', 'save', 'done',
+      'ho gaya', 'ho gya', 'पूरा', 'पूरा हो गया', 'खत्म', 'बहुत है', 'काफी है',
+      'khatam', 'bas', 'काफी', 'बस करो', 'बस भाई', 'रुको भाई', 'skip',
+      'बाद मे', 'skip now', 'exit now', 'leave', 'quit', 'छोड़ो'
+    ];
+    const isStop = stopKeywords.some(kw => input.toLowerCase().includes(kw.toLowerCase()));
+
+    // If user says STOP at any point, save what we have and exit gracefully
+    if (isStop) {
+      // If store was already created, save it. If not, just exit cleanly.
+      let createdStoreId = wiz.data.storeId;
+      if (!createdStoreId && wiz.data.storeName) {
+        // Try to save what we have so far
+        try {
+          const storeId = 'store_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+          const store = {
+            _id: storeId, id: storeId,
+            ownerId: wiz.userId || ('anon_' + Date.now()),
+            ownerName: wiz.data.ownerName || wiz.data.phone || 'Owner',
+            name: wiz.data.storeName, phone: wiz.data.phone,
+            address: wiz.data.address || '', area: wiz.data.area || '',
+            city: wiz.data.city || '', pincode: wiz.data.pincode || '',
+            lat: 0, lng: 0, deliveryRadius: wiz.data.deliveryRadius || 5,
+            openTime: wiz.data.openTime || '07:00', closeTime: wiz.data.closeTime || '22:00',
+            storeType: wiz.data.storeType || 'general',
+            rating: 0, totalOrders: 0, totalReviews: 0,
+            status: 'active', minOrder: 0, deliveryFee: 0, avgDeliveryMins: 25,
+            joinedAt: Date.now(),
+          };
+          await localbazarStoresCol.insertOne(store);
+          createdStoreId = storeId;
+          wiz.data.storeId = storeId;
+          if (wiz.userId) {
+            await usersCol.updateOne({ id: wiz.userId }, { $set: { storeId: storeId, onboardingComplete: true, role: 'localbazar-dukandar' } });
+          }
+        } catch (e) { console.error('Save on exit error:', e.message); }
+      }
       complete = true;
+      const isStoreReady = wiz.data.storeName && wiz.data.address;
       response = {
-        text: '✅ ठीक है! आपकी दुकान तैयार है।\n\n🏠 Dashboard पर जाएं: /localbazar-dukandar.html\n\n📦 Products बाद में भी जोड़ सकते हैं।',
+        text: isStoreReady
+          ? '✅ ठीक है! आपकी दुकान तैयार है।\n\n🏠 Dashboard पर जाएं: /localbazar-dukandar.html\n\n📦 Products बाद में भी जोड़ सकते हैं।\n\n🙏 कभी भी वापस आकर continue कर सकते हैं!'
+          : '✅ ठीक है! आपने अभी के लिए रुकने को कहा।\n\n💡 चाहें तो बाद में दोबारा शुरू कर सकते हैं।\n\n🏠 Customer page: /localbazar.html',
         options: null, redirect: '/localbazar-dukandar.html',
-        storeId: wiz.data.storeId, complete: true,
+        storeId: createdStoreId, complete: true,
       };
       wiz.step = nextStep;
       wiz.messages.push({ role: 'assistant', text: response.text });
@@ -720,16 +759,27 @@ module.exports = function(app, db, usersCol, notificationsCol) {
           response = { text: '❌ दुकान बनाने में error: ' + e.message, options: null };
         }
         break;
-      case 9:  // Add products? OR done?
-        if (input.toLowerCase().match(/(बाद|नहीं|skip|baad|nahi|no|done|बस|ho gaya|पूरा|खत्म|khatam|bas)/)) {
-          // Skip products
+      case 9:  // Add products? OR done? (POST-SETUP)
+        // Detect quick mode: user wants to add multiple products at once
+        const lowerInput = input.toLowerCase();
+        if (lowerInput.match(/(बाद|नहीं|skip|baad|nahi|no|done|बस|ho gaya|पूरा|खत्म|khatam|bas)/)) {
+          // User chose to skip products
           complete = true;
           response = {
             text: '✅ ठीक है! आपकी दुकान तैयार है।\n\n📦 Products बाद में जोड़ सकते हैं dashboard से।\n\n🏠 Dashboard: /localbazar-dukandar.html',
             options: null, redirect: '/localbazar-dukandar.html',
             storeId: wiz.data.storeId,
           };
+        } else if (lowerInput.match(/(quick|4|jaldi|tez|और 4|और चार)/)) {
+          // Quick mode: 4 more products
+          wiz.data.quickModeRemaining = 4;
+          nextStep = 10;
+          response = {
+            text: '⚡ Quick mode ON! 4 products jaldi se add karenge.\n\n📦 Pehla product ka naam bataiye:',
+            options: null, productsAdded: 0, quickMode: true,
+          };
         } else {
+          // Default: add single product
           nextStep = 10;
           response = {
             text: '✅ शानदार! पहले product का नाम बताइए:\n\n💡 सुझाव: कुछ भी - "चावल", "दवाई", "बैटरी", "कपड़ा" - मैं खुद category पहचान लूँगा!',
