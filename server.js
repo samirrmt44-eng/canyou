@@ -12,6 +12,17 @@ const xml2js = require('xml2js');
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
+// ============================================================
+// ERIKSO - School Transport Module (loads early to register routes)
+// ============================================================
+let eriksoModule = null;
+try {
+  eriksoModule = require('./erikso.js');
+  console.log('🚐 Erikso module file loaded');
+} catch (e) {
+  console.error('⚠️ Erikso module file not found (will skip):', e.message);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -2199,19 +2210,8 @@ app.post('/api/odysee/streams/add', async (req, res) => {
 // ============================================================
 // FALLBACK
 // ============================================================
+// NOTE: Erikso module is initialized in connectDB().then() below (needs DB connection)
 app.get(/(.*)/, (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-
-// ============================================================
-// START
-// ============================================================
-// Initialize Erikso School Transport module
-try {
-  const eriksoModule = require('./erikso.js');
-  eriksoModule(app, db, usersCol, notificationsCol);
-  console.log('🚐 Erikso module loaded!');
-} catch (e) {
-  console.error('⚠️ Erikso module failed to load:', e.message);
-}
 
 connectDB().then(async () => {
   console.log('🚀 Initial channel sync...');
@@ -2220,6 +2220,15 @@ connectDB().then(async () => {
   if (typeof connectDB_business === 'function') {
     await connectDB_business();
     console.log('🏢 Business Suite initialized!');
+  }
+  // Initialize Erikso School Transport module (needs DB)
+  if (eriksoModule) {
+    try {
+      eriksoModule(app, db, usersCol, notificationsCol);
+      console.log('🚐 Erikso School Transport initialized!');
+    } catch (e) {
+      console.error('⚠️ Erikso init error:', e.message);
+    }
   }
   setInterval(async () => {
     console.log('🔄 Periodic channel sync...');
