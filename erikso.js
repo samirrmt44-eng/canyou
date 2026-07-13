@@ -71,6 +71,14 @@ module.exports = function(app, db, usersCol, notificationsCol) {
     res.json({ success: true, driver: result });
   });
 
+  // Get driver by userId
+  app.get('/api/erikso/driver/user/:userId', async (req, res) => {
+    const driver = await eriksoDriversCol.findOne({ userId: req.params.userId });
+    if (!driver) return res.status(404).json({ error: 'Driver not found', success: false });
+    const { _id, ...result } = driver;
+    res.json({ success: true, driver: result });
+  });
+
   // Driver status (online/offline)
   app.post('/api/erikso/driver/:driverId/status', async (req, res) => {
     const { online, lat, lng } = req.body;
