@@ -356,6 +356,207 @@ module.exports = function(app, db, usersCol) {
     });
   });
 
+  // Submit feedback (community posts)
+  app.post('/api/signals/feedback', async (req, res) => {
+    try {
+      const { text, name, sessionId } = req.body;
+      if (!text || !text.trim()) return res.status(400).json({ error: 'Feedback text required' });
+      const trimmed = String(text).trim().slice(0, 200);
+      let userName = name || 'Anonymous';
+      let userId = null;
+      if (sessionId) {
+        const u = await usersCol.findOne({ sessionId });
+        if (u) { userName = u.name; userId = u.id; }
+      }
+      const feedbackCol = db.collection('feedback');
+      const post = {
+        _id: 'fb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        id: 'fb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        userId, userName, text: trimmed,
+        likes: 0, likedBy: [],
+        createdAt: Date.now(),
+        status: 'active',
+      };
+      await feedbackCol.insertOne(post);
+      const { _id, likedBy, ...result } = post;
+      res.json({ success: true, post: result });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Get all feedback (community posts)
+  app.get('/api/signals/feedback', async (req, res) => {
+    try {
+      const { limit } = req.query;
+      const lim = Math.min(parseInt(limit) || 30, 100);
+      const feedbackCol = db.collection('feedback');
+      const posts = await feedbackCol.find({ status: 'active' })
+        .sort({ createdAt: -1 }).limit(lim).toArray();
+      res.json({
+        success: true,
+        count: posts.length,
+        posts: posts.map(p => {
+          const { _id, likedBy, ...r } = p;
+          return r;
+        }),
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Like a feedback post
+  app.post('/api/signals/feedback/:id/like', async (req, res) => {
+    try {
+      const feedbackCol = db.collection('feedback');
+      const { sessionId } = req.body;
+      const post = await feedbackCol.findOne({ id: req.params.id });
+      if (!post) return res.status(404).json({ error: 'Post not found' });
+      const likedBy = post.likedBy || [];
+      let liked = false;
+      if (sessionId && likedBy.includes(sessionId)) {
+        // Unlike
+        await feedbackCol.updateOne(
+          { id: req.params.id },
+          { $pull: { likedBy: sessionId }, $inc: { likes: -1 } }
+        );
+        liked = false;
+      } else if (sessionId) {
+        // Like
+        await feedbackCol.updateOne(
+          { id: req.params.id },
+          { $addToSet: { likedBy: sessionId }, $inc: { likes: 1 } }
+        );
+        liked = true;
+      } else {
+        // Anonymous like (just count)
+        await feedbackCol.updateOne({ id: req.params.id }, { $inc: { likes: 1 } });
+      }
+      const updated = await feedbackCol.findOne({ id: req.params.id });
+      res.json({ success: true, likes: updated.likes, liked: liked });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Set price alert
+  app.post('/api/signals/alerts', async (req, res) => {
+    try {
+      const { coin, condition, targetPrice, sessionId } = req.body;
+      if (!coin || !condition || !targetPrice) {
+        return res.status(400).json({ error: 'coin, condition, targetPrice required' });
+      }
+      if (!sessionId) return res.status(400).json({ error: 'sessionId required' });
+      const user = await usersCol.findOne({ sessionId });
+      if (!user) return res.status(401).json({ error: 'Login required' });
+      const alertsCol = db.collection('priceAlerts');
+      const alert = {
+        _id: 'al_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        id: 'al_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        userId: user.id,
+        sessionId,
+        coin: String(coin).toUpperCase(),
+        condition: String(condition),  // 'above' | 'below'
+        targetPrice: parseFloat(targetPrice),
+        status: 'active',  // 'active' | 'triggered' | 'cancelled'
+        createdAt: Date.now(),
+        triggeredAt: null,
+        triggeredPrice: null,
+      };
+      await alertsCol.insertOne(alert);
+      const { _id, ...result } = alert;
+      res.json({ success: true, alert: result });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Get user's price alerts
+  app.get('/api/signals/alerts', async (req, res) => {
+    try {
+      const { sessionId } = req.query;
+      if (!sessionId) return res.status(400).json({ error: 'sessionId required' });
+      const alertsCol = db.collection('priceAlerts');
+      const alerts = await alertsCol.find({ sessionId })
+        .sort({ createdAt: -1 }).limit(50).toArray();
+      res.json({
+        success: true,
+        count: alerts.length,
+        alerts: alerts.map(a => { const { _id, ...r } = a; return r; }),
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Cancel/delete alert
+  app.delete('/api/signals/alerts/:id', async (req, res) => {
+    try {
+      const alertsCol = db.collection('priceAlerts');
+      const result = await alertsCol.deleteOne({ id: req.params.id });
+      res.json({ success: true, deleted: result.deletedCount });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Background price monitor: check active alerts every 30s
+  function startPriceMonitor() {
+    setInterval(async () => {
+      try {
+        const alertsCol = db.collection('priceAlerts');
+        const activeAlerts = await alertsCol.find({ status: 'active' }).toArray();
+        if (activeAlerts.length === 0) return;
+        // Get unique coins
+        const coins = [...new Set(activeAlerts.map(a => a.coin))];
+        const symbolsParam = encodeURIComponent(JSON.stringify(coins));
+        // Use cached prices
+        let allTickers;
+        if (global._binanceCache && (Date.now() - global._binanceCache.ts) < 10000) {
+          allTickers = global._binanceCache.data;
+        } else {
+          try {
+            const r = await axios.get('https://fapi.binance.com/fapi/v1/ticker/price', { timeout: 5000 });
+            allTickers = r.data;
+            global._binanceCache = { ts: Date.now(), data: allTickers };
+          } catch (e) { return; }
+        }
+        const priceMap = {};
+        allTickers.forEach(t => { priceMap[t.symbol] = parseFloat(t.price); });
+        // Check each alert
+        for (const alert of activeAlerts) {
+          const price = priceMap[alert.coin] || 0;
+          if (price <= 0) continue;
+          let triggered = false;
+          if (alert.condition === 'above' && price >= alert.targetPrice) triggered = true;
+          else if (alert.condition === 'below' && price <= alert.targetPrice) triggered = true;
+          if (triggered) {
+            await alertsCol.updateOne(
+              { id: alert.id },
+              { $set: { status: 'triggered', triggeredAt: Date.now(), triggeredPrice: price } }
+            );
+            // Create notification
+            await notificationsCol.insertOne({
+              _id: 'n_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+              id: 'n_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+              userId: alert.userId,
+              type: 'price_alert',
+              targetType: 'alert',
+              targetId: alert.id,
+              message: '🔔 ' + alert.coin + ' is now $' + price + ' (' + alert.condition + ' $' + alert.targetPrice + ')',
+              read: false,
+              createdAt: Date.now(),
+            });
+            console.log('🔔 Alert triggered:', alert.coin, alert.condition, alert.targetPrice, 'at', price);
+          }
+        }
+      } catch (e) {
+        console.error('Price monitor error:', e.message);
+      }
+    }, 30 * 1000);  // Every 30s
+  }
+
   // Get unique coins from all signals
   app.get('/api/signals/coins', async (req, res) => {
     if (!signalsCol) return res.status(503).json({ error: 'DB not ready' });
@@ -1083,6 +1284,51 @@ module.exports = function(app, db, usersCol) {
     }
   });
 
+  // Get random top N coins for analysis (rotates every request)
+  // Returns 10 popular crypto coins, shuffled for variety
+  app.get('/api/signals/rotating-coins', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit) || 10;
+      // Popular crypto universe (top trading pairs)
+      const popularCoins = [
+        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT',
+        'ADAUSDT', 'AVAXUSDT', 'LINKUSDT', 'DOTUSDT', 'MATICUSDT', 'LTCUSDT',
+        'ARBUSDT', 'OPUSDT', 'TRXUSDT', 'ATOMUSDT', 'NEARUSDT', 'APTUSDT',
+        'INJUSDT', 'SUIUSDT', 'TONUSDT', 'ICPUSDT', 'FILUSDT', 'ETCUSDT',
+        'WLDUSDT', 'PEPEUSDT', 'WIFUSDT', 'BONKUSDT', 'FLOKIUSDT', 'SHIBUSDT',
+        'UNIUSDT', 'AAVEUSDT', 'MKRUSDT', 'COMPUSDT', 'CRVUSDT', 'SNXUSDT',
+        'SXPUSDT', 'YFIUSDT', 'BALUSDT', 'SUSHIUSDT', 'GRTUSDT', 'RNDRUSDT',
+        'FETUSDT', 'AGIXUSDT', 'OCEANUSDT', 'RUNEUSDT', 'KSMUSDT', 'ZECUSDT',
+        'DASHUSDT', 'EOSUSDT', 'XLMUSDT', 'NEOUSDT', 'WAVESUSDT', 'QTUMUSDT',
+        'CHZUSDT', 'ENJUSDT', 'MANAUSDT', 'SANDUSDT', 'AXSUSDT', 'GALAUSDT',
+        'IMXUSDT', 'LDOUSDT', 'BLURUSDT', 'MASKUSDT', 'DYDXUSDT', 'GMXUSDT',
+        'CHIPUSDT', 'TAGUSDT', 'FHEUSDT', 'DEXEUSDT', 'BANKUSDT', 'KAITOUSDT',
+        'VANRYUSDT', 'BASEDUSDT', 'CLOUSDT', 'TUSDT', 'SXTUSDT', 'HIFIUSDT',
+      ];
+      // Shuffle with date-based seed so it's the same for everyone that minute
+      const now = Date.now();
+      const minuteSeed = Math.floor(now / 60000);  // changes every minute
+      // Simple seeded shuffle
+      const shuffled = [...popularCoins];
+      let seed = minuteSeed;
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        seed = (seed * 9301 + 49297) % 233280;
+        const j = seed % (i + 1);
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      const selected = shuffled.slice(0, limit);
+      res.json({
+        success: true,
+        coins: selected,
+        minute: minuteSeed,
+        rotatesAt: (minuteSeed + 1) * 60000,
+        ts: now,
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Get list of all signal members (for leaderboard)
   app.get('/api/signals/members', async (req, res) => {
     try {
@@ -1275,6 +1521,8 @@ module.exports = function(app, db, usersCol) {
   // Initialize
   connectDB_signals().then(() => {
     startAutoPolling();
+    startPriceMonitor();
     console.log('📈 Trading Signals auto-polling started (every 30s)');
+    console.log('🔔 Price alert monitor started (every 30s)');
   }).catch(e => console.error('Signals init error:', e.message));
 };
