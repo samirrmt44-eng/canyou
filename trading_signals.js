@@ -424,12 +424,17 @@ module.exports = function(app, db, usersCol) {
       const todayStart = new Date(); todayStart.setHours(0,0,0,0);
       const todayMs = todayStart.getTime();
 
-      const [totalVisitors, todayVisitors, activeNow, totalSignalsAll, todaySigs] = await Promise.all([
+      const [totalVisitors, todayVisitors, activeNow, totalSignalsAll, todaySigs,
+             totalMembers, onlineMembers, todayNewMembers] = await Promise.all([
         visitsCol.countDocuments({}),
         visitsCol.countDocuments({ firstSeen: { $gte: todayMs } }),
         visitsCol.countDocuments({ lastSeen: { $gte: activeCutoff } }),
         signalsCol.countDocuments({}),
         signalsCol.countDocuments({ createdAt: { $gte: todayMs } }),
+        // Members: users with role='signal-member' AND have an API key
+        usersCol.countDocuments({ role: 'signal-member', signalApiKey: { $exists: true, $ne: '' } }),
+        usersCol.countDocuments({ role: 'signal-member', lastSeen: { $gte: activeCutoff } }),
+        usersCol.countDocuments({ role: 'signal-member', joinedAt: { $gte: todayMs } }),
       ]);
 
       // For top viewed, only fetch fields we need (lighter)
@@ -440,11 +445,70 @@ module.exports = function(app, db, usersCol) {
       res.json({
         success: true,
         visitors: { total: totalVisitors, today: todayVisitors, activeNow: activeNow, totalViews: totalViews },
+        members: {
+          total: totalMembers,
+          online: onlineMembers,
+          newToday: todayNewMembers,
+        },
         signals: {
           total: totalSignalsAll,
           today: todaySigs,
           topViewed: topViewedFull.map(s => { const { _id, ...r } = s; return r; }),
         },
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Get list of all signal members (for leaderboard)
+  app.get('/api/signals/members', async (req, res) => {
+    try {
+      const { limit, sort } = req.query;
+      const lim = Math.min(parseInt(limit) || 50, 200);
+      const sortBy = sort === 'recent' ? { lastSeen: -1 }
+                   : sort === 'signals' ? { signalsPosted: -1, lastSeen: -1 }
+                   : sort === 'name' ? { name: 1 }
+                   : { lastSeen: -1 };
+      const members = await usersCol.find({ role: 'signal-member', signalApiKey: { $exists: true, $ne: '' } })
+        .sort(sortBy)
+        .limit(lim)
+        .project({ id: 1, name: 1, location: 1, country: 1, avatar: 1, signalsPosted: 1, joinedAt: 1, lastSeen: 1, online: 1 })
+        .toArray();
+      res.json({
+        success: true,
+        count: members.length,
+        members: members.map(m => {
+          const { _id, ...r } = m;
+          return r;
+        }),
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Get specific member's stats + their recent signals
+  app.get('/api/signals/members/:userId', async (req, res) => {
+    try {
+      const user = await usersCol.findOne({ id: req.params.userId, role: 'signal-member' });
+      if (!user) return res.status(404).json({ error: 'Member not found' });
+      const signals = await signalsCol.find({ userId: req.params.userId })
+        .sort({ createdAt: -1 }).limit(50).toArray();
+      const closed = signals.filter(s => s.signal.includes('CLOSE'));
+      const totalPnl = closed.reduce((s, x) => s + (x.pnl || 0), 0);
+      const winners = closed.filter(s => s.pnl > 0).length;
+      const { _id, signalApiKey, sessionId, ...safeUser } = user;
+      res.json({
+        success: true,
+        member: safeUser,
+        stats: {
+          totalSignals: signals.length,
+          closed: closed.length,
+          totalPnl: Number(totalPnl.toFixed(2)),
+          winRate: closed.length > 0 ? Math.round((winners / closed.length) * 100) : 0,
+        },
+        recentSignals: signals.map(s => { const { _id, ...r } = s; return r; }),
       });
     } catch (e) {
       res.status(500).json({ error: e.message });
