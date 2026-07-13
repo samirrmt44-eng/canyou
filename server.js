@@ -23,6 +23,17 @@ try {
   console.error('⚠️ Erikso module file not found (will skip):', e.message);
 }
 
+// ============================================================
+// DAINIKSTATE NEWS SCRAPER
+// ============================================================
+let newsScraperModule = null;
+try {
+  newsScraperModule = require('./news_scraper.js');
+  console.log('📰 News scraper module file loaded');
+} catch (e) {
+  console.error('⚠️ News scraper module not found (will skip):', e.message);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -2228,6 +2239,15 @@ connectDB().then(async () => {
       console.log('🚐 Erikso School Transport initialized!');
     } catch (e) {
       console.error('⚠️ Erikso init error:', e.message);
+    }
+  }
+  // Initialize DainikState News Scraper (needs DB)
+  if (newsScraperModule) {
+    try {
+      newsScraperModule(app, db, usersCol);
+      console.log('📰 DainikState News Scraper initialized!');
+    } catch (e) {
+      console.error('⚠️ News scraper init error:', e.message);
     }
   }
   setInterval(async () => {
