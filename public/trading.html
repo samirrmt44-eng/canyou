@@ -162,6 +162,27 @@
     font-weight: 800; letter-spacing: 0.5px; margin-left: 6px;
   }
   .live-indicator::before { content: '●'; margin-right: 3px; animation: pulse 1s infinite; }
+  /* Live PnL pulse - when value updates */
+  .pnl-live {
+    transition: all 0.3s ease;
+  }
+  .pnl-live.live-updated {
+    animation: pnlFlash 0.8s ease;
+  }
+  @keyframes pnlFlash {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.15); text-shadow: 0 0 12px currentColor; }
+    100% { transform: scale(1); }
+  }
+  .live-dot-pnl {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #1de9b6;
+    margin-left: 4px;
+    animation: pulse 1.5s infinite;
+    vertical-align: middle;
+  }
   .view-count {
     display: inline-block;
     background: rgba(29,233,182,0.15); color: #1de9b6;
@@ -882,7 +903,8 @@ function renderSignal(s, isNew = false) {
       <div class="signal-header">
         <div class="coin-name">
           ${esc(s.coin)}
-          ${s.status === 'active' ? '<span class="live-indicator">LIVE</span>' : ''}
+          ${!s.signal.includes('CLOSE') && s.status === 'active' ? '<span class="live-indicator">LIVE</span><span class="live-dot-pnl" title="Live price updating"></span>' : ''}
+          ${s.signal.includes('CLOSE') ? '<span class="live-indicator" style="background:rgba(255,255,255,0.1);color:#aaa;">CLOSED</span>' : ''}
           ${s.views > 0 ? `<span class="view-count">👁 ${s.views}</span>` : ''}
         </div>
         <span class="signal-badge ${signalClass}">${esc(s.signal)}</span>
@@ -897,7 +919,14 @@ function renderSignal(s, isNew = false) {
       <div class="pnl-display">
         <div>
           <div class="pnl-label">PnL</div>
-          <div class="pnl-value ${pnlClass}">${s.pnl > 0 ? '+' : ''}${parseFloat(s.pnl || 0).toFixed(2)}%</div>
+          <div class="pnl-value ${pnlClass} pnl-live"
+               data-coin="${esc(s.coin)}"
+               data-entry="${s.entry || 0}"
+               data-signal="${esc(s.signal)}"
+               data-static-pnl="${s.pnl || 0}"
+               data-side="${s.signal.includes('SHORT') ? 'SHORT' : (s.signal.includes('LONG') ? 'LONG' : '')}"
+               data-status="${esc(s.status)}"
+               data-leverage="${(s.leverage || '1x').replace('x','')}">${s.pnl > 0 ? '+' : ''}${parseFloat(s.pnl || 0).toFixed(2)}%</div>
         </div>
         <div class="signal-meta">
           ${s.leverage ? `<span class="meta-tag">⚡ ${esc(s.leverage)}</span>` : ''}
@@ -937,9 +966,9 @@ function findAndRenderBestSignal(signals) {
         ${best.signal.includes('CLOSE') ? '<span class="live-indicator">CLOSED</span>' : ''}
         ${best.views > 0 ? `<span class="view-count">👁 ${best.views}</span>` : ''}
       </div>
-      <div class="best-pnl-big ${pnlClass}">
-        ${best.pnl > 0 ? '+' : ''}${parseFloat(best.pnl).toFixed(2)}%
-      </div>
+  <div class="best-pnl-big ${pnlClass} pnl-live" data-coin="${esc(best.coin)}" data-entry="${best.entry || 0}" data-signal="${esc(best.signal)}" data-static-pnl="${best.pnl}">
+    ${best.pnl > 0 ? '+' : ''}${parseFloat(best.pnl).toFixed(2)}%
+  </div>
       <div class="best-meta">
         <span class="meta-tag">${esc(best.signal)}</span>
         ${best.entry ? `<span class="meta-tag">Entry: $${parseFloat(best.entry).toFixed(2)}</span>` : ''}
@@ -1017,6 +1046,88 @@ async function fetchBestSignal() {
   } catch (e) {
     // silent fail
   }
+}
+
+// ===== Live PnL update - fetch prices from Binance and update OPEN signals =====
+let lastPriceFetch = 0;
+let cachedPrices = {};
+
+async function fetchLivePricesAndUpdatePnl() {
+  try {
+    // Get unique coins from visible pnl-live elements
+    const pnlElements = document.querySelectorAll('.pnl-live');
+    if (pnlElements.length === 0) return;
+    const coinsSet = new Set();
+    pnlElements.forEach(el => {
+      const c = el.getAttribute('data-coin');
+      if (c) coinsSet.add(c);
+    });
+    if (coinsSet.size === 0) return;
+    // Throttle: max 1 request per 5s
+    const now = Date.now();
+    if (now - lastPriceFetch < 4000) {
+      // Use cached prices
+      updatePnlElements(cachedPrices);
+      return;
+    }
+    lastPriceFetch = now;
+    const coinsParam = Array.from(coinsSet).join(',');
+    const r = await fetch(API + '/api/signals/live-prices?coins=' + encodeURIComponent(coinsParam)).then(r => r.json());
+    if (r.success && r.prices) {
+      cachedPrices = r.prices;
+      updatePnlElements(r.prices);
+    }
+  } catch (e) {
+    // silent fail - keep showing static pnl
+  }
+}
+
+function updatePnlElements(prices) {
+  // For each .pnl-live element, calculate new pnl
+  const elements = document.querySelectorAll('.pnl-live');
+  elements.forEach(el => {
+    const coin = el.getAttribute('data-coin');
+    const entry = parseFloat(el.getAttribute('data-entry')) || 0;
+    const signal = el.getAttribute('data-signal');
+    const staticPnl = parseFloat(el.getAttribute('data-static-pnl')) || 0;
+    const side = el.getAttribute('data-side');  // 'LONG' | 'SHORT' | ''
+    const status = el.getAttribute('data-status');
+    const lev = parseFloat(el.getAttribute('data-leverage')) || 1;
+    // Get current price (try multiple key formats)
+    let currentPrice = prices[coin] || prices[coin.replace('/', '')] || 0;
+    if (!currentPrice || !entry || entry <= 0) {
+      // Can't compute live - keep static
+      return;
+    }
+    let livePnl = 0;
+    // For OPEN signals (no CLOSE in name), calculate unrealized PnL
+    if (!signal.includes('CLOSE') && side) {
+      // Unrealized PnL% = (mark - entry) / entry * 100 * leverage
+      if (side === 'LONG') {
+        livePnl = ((currentPrice - entry) / entry) * 100 * lev;
+      } else if (side === 'SHORT') {
+        livePnl = ((entry - currentPrice) / entry) * 100 * lev;
+      }
+    } else {
+      // CLOSE signals - keep stored pnl
+      livePnl = staticPnl;
+    }
+    // Update display
+    const sign = livePnl > 0 ? '+' : '';
+    const newText = sign + livePnl.toFixed(2) + '%';
+    const oldText = el.textContent.trim();
+    if (oldText !== newText) {
+      el.textContent = newText;
+      // Update color class
+      el.classList.remove('positive', 'negative');
+      if (livePnl > 0) el.classList.add('positive');
+      else if (livePnl < 0) el.classList.add('negative');
+      // Pulse animation
+      el.classList.remove('live-updated');
+      void el.offsetWidth;  // force reflow
+      el.classList.add('live-updated');
+    }
+  });
 }
 
 // ===== Filter buttons =====
@@ -1131,10 +1242,13 @@ async function loadMembers() {
 function startPolling() {
   fetchSignals();
   fetchBestSignal();
+  fetchLivePricesAndUpdatePnl();  // Initial live price update
   pollInterval = setInterval(() => {
     fetchSignals();
     fetchBestSignal();
-  }, 10000);  // Refresh every 10s
+  }, 10000);  // Refresh signals every 10s
+  // Live PnL update every 4s (throttled inside)
+  setInterval(fetchLivePricesAndUpdatePnl, 4000);
   fetchStats();
   setInterval(fetchStats, 15000);
 }
