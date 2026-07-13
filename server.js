@@ -1162,8 +1162,174 @@ app.get('/api/groups/:groupId/members', async (req, res) => {
 });
 
 // ============================================================
-// CALLS (Voice/Video - WebRTC signaling)
+// JITSI CALL INTEGRATION
 // ============================================================
+// Uses public Jitsi Meet (https://meet.jit.si) for reliable
+// voice/video calls with ring notifications
+// ============================================================
+
+// Initiate a call (caller side) - creates a Jitsi room
+app.post('/api/calls/initiate', async (req, res) => {
+  const { fromUserId, toUserId, groupId, type } = req.body;
+  if (!fromUserId || !type) return res.status(400).json({ error: 'fromUserId and type required' });
+  if (!callsCol) return res.status(503).json({ error: 'DB not ready' });
+
+  const user = await usersCol.findOne({ id: fromUserId });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  // Group call permissions check
+  if (groupId) {
+    const group = await groupsCol.findOne({ id: groupId });
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+    if (!group.members.includes(fromUserId)) {
+      return res.status(403).json({ error: 'You must be a member to call' });
+    }
+    const whoCanCall = group.whoCanCall || 'everyone';
+    const isAdmin = group.admins?.includes(fromUserId);
+    if (whoCanCall === 'admins_only' && !isAdmin) {
+      return res.status(403).json({ error: 'Only admins/owner can start calls' });
+    }
+    if (whoCanCall === 'specific' && !(group.allowedCallers || []).includes(fromUserId) && !isAdmin) {
+      return res.status(403).json({ error: 'Not allowed to call' });
+    }
+    if (group.blockedMembers?.includes(fromUserId)) {
+      return res.status(403).json({ error: 'You are blocked from this group' });
+    }
+  }
+
+  // Create unique room ID
+  const callId = 'ds-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex');
+  const jitsiRoom = `dainikstate-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+  const jitsiUrl = `https://meet.jit.si/${jitsiRoom}`;
+
+  // Get callee info (for 1-on-1 calls)
+  let calleeName = 'User';
+  if (toUserId) {
+    const callee = await usersCol.findOne({ id: toUserId });
+    if (callee) calleeName = callee.name;
+  }
+
+  const call = {
+    _id: callId, callId, type, // 'voice' | 'video'
+    groupId: groupId || null,
+    toUserId: toUserId || null,
+    fromUserId,
+    callerName: user.name,
+    callerAvatar: user.avatar,
+    calleeName,
+    jitsiRoom,
+    jitsiUrl,
+    status: 'ringing', // 'ringing' | 'active' | 'ended' | 'declined' | 'missed'
+    startedAt: Date.now(),
+    acceptedAt: null,
+    endedAt: null,
+    duration: 0,
+  };
+  await callsCol.insertOne(call);
+  const { _id, ...result } = call;
+
+  // Send notification to receiver(s)
+  if (toUserId) {
+    // 1-on-1 call
+    await notificationsCol.insertOne({
+      _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+      id: undefined, userId: toUserId,
+      type: 'incoming_call', from: fromUserId, targetType: 'call', targetId: callId,
+      message: `📞 ${user.name} is ${type === 'video' ? 'video' : 'voice'} calling you`,
+      read: false, createdAt: Date.now(),
+    });
+  } else if (groupId) {
+    // Group call - notify all members
+    const group = await groupsCol.findOne({ id: groupId });
+    if (group) {
+      for (const memberId of group.members) {
+        if (memberId === fromUserId) continue;
+        await notificationsCol.insertOne({
+          _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+          id: undefined, userId: memberId,
+          type: 'group_call', from: fromUserId, targetType: 'call', targetId: callId,
+          message: `📞 ${user.name} started a ${type} call in ${group.name}`,
+          read: false, createdAt: Date.now(),
+        });
+      }
+    }
+  }
+
+  res.json({ success: true, call: result });
+});
+
+// Accept a call (callee side) - returns Jitsi URL
+app.post('/api/calls/:callId/accept', async (req, res) => {
+  const { userId } = req.body;
+  if (!callsCol) return res.status(503).json({ error: 'DB not ready' });
+  const call = await callsCol.findOne({ callId: req.params.callId });
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  if (call.status !== 'ringing') return res.status(400).json({ error: 'Call is not ringing' });
+  // For 1-on-1, only the callee can accept
+  if (call.toUserId && call.toUserId !== userId) {
+    return res.status(403).json({ error: 'Not the callee' });
+  }
+  // For group calls, any member can accept (joins existing Jitsi room)
+  await callsCol.updateOne(
+    { callId: req.params.callId },
+    { $set: { status: 'active', acceptedAt: Date.now(), acceptedBy: userId } }
+  );
+  // Notify caller that call was accepted
+  await notificationsCol.insertOne({
+    _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+    id: undefined, userId: call.fromUserId,
+    type: 'call_accepted', from: userId, targetType: 'call', targetId: req.params.callId,
+    message: `✅ Your call was accepted`,
+    read: false, createdAt: Date.now(),
+  });
+  res.json({ success: true, jitsiUrl: call.jitsiUrl, jitsiRoom: call.jitsiRoom });
+});
+
+// Decline a call
+app.post('/api/calls/:callId/decline', async (req, res) => {
+  const { userId } = req.body;
+  if (!callsCol) return res.status(503).json({ error: 'DB not ready' });
+  const call = await callsCol.findOne({ callId: req.params.callId });
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  if (call.status !== 'ringing') return res.status(400).json({ error: 'Call is not ringing' });
+  await callsCol.updateOne(
+    { callId: req.params.callId },
+    { $set: { status: 'declined', endedAt: Date.now(), declinedBy: userId } }
+  );
+  // Notify caller
+  await notificationsCol.insertOne({
+    _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+    id: undefined, userId: call.fromUserId,
+    type: 'call_declined', from: userId, targetType: 'call', targetId: req.params.callId,
+    message: `❌ Call declined`,
+    read: false, createdAt: Date.now(),
+  });
+  res.json({ success: true });
+});
+
+// Get call status (for polling)
+app.get('/api/calls/:callId/status', async (req, res) => {
+  if (!callsCol) return res.status(503).json({ error: 'DB not ready' });
+  const call = await callsCol.findOne({ callId: req.params.callId });
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  const { _id, ...result } = call;
+  res.json({ success: true, call: result });
+});
+
+// End a call
+app.post('/api/calls/:callId/end', async (req, res) => {
+  const { userId } = req.body;
+  if (!callsCol) return res.status(503).json({ error: 'DB not ready' });
+  const call = await callsCol.findOne({ callId: req.params.callId });
+  if (!call) return res.status(404).json({ error: 'Call not found' });
+  const endedAt = Date.now();
+  const duration = call.acceptedAt ? Math.floor((endedAt - call.acceptedAt) / 1000) : 0;
+  await callsCol.updateOne(
+    { callId: req.params.callId },
+    { $set: { status: 'ended', endedAt, duration, endedBy: userId } }
+  );
+  res.json({ success: true });
+});
 
 // Start or join a call
 app.post('/api/calls', async (req, res) => {
