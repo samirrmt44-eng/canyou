@@ -303,6 +303,122 @@
     border-radius: 50%; background: #00c853;
     box-shadow: 0 0 4px #00c853;
   }
+
+  /* ===== BEST SIGNAL (Top PnL) ===== */
+  .best-signal {
+    background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.1), rgba(255,215,0,0.05));
+    border: 2px solid #ffd700;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(255,215,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+    animation: goldPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes goldPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(255,215,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1); }
+    50% { box-shadow: 0 0 30px rgba(255,215,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2); }
+  }
+  .best-signal::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%);
+    animation: shine 3s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes shine {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+  }
+  .best-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .best-title {
+    font-size: 11px; font-weight: 900;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: #ffd700;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .best-rank {
+    background: linear-gradient(135deg, #ffd700, #ff9500);
+    color: #000;
+    padding: 3px 10px; border-radius: 12px;
+    font-size: 10px; font-weight: 900;
+  }
+  .best-coin {
+    font-size: 22px; font-weight: 900; color: #fff;
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+  }
+  .best-pnl-big {
+    font-size: 36px; font-weight: 900;
+    background: linear-gradient(135deg, #00c853, #1de9b6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+  }
+  .best-pnl-big.negative {
+    background: linear-gradient(135deg, #ff3b30, #ff6b6b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .best-meta {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .best-meta .meta-tag {
+    background: rgba(255,215,0,0.15);
+    color: #ffd700;
+    border: 1px solid rgba(255,215,0,0.3);
+  }
+
+  /* ===== FREE badges ===== */
+  .free-banner {
+    background: linear-gradient(135deg, rgba(0,200,83,0.1), rgba(29,233,182,0.1));
+    border: 1px solid rgba(0,200,83,0.3);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px;
+  }
+  .free-banner-icon { font-size: 28px; }
+  .free-banner-text { flex: 1; }
+  .free-banner-title {
+    font-size: 13px; font-weight: 900; color: #00c853;
+    margin-bottom: 2px;
+  }
+  .free-banner-sub { font-size: 11px; opacity: 0.8; }
+  .free-tag {
+    display: inline-block;
+    background: linear-gradient(135deg, #00c853, #1de9b6);
+    color: #000;
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 900;
+    letter-spacing: 0.5px;
+    margin-left: 4px;
+  }
+  .feature-list {
+    list-style: none; margin-top: 8px; font-size: 12px;
+    text-align: left;
+  }
+  .feature-list li {
+    padding: 3px 0;
+    display: flex; align-items: center; gap: 6px;
+    opacity: 0.85;
+  }
+  .feature-list li::before {
+    content: '✓';
+    color: #00c853;
+    font-weight: 900;
+    font-size: 14px;
+  }
 </style>
 </head>
 <body>
@@ -359,6 +475,9 @@
     <button class="add-coin-btn" onclick="showAddSignalModal()">➕ Add My Coin</button>
   </div>
 
+  <!-- Best signal (top PnL) -->
+  <div id="bestSignalContainer"></div>
+
   <div class="signals-list" id="signalsList">
     <div class="empty">
       <div class="empty-icon">⏳</div>
@@ -377,27 +496,41 @@
 <!-- Auto-register / Login modal -->
 <div class="modal-bg" id="authModal">
   <div class="modal">
-    <h2>👋 Welcome to DainikState Trading!</h2>
-    <p style="font-size:13px;opacity:0.7;margin-bottom:12px;">Sign in to share your coin signals with the community.</p>
+    <h2>👋 Welcome to DainikState Trading! <span class="free-tag">100% FREE</span></h2>
 
-    <div class="tab-switch">
-      <button id="registerTab" class="active" onclick="switchAuthTab('register')">New Account</button>
-      <button id="loginTab" onclick="switchAuthTab('login')">Returning User</button>
+    <div class="free-banner">
+      <div class="free-banner-icon">🎉</div>
+      <div class="free-banner-text">
+        <div class="free-banner-title">बिल्कुल FREE! कोई पैसा नहीं लगेगा</div>
+        <div class="free-banner-sub">No credit card. No hidden charges. Lifetime free.</div>
+      </div>
+    </div>
+
+    <ul class="feature-list">
+      <li>✅ Share unlimited coin signals</li>
+      <li>✅ Get your personal webhook URL</li>
+      <li>✅ Live PnL tracking &amp; leaderboard</li>
+      <li>✅ Connect any trading bot (Binance, etc.)</li>
+    </ul>
+
+    <div class="tab-switch" style="margin-top:14px">
+      <button id="registerTab" class="active" onclick="switchAuthTab('register')">🆕 New Account</button>
+      <button id="loginTab" onclick="switchAuthTab('login')">🔑 Login</button>
     </div>
 
     <div id="registerForm">
       <label>Your Name *</label>
       <input type="text" id="regName" placeholder="e.g. Rajesh Kumar">
 
-      <label>Phone Number</label>
+      <label>Phone Number (optional)</label>
       <input type="tel" id="regPhone" placeholder="+91 9876543210">
 
-      <label>Location</label>
+      <label>Location (optional)</label>
       <input type="text" id="regLocation" placeholder="e.g. Delhi, India">
 
       <div class="modal-buttons">
         <button class="btn-secondary" onclick="skipAuth()">Skip for now</button>
-        <button class="btn-primary" onclick="doRegister()">Create Account</button>
+        <button class="btn-primary" onclick="doRegister()">🚀 Create FREE Account</button>
       </div>
     </div>
 
@@ -407,7 +540,7 @@
 
       <div class="modal-buttons">
         <button class="btn-secondary" onclick="skipAuth()">Cancel</button>
-        <button class="btn-primary" onclick="doLogin()">Login</button>
+        <button class="btn-primary" onclick="doLogin()">🔑 Login</button>
       </div>
     </div>
   </div>
@@ -778,6 +911,50 @@ function renderSignal(s, isNew = false) {
   `;
 }
 
+// ===== Find and render the BEST signal (top PnL%) =====
+function findAndRenderBestSignal(signals) {
+  const container = document.getElementById('bestSignalContainer');
+  // Only consider CLOSE signals (those have actual pnl values)
+  const closedSignals = signals.filter(s => s.signal.includes('CLOSE') && s.pnl !== 0);
+  if (closedSignals.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  // Find the one with highest pnl
+  const best = closedSignals.reduce((max, s) => (s.pnl > max.pnl ? s : max), closedSignals[0]);
+  // Don't show the best signal again in the main list to avoid duplication
+  // Actually let's still show it in main list, but here as featured
+  const pnlClass = best.pnl > 0 ? '' : 'negative';
+  const signalClass = best.signal.toLowerCase();
+  container.innerHTML = `
+    <div class="best-signal" data-id="${best.id}">
+      <div class="best-header">
+        <div class="best-title">🏆 BEST SIGNAL — TOP PnL</div>
+        <div class="best-rank">#1 RANK</div>
+      </div>
+      <div class="best-coin">
+        ${esc(best.coin)}
+        ${best.signal.includes('CLOSE') ? '<span class="live-indicator">CLOSED</span>' : ''}
+        ${best.views > 0 ? `<span class="view-count">👁 ${best.views}</span>` : ''}
+      </div>
+      <div class="best-pnl-big ${pnlClass}">
+        ${best.pnl > 0 ? '+' : ''}${parseFloat(best.pnl).toFixed(2)}%
+      </div>
+      <div class="best-meta">
+        <span class="meta-tag">${esc(best.signal)}</span>
+        ${best.entry ? `<span class="meta-tag">Entry: $${parseFloat(best.entry).toFixed(2)}</span>` : ''}
+        ${best.leverage ? `<span class="meta-tag">⚡ ${esc(best.leverage)}</span>` : ''}
+        ${best.timeframe ? `<span class="meta-tag">⏱ ${esc(best.timeframe)}</span>` : ''}
+        ${best.userName ? `<span class="meta-tag">👤 ${esc(best.userName)}</span>` : ''}
+        <span class="meta-tag">🕐 ${timeAgo(best.createdAt)}</span>
+      </div>
+      ${best.note ? `<div style="font-size:12px;margin-top:8px;opacity:0.8;color:#ffd700;">💡 ${esc(best.note)}</div>` : ''}
+    </div>
+  `;
+  // Track view on the best signal
+  trackSignalView(best.id);
+}
+
 // ===== Fetch signals (paginated) =====
 async function fetchSignals() {
   try {
@@ -826,6 +1003,19 @@ async function fetchSignals() {
   } catch (e) {
     document.getElementById('connectionStatus').innerHTML = '● Disconnected';
     document.getElementById('connectionStatus').style.color = '#ff3b30';
+  }
+}
+
+// ===== Fetch BEST signal (separately, looks at top 200 signals) =====
+async function fetchBestSignal() {
+  try {
+    // Only look at public signals, sorted by pnl descending
+    const r = await fetch(API + '/api/signals?limit=200&sort=pnl_desc').then(r => r.json());
+    if (r.success && r.signals) {
+      findAndRenderBestSignal(r.signals);
+    }
+  } catch (e) {
+    // silent fail
   }
 }
 
@@ -940,7 +1130,11 @@ async function loadMembers() {
 // ===== INIT =====
 function startPolling() {
   fetchSignals();
-  pollInterval = setInterval(fetchSignals, 10000);  // Refresh every 10s
+  fetchBestSignal();
+  pollInterval = setInterval(() => {
+    fetchSignals();
+    fetchBestSignal();
+  }, 10000);  // Refresh every 10s
   fetchStats();
   setInterval(fetchStats, 15000);
 }
