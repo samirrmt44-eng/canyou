@@ -589,6 +589,7 @@
       <div class="user-bar-sub" id="userSub">Loading...</div>
     </div>
     <button onclick="showWebhookModal()">🔑 Webhook</button>
+    <button onclick="showAnalyzerModal()">📊 Analyze</button>
     <button onclick="logout()">Logout</button>
   </div>
 
@@ -612,11 +613,11 @@
   </div>
 
   <!-- Members bar -->
-  <div class="visitor-bar members-bar" onclick="showMembersModal()">
+  <div class="visitor-bar members-bar" onclick="showAdminModal()">
     <div class="visitor-item"><span class="visitor-icon">🏆</span><span class="visitor-num" id="mTotal">0</span><span class="visitor-lbl">Members</span></div>
     <div class="visitor-item"><span class="visitor-icon">🟢</span><span class="visitor-num" id="mOnline">0</span><span class="visitor-lbl">Online</span></div>
     <div class="visitor-item"><span class="visitor-icon">📅</span><span class="visitor-num" id="mNew">0</span><span class="visitor-lbl">New Today</span></div>
-    <div class="visitor-item"><span class="visitor-icon">➡️</span><span class="visitor-num" style="font-size:13px;opacity:0.7">View All</span><span class="visitor-lbl">Leaderboard</span></div>
+    <div class="visitor-item"><span class="visitor-icon">📊</span><span class="visitor-num" style="font-size:13px;opacity:0.7">Report</span><span class="visitor-lbl">Login</span></div>
   </div>
 
   <!-- Motivational banner (dynamic based on performance) -->
@@ -808,6 +809,70 @@ curl -X POST "WEBHOOK_URL" \
     <div class="modal-buttons">
       <button class="btn-secondary" onclick="closeAddSignalModal()">Cancel</button>
       <button class="btn-primary" onclick="submitMySignal()">Post Signal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Smart Analyzer modal (auto LONG/SHORT/HOLD for any coin) -->
+<div class="modal-bg" id="analyzerModal">
+  <div class="modal" style="max-width: 480px;">
+    <h2>📊 Smart Coin Analyzer</h2>
+    <p style="font-size:12px;opacity:0.7;margin-bottom:8px;">Real-time CCI strategy analysis. Type any coin to get LONG/SHORT/HOLD signal with confidence, entry, target &amp; stop loss.</p>
+
+    <label>Coin *</label>
+    <input type="text" id="analyzerCoin" placeholder="e.g. BTCUSDT, ETHUSDT, SOLUSDT" style="text-transform:uppercase;" onkeypress="if(event.key==='Enter')runAnalyzer()">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <div>
+        <label>Timeframe</label>
+        <select id="analyzerTimeframe">
+          <option value="1m">1m</option>
+          <option value="5m">5m</option>
+          <option value="15m" selected>15m</option>
+          <option value="1h">1h</option>
+          <option value="4h">4h</option>
+        </select>
+      </div>
+      <div>
+        <label>Strategy</label>
+        <select id="analyzerStrategy">
+          <option value="standard" selected>Standard (14/30)</option>
+          <option value="fast">Fast (8/21)</option>
+          <option value="slow">Slow (20/50)</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-primary" style="width:100%;margin-top:12px" onclick="runAnalyzer()">🔍 Analyze Now</button>
+
+    <div id="analyzerResult" style="margin-top:14px"></div>
+
+    <div class="modal-buttons" style="margin-top:14px">
+      <button class="btn-secondary" onclick="closeAnalyzerModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin report modal (for site owner) -->
+<div class="modal-bg" id="adminModal">
+  <div class="modal" style="max-width: 600px;">
+    <h2>📊 Login Report — Members Analytics</h2>
+    <p style="font-size:12px;opacity:0.7;margin-bottom:8px;">All registered members of DainikState Trading. Click any member for details.</p>
+
+    <div id="adminStats" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px"></div>
+
+    <div class="tab-switch">
+      <button id="adminSortJoined" class="active" onclick="sortAdmin('joined')">📅 By Join</button>
+      <button id="adminSortLastSeen" onclick="sortAdmin('lastSeen')">🕐 Last Seen</button>
+      <button id="adminSortActivity" onclick="sortAdmin('activity')">📊 Activity</button>
+    </div>
+
+    <div class="member-list" id="adminList">
+      <div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading members...</div></div>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn-secondary" onclick="closeAdminModal()">Close</button>
     </div>
   </div>
 </div>
@@ -1514,6 +1579,205 @@ function filterByCoin(coin) {
   });
   fetchSignals();
   window.scrollTo({ top: document.getElementById('signalsList').offsetTop - 50, behavior: 'smooth' });
+}
+
+// ===== Smart Coin Analyzer =====
+function showAnalyzerModal() {
+  document.getElementById('analyzerModal').classList.add('active');
+  document.getElementById('analyzerResult').innerHTML = '';
+  setTimeout(() => document.getElementById('analyzerCoin').focus(), 100);
+}
+
+function closeAnalyzerModal() {
+  document.getElementById('analyzerModal').classList.remove('active');
+}
+
+async function runAnalyzer() {
+  const coin = document.getElementById('analyzerCoin').value.trim().toUpperCase();
+  if (!coin) return showToast('Enter a coin!', '#ff3b30');
+  const interval = document.getElementById('analyzerTimeframe').value;
+  const strategy = document.getElementById('analyzerStrategy').value;
+  const cciSettings = { standard: [14, 30], fast: [8, 21], slow: [20, 50] };
+  const [cciX, cciY] = cciSettings[strategy];
+  const resultDiv = document.getElementById('analyzerResult');
+  resultDiv.innerHTML = '<div style="text-align:center;padding:20px"><div style="font-size:24px">⏳</div><div style="opacity:0.7">Analyzing ' + esc(coin) + '...</div></div>';
+  try {
+    const r = await fetch(API + '/api/signals/analyze/' + encodeURIComponent(coin) + '?interval=' + interval + '&cciX=' + cciX + '&cciY=' + cciY).then(r => r.json());
+    if (r.success) {
+      const sig = r.signal;
+      const actionColors = {
+        LONG: ['#00c853', '#1de9b6', '🟢'],
+        SHORT: ['#ff3b30', '#ff6b6b', '🔴'],
+        HOLD_LONG: ['#00c853', '#1de9b6', '✅'],
+        HOLD_SHORT: ['#ff3b30', '#ff6b6b', '✅'],
+        WAIT: ['#888', '#aaa', '⏳'],
+      };
+      const colors = actionColors[sig.action] || actionColors.WAIT;
+      const conf = sig.confidence;
+      const confColor = conf >= 70 ? '#00c853' : conf >= 40 ? '#ffd700' : '#ff3b30';
+      let nextSignalHtml = '';
+      if (sig.nextSignal) {
+        nextSignalHtml = '<div style="margin-top:8px;padding:6px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:11px">📍 Next ' + sig.nextSignal.type + ' signal in ' + sig.nextSignal.distance + ' CCI points</div>';
+      }
+      resultDiv.innerHTML = `
+        <div style="background:linear-gradient(135deg, ${colors[0]}33, ${colors[1]}22);border:1px solid ${colors[0]}66;border-radius:10px;padding:14px;margin-top:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div>
+              <div style="font-size:18px;font-weight:900;color:#fff">${esc(r.coin)}</div>
+              <div style="font-size:11px;opacity:0.7">$${parseFloat(r.currentPrice).toFixed(4)} • ${esc(r.interval)}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:24px">${colors[2]}</div>
+              <div style="font-size:20px;font-weight:900;color:${colors[0]}">${sig.action.replace('_', ' ')}</div>
+            </div>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);padding:8px;border-radius:6px;margin-bottom:8px">
+            <div style="font-size:11px;opacity:0.7">CONFIDENCE</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+              <div style="flex:1;background:rgba(255,255,255,0.1);height:6px;border-radius:3px;overflow:hidden">
+                <div style="width:${conf}%;height:100%;background:${confColor};border-radius:3px"></div>
+              </div>
+              <div style="font-size:14px;font-weight:900;color:${confColor}">${conf}%</div>
+            </div>
+          </div>
+          <div style="font-size:13px;line-height:1.4;margin-bottom:8px">${esc(sig.reason)}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
+            <div style="text-align:center;background:rgba(0,0,0,0.2);padding:6px;border-radius:6px">
+              <div style="font-size:9px;opacity:0.7">ENTRY</div>
+              <div style="font-size:12px;font-weight:700">$${parseFloat(sig.entry).toFixed(4)}</div>
+            </div>
+            <div style="text-align:center;background:rgba(0,200,83,0.15);padding:6px;border-radius:6px">
+              <div style="font-size:9px;opacity:0.7">TARGET</div>
+              <div style="font-size:12px;font-weight:700;color:#00c853">$${sig.target ? parseFloat(sig.target).toFixed(4) : '-'}</div>
+            </div>
+            <div style="text-align:center;background:rgba(255,59,48,0.15);padding:6px;border-radius:6px">
+              <div style="font-size:9px;opacity:0.7">STOP LOSS</div>
+              <div style="font-size:12px;font-weight:700;color:#ff3b30">$${sig.stopLoss ? parseFloat(sig.stopLoss).toFixed(4) : '-'}</div>
+            </div>
+          </div>
+          <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px">
+            <div style="text-align:center;background:rgba(0,0,0,0.2);padding:4px;border-radius:4px">
+              <div style="opacity:0.6;font-size:9px">CCI(${cciX})</div>
+              <div style="font-weight:700">${parseFloat(r.cciX.value || 0).toFixed(2)}</div>
+            </div>
+            <div style="text-align:center;background:rgba(0,0,0,0.2);padding:4px;border-radius:4px">
+              <div style="opacity:0.6;font-size:9px">CCI(${cciY})</div>
+              <div style="font-weight:700">${parseFloat(r.cciY.value || 0).toFixed(2)}</div>
+            </div>
+            <div style="text-align:center;background:rgba(0,0,0,0.2);padding:4px;border-radius:4px">
+              <div style="opacity:0.6;font-size:9px">SUM</div>
+              <div style="font-weight:700;color:${r.sum.current > 0 ? '#00c853' : (r.sum.current < 0 ? '#ff3b30' : '#888')}">${parseFloat(r.sum.current || 0).toFixed(2)}</div>
+            </div>
+          </div>
+          ${nextSignalHtml}
+        </div>
+      `;
+    } else {
+      resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#ff3b30">' + (r.error || 'Analysis failed') + '</div>';
+    }
+  } catch (e) {
+    resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#ff3b30">Network error: ' + e.message + '</div>';
+  }
+}
+
+// ===== Admin Report (Members analytics) =====
+let adminData = null;
+let adminSort = 'joined';
+
+function showAdminModal() {
+  document.getElementById('adminModal').classList.add('active');
+  loadAdminReport();
+}
+
+function closeAdminModal() {
+  document.getElementById('adminModal').classList.remove('active');
+}
+
+function sortAdmin(by) {
+  adminSort = by;
+  document.getElementById('adminSortJoined').classList.toggle('active', by === 'joined');
+  document.getElementById('adminSortLastSeen').classList.toggle('active', by === 'lastSeen');
+  document.getElementById('adminSortActivity').classList.toggle('active', by === 'activity');
+  renderAdminList();
+}
+
+async function loadAdminReport() {
+  const stats = document.getElementById('adminStats');
+  const list = document.getElementById('adminList');
+  list.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading members...</div></div>';
+  try {
+    const r = await fetch(API + '/api/signals/admin/report').then(r => r.json());
+    if (r.success) {
+      adminData = r;
+      const s = r.stats;
+      stats.innerHTML = `
+        <div style="background:rgba(0,200,83,0.1);border:1px solid rgba(0,200,83,0.3);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:900;color:#00c853">${s.total}</div>
+          <div style="font-size:9px;opacity:0.7">Total Members</div>
+        </div>
+        <div style="background:rgba(0,200,83,0.05);border:1px solid rgba(0,200,83,0.2);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:900;color:#00c853">${s.online}</div>
+          <div style="font-size:9px;opacity:0.7">Online Now</div>
+        </div>
+        <div style="background:rgba(45,142,255,0.1);border:1px solid rgba(45,142,255,0.3);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:900;color:#2d8eff">${s.activeToday}</div>
+          <div style="font-size:9px;opacity:0.7">Active Today</div>
+        </div>
+        <div style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:900;color:#ffd700">${s.postedSignals}</div>
+          <div style="font-size:9px;opacity:0.7">Posted Signals</div>
+        </div>
+      `;
+      renderAdminList();
+    } else {
+      list.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div>';
+    }
+  } catch (e) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Network error</div></div>';
+  }
+}
+
+function renderAdminList() {
+  if (!adminData) return;
+  const list = document.getElementById('adminList');
+  let members = [...adminData.members];
+  if (adminSort === 'joined') members.sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0));
+  else if (adminSort === 'lastSeen') members.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+  else if (adminSort === 'activity') members.sort((a, b) => (b.signalsPosted || 0) - (a.signalsPosted || 0));
+  if (members.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No members yet</div></div>';
+    return;
+  }
+  list.innerHTML = members.map(m => {
+    const lastSeenAgo = m.lastSeen ? Math.floor((Date.now() - m.lastSeen) / 1000) : null;
+    let agoStr = 'never';
+    if (lastSeenAgo !== null) {
+      if (lastSeenAgo < 60) agoStr = lastSeenAgo + 's ago';
+      else if (lastSeenAgo < 3600) agoStr = Math.floor(lastSeenAgo / 60) + 'm ago';
+      else if (lastSeenAgo < 86400) agoStr = Math.floor(lastSeenAgo / 3600) + 'h ago';
+      else agoStr = Math.floor(lastSeenAgo / 86400) + 'd ago';
+    }
+    const dotColor = m.isOnline ? '#00c853' : m.isRecent ? '#ffd700' : '#888';
+    const joined = m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : '?';
+    return `
+      <div class="member-item">
+        <img src="${esc(m.avatar)}" alt="">
+        <div class="member-info">
+          <div class="member-name">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:4px"></span>
+            ${esc(m.name)}
+          </div>
+          <div class="member-meta">
+            📍 ${esc(m.location || 'Unknown')} • ${m.signalsPosted || 0} signals • Joined ${joined}
+          </div>
+        </div>
+        <div class="member-stats">
+          <div class="member-stat-num" style="font-size:12px">${agoStr}</div>
+          <div class="member-stat-lbl">${m.activity ? m.activity.toUpperCase() : 'INACTIVE'}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // ===== INIT =====
