@@ -585,6 +585,408 @@ module.exports = function(app, db, usersCol, notificationsCol) {
     }
   });
 
+  // ============================================================
+  // AI-ASSISTED ONBOARDING WIZARD (Hindi-first)
+  // Step-by-step guided setup for non-tech-savvy dukaandars
+  // ============================================================
+  // AI Chatbot - stateful conversation flow
+  const wizardSessions = {};
+
+  // Start or continue wizard
+  app.post('/api/kirana/wizard/start', async (req, res) => {
+    try {
+      const { sessionId, phone, name } = req.body;
+      if (!sessionId) return res.status(400).json({ error: 'sessionId required' });
+      // Find or create user
+      let user = null;
+      if (phone) user = await usersCol.findOne({ phone: phone });
+      if (!user && name) {
+        const userId = 'u_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+        user = {
+          _id: userId, id: userId,
+          sessionId, name: String(name).trim(),
+          phone: phone || '', role: 'kirana-dukandar',
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=ff6b35&color=fff&bold=true&size=200`,
+          joinedAt: Date.now(), lastSeen: Date.now(),
+          onboardingComplete: false, storeId: null,
+        };
+        await usersCol.insertOne(user);
+      }
+      // Get or create wizard session
+      let wiz = wizardSessions[sessionId];
+      if (!wiz) {
+        wiz = {
+          step: 0, language: 'hi',
+          data: {
+            ownerName: user?.name || name || '',
+            phone: user?.phone || phone || '',
+            storeName: '', ownerPhone: user?.phone || phone || '',
+            address: '', area: '', city: '', pincode: '',
+            deliveryRadius: 3, openTime: '07:00', closeTime: '22:00',
+            productCount: 0, storeId: null,
+          },
+          messages: [],
+          userId: user?.id || null,
+        };
+        wizardSessions[sessionId] = wiz;
+      }
+      // Welcome message
+      const welcomeMsg = {
+        role: 'assistant',
+        text: '🙏 नमस्ते! मैं दैनिकस्टेट किराना सहायक हूँ।\n\nमैं आपकी दुकान को ऑनलाइन लाने में मदद करूँगा।\n\nचलिए शुरू करते हैं! पहला सवाल:\n\n📝 आपकी दुकान का नाम क्या है?\n(जैसे: शर्मा किराना, गुप्ता जनरल स्टोर)',
+        options: null,
+        step: 0,
+      };
+      wiz.messages = [welcomeMsg];
+      wiz.step = 0;
+      res.json({ success: true, wizard: { step: wiz.step, message: welcomeMsg, data: wiz.data } });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Send message to wizard (user reply)
+  app.post('/api/kirana/wizard/message', async (req, res) => {
+    try {
+      const { sessionId, message } = req.body;
+      if (!sessionId || !message) return res.status(400).json({ error: 'sessionId, message required' });
+      const wiz = wizardSessions[sessionId];
+      if (!wiz) return res.status(404).json({ error: 'Wizard not started. Call /wizard/start first' });
+      // Add user message
+      wiz.messages.push({ role: 'user', text: message });
+      // Process based on current step
+      const result = await processWizardStep(wiz, message);
+      res.json({ success: true, response: result, data: wiz.data, complete: wiz.complete || false });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Quick reply / option select
+  app.post('/api/kirana/wizard/option', async (req, res) => {
+    try {
+      const { sessionId, option, value } = req.body;
+      if (!sessionId || !option) return res.status(400).json({ error: 'sessionId, option required' });
+      const wiz = wizardSessions[sessionId];
+      if (!wiz) return res.status(404).json({ error: 'Wizard not started' });
+      wiz.messages.push({ role: 'user', text: option });
+      const result = await processWizardStep(wiz, option, value);
+      res.json({ success: true, response: result, data: wiz.data, complete: wiz.complete || false });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Get wizard state
+  app.get('/api/kirana/wizard/:sessionId', async (req, res) => {
+    const wiz = wizardSessions[req.params.sessionId];
+    if (!wiz) return res.status(404).json({ error: 'Wizard not started' });
+    res.json({ success: true, step: wiz.step, messages: wiz.messages, data: wiz.data, complete: wiz.complete || false });
+  });
+
+  // Process each step of the wizard
+  async function processWizardStep(wiz, userInput, optionValue) {
+    const step = wiz.step;
+    const input = (userInput || '').trim();
+    let response = null;
+    let nextStep = step;
+    let complete = false;
+    switch (step) {
+      case 0:  // Store name
+        if (input.length < 2) {
+          response = { text: '⚠️ कृपया दुकान का सही नाम लिखें (कम से कम 2 अक्षर)', options: null };
+        } else {
+          wiz.data.storeName = input;
+          nextStep = 1;
+          response = {
+            text: '✅ बढ़िया! "' + input + '" एक अच्छा नाम है।\n\n📍 अब अपनी दुकान का पूरा पता बताइए:\n(जैसे: मेन बाजार, हजारीबाग)',
+            options: null,
+          };
+        }
+        break;
+      case 1:  // Address
+        if (input.length < 5) {
+          response = { text: '⚠️ कृपया पूरा पता लिखें', options: null };
+        } else {
+          wiz.data.address = input;
+          nextStep = 2;
+          response = {
+            text: '📝 अब अपना क्षेत्र/मोहल्ला बताइए:\n(जैसे: बस स्टैंड के पास, पुराना बाजार)',
+            options: null,
+          };
+        }
+        break;
+      case 2:  // Area
+        if (input.length < 2) {
+          response = { text: '⚠️ कृपया क्षेत्र का नाम लिखें', options: null };
+        } else {
+          wiz.data.area = input;
+          nextStep = 3;
+          response = {
+            text: '🏙️ अपना शहर बताइए:',
+            options: null,
+          };
+        }
+        break;
+      case 3:  // City
+        if (input.length < 2) {
+          response = { text: '⚠️ कृपया शहर का नाम लिखें', options: null };
+        } else {
+          wiz.data.city = input;
+          nextStep = 4;
+          response = {
+            text: '📮 पिनकोड (6 अंक):',
+            options: null,
+          };
+        }
+        break;
+      case 4:  // Pincode
+        if (!/^\d{6}$/.test(input)) {
+          response = { text: '⚠️ कृपया सही 6 अंकों का पिनकोड लिखें', options: null };
+        } else {
+          wiz.data.pincode = input;
+          nextStep = 5;
+          response = {
+            text: '⏰ आपकी दुकान कब खुलती है? (जैसे: सुबह 7 बजे)',
+            options: ['सुबह 6 बजे', 'सुबह 7 बजे', 'सुबह 8 बजे', 'सुबह 9 बजे', 'सुबह 10 बजे'],
+          };
+        }
+        break;
+      case 5:  // Open time
+        const timeMap = { 'सुबह 6 बजे': '06:00', 'सुबह 7 बजे': '07:00', 'सुबह 8 बजे': '08:00', 'सुबह 9 बजे': '09:00', 'सुबह 10 बजे': '10:00' };
+        wiz.data.openTime = timeMap[input] || input;
+        nextStep = 6;
+        response = {
+          text: '🌙 दुकान कब बंद होती है? (जैसे: रात 10 बजे)',
+          options: ['रात 8 बजे', 'रात 9 बजे', 'रात 10 बजे', 'रात 11 बजे', 'रात 12 बजे'],
+        };
+        break;
+      case 6:  // Close time
+        const closeMap = { 'रात 8 बजे': '20:00', 'रात 9 बजे': '21:00', 'रात 10 बजे': '22:00', 'रात 11 बजे': '23:00', 'रात 12 बजे': '00:00' };
+        wiz.data.closeTime = closeMap[input] || input;
+        nextStep = 7;
+        response = {
+          text: '🚚 कितने किलोमीटर तक आप डिलीवरी कर सकते हैं?\n(अधिकतम दूरी)',
+          options: ['2 km', '3 km', '5 km', '7 km', '10 km'],
+        };
+        break;
+      case 7:  // Delivery radius
+        const radiusMap = { '2 km': 2, '3 km': 3, '5 km': 5, '7 km': 7, '10 km': 10 };
+        wiz.data.deliveryRadius = radiusMap[input] || 5;
+        nextStep = 8;
+        response = {
+          text: '🎉 बहुत बढ़िया! अब मैं आपकी दुकान बना देता हूँ।\n\n⏳ कृपया प्रतीक्षा करें...',
+          options: null,
+        };
+        // Create the store
+        try {
+          const storeId = 'store_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+          const store = {
+            _id: storeId, id: storeId,
+            ownerId: wiz.userId || ('anon_' + Date.now()),
+            ownerName: wiz.data.ownerName || wiz.data.phone || 'Owner',
+            name: wiz.data.storeName,
+            phone: wiz.data.phone,
+            address: wiz.data.address,
+            area: wiz.data.area,
+            city: wiz.data.city,
+            pincode: wiz.data.pincode,
+            lat: 0, lng: 0,
+            deliveryRadius: wiz.data.deliveryRadius,
+            openTime: wiz.data.openTime,
+            closeTime: wiz.data.closeTime,
+            rating: 0, totalOrders: 0, totalReviews: 0,
+            status: 'active',
+            minOrder: 0, deliveryFee: 0,  // FREE delivery!
+            avgDeliveryMins: 25,
+            joinedAt: Date.now(),
+          };
+          await kiranaStoresCol.insertOne(store);
+          wiz.data.storeId = storeId;
+          // Update user with storeId
+          if (wiz.userId) {
+            await usersCol.updateOne({ id: wiz.userId }, { $set: { storeId: storeId, onboardingComplete: true, role: 'kirana-dukandar' } });
+          }
+          nextStep = 9;
+          response = {
+            text: '✅ आपकी दुकान "' + wiz.data.storeName + '" सफलतापूर्वक बन गई! 🎉\n\n📦 अब अगला कदम: अपने पहले उत्पाद जोड़ें!\n\nचलिए कुछ products डालते हैं:',
+            options: ['हाँ, चलिए!', 'बाद में करूँगा'],
+            storeId: storeId,
+            storeName: wiz.data.storeName,
+          };
+        } catch (e) {
+          response = { text: '❌ दुकान बनाने में error: ' + e.message, options: null };
+        }
+        break;
+      case 9:  // Add products?
+        if (input.includes('बाद') || input.includes('नहीं')) {
+          // Skip products, go to dashboard
+          complete = true;
+          response = {
+            text: '✅ ठीक है! बाद में product जोड़ सकते हैं।\n\n🏠 अब आप अपनी दुकान का dashboard देख सकते हैं:\n👉 /kirana-dukandar.html\n\n👤 आपका store ID: ' + wiz.data.storeId,
+            options: null,
+            redirect: '/kirana-dukandar.html',
+          };
+        } else {
+          nextStep = 10;
+          response = {
+            text: '📦 पहले product का नाम बताइए:\n(जैसे: बासमती चावल, सरसों तेल, टूर दाल)',
+            options: null,
+            skipCategory: false,
+          };
+        }
+        break;
+      case 10:  // Product name
+        if (input.length < 2) {
+          response = { text: '⚠️ कृपया product का सही नाम लिखें', options: null };
+        } else {
+          wiz.data.currentProduct = { name: input };
+          nextStep = 11;
+          response = {
+            text: '💰 "' + input + '" की कीमत क्या है? (रुपये में)\nजैसे: 150 (150 रुपये)',
+            options: null,
+          };
+        }
+        break;
+      case 11:  // Price
+        const price = parseFloat(input.replace(/[^\d.]/g, ''));
+        if (isNaN(price) || price <= 0) {
+          response = { text: '⚠️ कृपया सही कीमत लिखें (संख्या में)', options: null };
+        } else {
+          wiz.data.currentProduct.price = price;
+          // Auto-suggest MRP (1.2x price)
+          wiz.data.currentProduct.mrp = Math.round(price * 1.2);
+          nextStep = 12;
+          response = {
+            text: '📏 कितना weight/size है? (जैसे: 1 kg, 5 लीटर, 1 dozen)',
+            options: ['1 kg', '5 kg', '1 लीटर', '1 dozen', '500 ग्राम', '100 ग्राम'],
+          };
+        }
+        break;
+      case 12:  // Unit
+        wiz.data.currentProduct.unit = input;
+        nextStep = 13;
+        response = {
+          text: '🏷️ कौन सा category?',
+          options: ['🍚 चावल/आटा', '🫘 दाल/दलहन', '🛢️ तेल/घी', '🌶️ मसाले', '🥛 डेयरी', '🥬 सब्जियां', '🍎 फल', '🥤 पेय पदार्थ', '🧹 घरेलू सामान', '🍪 नाश्ता/बिस्किट'],
+        };
+        break;
+      case 13:  // Category - map Hindi to IDs
+        const catMap = {
+          '🍚 चावल/आटा': 'cat_001', '🫘 दाल/दलहन': 'cat_002', '🛢️ तेल/घी': 'cat_003',
+          '🌶️ मसाले': 'cat_004', '🥛 डेयरी': 'cat_005', '🥬 सब्जियां': 'cat_006',
+          '🍎 फल': 'cat_007', '🥤 पेय पदार्थ': 'cat_008', '🧹 घरेलू सामान': 'cat_009',
+          '🍪 नाश्ता/बिस्किट': 'cat_011',
+        };
+        wiz.data.currentProduct.category = catMap[input] || 'cat_011';
+        nextStep = 14;
+        response = {
+          text: '📊 कितना stock है? (कितने pieces available हैं)',
+          options: ['10', '25', '50', '100', '200+'],
+        };
+        break;
+      case 14:  // Stock
+        const stock = parseInt(input) || 10;
+        wiz.data.currentProduct.stock = stock;
+        // Save product
+        try {
+          const productId = 'prod_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+          const product = {
+            _id: productId, id: productId,
+            storeId: wiz.data.storeId,
+            storeName: wiz.data.storeName,
+            storeArea: wiz.data.area,
+            name: wiz.data.currentProduct.name,
+            category: wiz.data.currentProduct.category,
+            unit: wiz.data.currentProduct.unit,
+            price: wiz.data.currentProduct.price,
+            mrp: wiz.data.currentProduct.mrp,
+            stock: stock,
+            image: '',
+            tags: [],
+            description: '',
+            competitors: {
+              amazon: wiz.data.currentProduct.price * 1.25,
+              flipkart: wiz.data.currentProduct.price * 1.22,
+              jiomart: wiz.data.currentProduct.price * 1.18,
+              bigbasket: wiz.data.currentProduct.price * 1.15,
+            },
+            rating: 0, totalSold: 0,
+            status: 'active',
+            createdAt: Date.now(),
+          };
+          await kiranaProductsCol.insertOne(product);
+          wiz.data.productCount = (wiz.data.productCount || 0) + 1;
+          nextStep = 9;  // Back to "add more?"
+          response = {
+            text: '✅ "' + product.name + '" सफलतापूर्वक जोड़ा गया! 🎉\n\n📦 क्या और product जोड़ना है?',
+            options: ['हाँ, एक और!', 'नहीं, बस इतना काफी है'],
+            productAdded: product.name,
+          };
+        } catch (e) {
+          response = { text: '❌ Product जोड़ने में error: ' + e.message, options: null };
+        }
+        break;
+    }
+    wiz.step = nextStep;
+    wiz.messages.push({ role: 'assistant', text: response.text });
+    return response;
+  }
+
+  // ============================================================
+  // ORDERS (Dukandar view)
+  // ============================================================
+  // Get orders for a specific store (for dukandar dashboard)
+  app.get('/api/kirana/store/:storeId/orders', async (req, res) => {
+    try {
+      const { status, limit } = req.query;
+      const query = { storeId: req.params.storeId };
+      if (status) query.status = status;
+      const lim = Math.min(parseInt(limit) || 50, 200);
+      const orders = await kiranaOrdersCol.find(query).sort({ createdAt: -1 }).limit(lim).toArray();
+      res.json({ success: true, count: orders.length, orders: orders.map(o => { const { _id, ...r } = o; return r; }) });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Update order (for delivery tracking)
+  app.put('/api/kirana/orders/:id/delivery', async (req, res) => {
+    try {
+      const { status, deliveryNotes, otp } = req.body;
+      const order = await kiranaOrdersCol.findOne({ id: req.params.id });
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+      const update = { status, updatedAt: Date.now() };
+      const statusHistory = order.statusHistory || [];
+      statusHistory.push({ status, at: Date.now(), notes: deliveryNotes || '', otp: otp || '' });
+      update.statusHistory = statusHistory;
+      if (status === 'delivered') {
+        update.deliveredAt = Date.now();
+        update.deliveryOtp = otp;
+      }
+      if (status === 'cancelled') {
+        update.cancelledAt = Date.now();
+        update.cancellationReason = deliveryNotes || '';
+      }
+      await kiranaOrdersCol.updateOne({ id: req.params.id }, { $set: update });
+      // Notify customer
+      await notificationsCol.insertOne({
+        _id: 'n_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+        id: 'n_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+        userId: order.customerId,
+        type: 'order_update',
+        targetType: 'order',
+        targetId: order.id,
+        message: '📦 Order #' + order.id.slice(-6) + ': ' + status.replace('_', ' ').toUpperCase(),
+        read: false,
+        createdAt: Date.now(),
+      });
+      res.json({ success: true, status });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Initialize
   connectDB_kirana().catch(e => console.error('Kirana init error:', e.message));
 };
