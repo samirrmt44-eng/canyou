@@ -1200,7 +1200,8 @@ app.post('/api/calls/initiate', async (req, res) => {
   // Create unique room ID
   const callId = 'ds-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex');
   const jitsiRoom = `dainikstate-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
-  const jitsiUrl = `https://meet.jit.si/${jitsiRoom}`;
+  // Use 8x8.vc (no login popup, free public Jitsi instance) instead of meet.jit.si
+  const jitsiUrl = `https://8x8.vc/${jitsiRoom}`;
 
   // Get callee info (for 1-on-1 calls)
   let calleeName = 'User';
