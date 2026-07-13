@@ -43,6 +43,15 @@ try {
   console.error('⚠️ Trading signals module not found (will skip):', e.message);
 }
 
+// Initialize Kirana Express Module
+let kiranaModule = null;
+try {
+  kiranaModule = require('./kirana.js');
+  console.log('🛒 Kirana module file loaded');
+} catch (e) {
+  console.error('⚠️ Kirana module file not found (will skip):', e.message);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -2271,6 +2280,15 @@ connectDB().then(async () => {
       console.log('📈 Trading Signals initialized!');
     } catch (e) {
       console.error('⚠️ Trading signals init error:', e.message);
+    }
+  }
+  // Initialize Kirana Express (needs DB + notifications)
+  if (kiranaModule) {
+    try {
+      kiranaModule(app, db, usersCol, notificationsCol);
+      console.log('🛒 Kirana Express initialized!');
+    } catch (e) {
+      console.error('⚠️ Kirana init error:', e.message);
     }
   }
   setInterval(async () => {
