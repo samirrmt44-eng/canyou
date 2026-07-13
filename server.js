@@ -44,12 +44,12 @@ try {
 }
 
 // Initialize Kirana Express Module
-let kiranaModule = null;
+let localBazarModule = null;
 try {
-  kiranaModule = require('./kirana.js');
-  console.log('🛒 Kirana module file loaded');
+  localBazarModule = require('./localbazar.js');
+  console.log('🛒 Local Bazar module file loaded');
 } catch (e) {
-  console.error('⚠️ Kirana module file not found (will skip):', e.message);
+  console.error('⚠️ Local Bazar module file not found (will skip):', e.message);
 }
 
 const app = express();
@@ -2282,13 +2282,13 @@ connectDB().then(async () => {
       console.error('⚠️ Trading signals init error:', e.message);
     }
   }
-  // Initialize Kirana Express (needs DB + notifications)
-  if (kiranaModule) {
+  // Initialize Local Bazar (needs DB + notifications)
+  if (localBazarModule) {
     try {
-      kiranaModule(app, db, usersCol, notificationsCol);
-      console.log('🛒 Kirana Express initialized!');
+      localBazarModule(app, db, usersCol, notificationsCol);
+      console.log('🛒 Local Bazar initialized!');
     } catch (e) {
-      console.error('⚠️ Kirana init error:', e.message);
+      console.error('⚠️ Local Bazar init error:', e.message);
     }
   }
   setInterval(async () => {
