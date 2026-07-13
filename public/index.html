@@ -3748,30 +3748,32 @@ async function startCall(type, targetUserId, groupId = null) {
   }, 1000);
 }
 
-// Open Jitsi iframe modal
-function openJitsiCall(jitsiUrl, title, callId) {
-  const modal = document.getElementById('jitsiCallModal');
-  const frame = document.getElementById('jitsiFrame');
-  document.getElementById('jitsiCallTitle').textContent = '📞 ' + (title || 'Call');
-  // Add user display name as Jitsi prejoin config
-  const userName = currentUser?.name || 'Guest';
-  // Use 8x8.vc (no login popup) with guest mode + auto-join
-  // Convert meet.jit.si URL to 8x8.vc for seamless experience
-  let finalUrl = jitsiUrl;
-  // Multiple fallback hosts + config to disable ALL popups
+// Helper: Convert any Jitsi URL to 8x8.vc (no login popup) with all config to skip prejoin
+function convertToNoLoginJitsi(originalUrl, userName, callType) {
+  // Extract room name from URL
+  let roomName = '';
+  try {
+    // URL format: https://meet.jit.si/ROOM_NAME or https://8x8.vc/ROOM_NAME
+    const url = new URL(originalUrl);
+    roomName = url.pathname.replace(/^\//, '').split('?')[0].split('#')[0];
+  } catch (e) {
+    // Fallback: split by /
+    roomName = originalUrl.split('/').pop().split('?')[0].split('#')[0];
+  }
+  if (!roomName) roomName = 'dainikstate-call-' + Date.now();
+  // All Jitsi config params to skip login, prejoin, app prompts
   const configParams = new URLSearchParams({
     'userInfo.displayName': userName,
-    'config.prejoinPageEnabled': 'false',          // Skip prejoin page
-    'config.startWithAudioMuted': 'true',          // Start muted
-    'config.startWithVideoMuted': jitsiCall?.type === 'voice' ? 'true' : 'false',
-    'config.requireDisplayName': 'false',          // No name required
-    'config.enableWelcomePage': 'false',           // No welcome page
-    'config.disableDeepLinking': 'true',           // No app redirect
-    'config.deeplinking.disabled': 'true',         // No mobile app prompt
+    'config.prejoinPageEnabled': 'false',
+    'config.startWithAudioMuted': 'true',
+    'config.startWithVideoMuted': callType === 'voice' ? 'true' : 'false',
+    'config.requireDisplayName': 'false',
+    'config.enableWelcomePage': 'false',
+    'config.disableDeepLinking': 'true',
+    'config.deeplinking.disabled': 'true',
     'config.callDisplayName': 'DainikState Call',
     'config.subject': 'DainikState Call',
-    'config.hideConferenceSubject': 'false',
-    'config.toolbarButtons': '["microphone","camera","desktop","fullscreen","hangup","chat","tileview"]',
+    'config.toolbarButtons': '["microphone","camera","desktop","fullscreen","hangup","chat"]',
     'config.showWatermark': 'false',
     'config.showBrandWatermark': 'false',
     'config.defaultRemoteDisplayName': 'DainikState User',
@@ -3782,31 +3784,10 @@ function openJitsiCall(jitsiUrl, title, callId) {
     'interfaceConfig.SHOW_CHROME_EXTENSION_BANNER': 'false',
     'interfaceConfig.HIDE_DEEP_LINKING_LOGO': 'true',
     'interfaceConfig.LANG_DETECTION': 'en',
+    'interfaceConfig.DEFAULT_BACKGROUND': '#0a0e1a',
   }).toString();
-  // Try multiple Jitsi-compatible servers (fallback chain)
-  // 1. 8x8.vc (no login popup, free)
-  // 2. jitsi.org (alternative)
-  // 3. meet.jit.si (original, may show login)
-  if (jitsiUrl.includes('meet.jit.si')) {
-    const roomName = jitsiUrl.split('/').pop();
-    // Primary: 8x8.vc (NO login popup)
-    finalUrl = `https://8x8.vc/${roomName}#${configParams}`;
-  } else {
-    finalUrl = `${jitsiUrl}#${configParams}`;
-  }
-  frame.src = finalUrl;
-  modal.classList.add('show');
-  document.body.style.overflow = 'hidden';
-  // Start timer
-  jitsiCallStartTime = Date.now();
-  if (jitsiCallTimerInterval) clearInterval(jitsiCallTimerInterval);
-  jitsiCallTimerInterval = setInterval(() => {
-    const seconds = Math.floor((Date.now() - jitsiCallStartTime) / 1000);
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const s = (seconds % 60).toString().padStart(2, '0');
-    const timerEl = document.getElementById('jitsiCallTimer');
-    if (timerEl) timerEl.textContent = `${m}:${s}`;
-  }, 1000);
+  // Always use 8x8.vc (no login popup, free, public Jitsi)
+  return `https://8x8.vc/${roomName}#${configParams}`;
 }
 
 function minimizeJitsiCall() {
