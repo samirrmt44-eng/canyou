@@ -72,7 +72,7 @@ module.exports = function(app, db, usersCol, notificationsCol) {
     // Map keywords to categories
     const keywordMap = {
       // Grocery
-      'चावल': 'cat_grocery_rice', 'rice': 'cat_grocery_rice', 'आटा': 'cat_grocery_rice', 'atta': 'cat_grocery_rice', 'wheat': 'cat_grocery_rice', 'दाल': 'cat_grocery_rice', 'dal': 'cat_grocery_rice', 'बेसन': 'cat_grocery_rice',
+      'चावल': 'cat_grocery_rice', 'चाव': 'cat_grocery_rice', 'rice': 'cat_grocery_rice', 'basmati': 'cat_grocery_rice', 'आटा': 'cat_grocery_rice', 'atta': 'cat_grocery_rice', 'wheat': 'cat_grocery_rice', 'दाल': 'cat_grocery_rice', 'dal': 'cat_grocery_rice', 'बेसन': 'cat_grocery_rice',
       'तेल': 'cat_grocery_oil', 'oil': 'cat_grocery_oil', 'मसाला': 'cat_grocery_oil', 'masala': 'cat_grocery_oil', 'मिर्च': 'cat_grocery_oil', 'हल्दी': 'cat_grocery_oil', 'चीनी': 'cat_grocery_oil', 'sugar': 'cat_grocery_oil', 'नमक': 'cat_grocery_oil', 'salt': 'cat_grocery_oil',
       'बिस्किट': 'cat_grocery_snacks', 'biscuit': 'cat_grocery_snacks', 'नूडल्स': 'cat_grocery_snacks', 'noodles': 'cat_grocery_snacks', 'maggi': 'cat_grocery_snacks', 'चिप्स': 'cat_grocery_snacks', 'chips': 'cat_grocery_snacks', 'नमकीन': 'cat_grocery_snacks',
       'कोल्ड': 'cat_grocery_beverages', 'cold': 'cat_grocery_beverages', 'ड्रिंक': 'cat_grocery_beverages', 'drink': 'cat_grocery_beverages', 'coke': 'cat_grocery_beverages', 'pepsi': 'cat_grocery_beverages', 'fanta': 'cat_grocery_beverages', 'juice': 'cat_grocery_beverages', 'रस': 'cat_grocery_beverages', 'पानी': 'cat_grocery_beverages', 'water': 'cat_grocery_beverages',
@@ -89,7 +89,7 @@ module.exports = function(app, db, usersCol, notificationsCol) {
       'हार्डवेयर': 'cat_home_hardware', 'hardware': 'cat_home_hardware', 'पाइप': 'cat_home_hardware', 'pipe': 'cat_home_hardware', 'नट': 'cat_home_hardware', 'बोल्ट': 'cat_home_hardware', 'हथौड़ा': 'cat_home_hardware', 'hammer': 'cat_home_hardware',
       // Personal
       'शैम्पू': 'cat_personal_care', 'shampoo': 'cat_personal_care', 'क्रीम': 'cat_personal_care', 'cream': 'cat_personal_care', 'परफ्यूम': 'cat_personal_care', 'perfume': 'cat_personal_care', 'तौलिया': 'cat_personal_care', 'toothbrush': 'cat_personal_care',
-      'दवाई': 'cat_personal_health', 'medicine': 'cat_personal_health', 'tablet': 'cat_personal_health', 'गोली': 'cat_personal_health', 'syrup': 'cat_personal_health', 'कैप्सूल': 'cat_personal_health', 'first': 'cat_personal_health', 'aid': 'cat_personal_health',
+      'दवाई': 'cat_personal_health', 'दवा': 'cat_personal_health', 'medicine': 'cat_personal_health', 'paracetamol': 'cat_personal_health', 'crocin': 'cat_personal_health', 'dolo': 'cat_personal_health', 'aspirin': 'cat_personal_health', 'tablet': 'cat_personal_health', 'capsule': 'cat_personal_health', 'injection': 'cat_personal_health', 'syrup': 'cat_personal_health', 'tablet': 'cat_personal_health', 'गोली': 'cat_personal_health', 'syrup': 'cat_personal_health', 'कैप्सूल': 'cat_personal_health', 'first': 'cat_personal_health', 'aid': 'cat_personal_health',
       // Fashion
       'कपड़ा': 'cat_fashion_clothes', 'कपड़े': 'cat_fashion_clothes', 'cloth': 'cat_fashion_clothes', 'शर्ट': 'cat_fashion_clothes', 'shirt': 'cat_fashion_clothes', 'पैंट': 'cat_fashion_clothes', 'pant': 'cat_fashion_clothes', 'साड़ी': 'cat_fashion_clothes', 'saree': 'cat_fashion_clothes', 'कुर्ता': 'cat_fashion_clothes', 't-shirt': 'cat_fashion_clothes',
       'जूता': 'cat_fashion_footwear', 'shoe': 'cat_fashion_footwear', 'चप्पल': 'cat_fashion_footwear', 'sandal': 'cat_fashion_footwear', 'सैंडल': 'cat_fashion_footwear',
