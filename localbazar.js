@@ -196,6 +196,41 @@ module.exports = function(app, db, usersCol, notificationsCol) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // Admin: reset categories to latest (24 categories)
+  app.post('/api/localbazar/reset-categories', async (req, res) => {
+    try {
+      await localbazarCategoriesCol.deleteMany({});
+      const categories = [
+        { id: 'cat_grocery_rice', name: '🍚 चावल / आटा / दाल', group: 'grocery', order: 1 },
+        { id: 'cat_grocery_oil', name: '🛢️ तेल / मसाले / चीनी', group: 'grocery', order: 2 },
+        { id: 'cat_grocery_snacks', name: '🍪 नाश्ता / बिस्किट / नूडल्स', group: 'grocery', order: 3 },
+        { id: 'cat_grocery_beverages', name: '🥤 पेय पदार्थ / कोल्ड ड्रिंक', group: 'grocery', order: 4 },
+        { id: 'cat_grocery_dairy', name: '🥛 डेयरी / ब्रेड / अंडे', group: 'grocery', order: 5 },
+        { id: 'cat_grocery_dryfruits', name: '🥜 मेवे / ड्राई फ्रूट्स', group: 'grocery', order: 6 },
+        { id: 'cat_fresh_vegetables', name: '🥬 सब्जियां (ताज़ा)', group: 'fresh', order: 7 },
+        { id: 'cat_fresh_fruits', name: '🍎 फल (ताज़ा)', group: 'fresh', order: 8 },
+        { id: 'cat_fresh_flowers', name: '💐 फूल / पूजा सामग्री', group: 'fresh', order: 9 },
+        { id: 'cat_home_cleaning', name: '🧹 सफाई / घरेलू सामान', group: 'home', order: 10 },
+        { id: 'cat_home_kitchen', name: '🍳 किचन / बर्तन / कुकवेयर', group: 'home', order: 11 },
+        { id: 'cat_home_electronics', name: '🔌 इलेक्ट्रॉनिक्स / बिजली सामान', group: 'home', order: 12 },
+        { id: 'cat_home_hardware', name: '🔧 हार्डवेयर / पाइप / नट बोल्ट', group: 'home', order: 13 },
+        { id: 'cat_personal_care', name: '🧴 साबुन / शैम्पू / कॉस्मेटिक', group: 'personal', order: 14 },
+        { id: 'cat_personal_health', name: '💊 दवाई / स्वास्थ्य सामान', group: 'personal', order: 15 },
+        { id: 'cat_fashion_clothes', name: '👕 कपड़े / साड़ी / कुर्ता', group: 'fashion', order: 16 },
+        { id: 'cat_fashion_footwear', name: '👟 जूते / चप्पल / सैंडल', group: 'fashion', order: 17 },
+        { id: 'cat_fashion_accessories', name: '👜 बैग / बेल्ट / घड़ी / गहने', group: 'fashion', order: 18 },
+        { id: 'cat_baby', name: '🍼 बच्चों के सामान (डायपर/फीड)', group: 'family', order: 19 },
+        { id: 'cat_pet', name: '🐕 पालतू जानवर सामान', group: 'family', order: 20 },
+        { id: 'cat_stationery', name: '✏️ स्टेशनरी / किताबें', group: 'family', order: 21 },
+        { id: 'cat_services_photo', name: '📸 फोटो / फ्रेमिंग', group: 'services', order: 22 },
+        { id: 'cat_services_repair', name: '🛠️ रिपेयर सामान / पुर्जे', group: 'services', order: 23 },
+        { id: 'cat_services_others', name: '📦 अन्य सामान', group: 'services', order: 24 },
+      ];
+      await localbazarCategoriesCol.insertMany(categories);
+      res.json({ success: true, count: categories.length });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   // Products
   app.post('/api/localbazar/products', async (req, res) => {
     try {
