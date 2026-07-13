@@ -1162,8 +1162,473 @@ app.get('/api/groups/:groupId/members', async (req, res) => {
 });
 
 // ============================================================
-// JITSI CALL INTEGRATION
+// BUSINESS SUITE - School/Kirana/Medical/Restaurant
 // ============================================================
+// Empowers small businesses with FREE digital tools
+// to compete with big e-commerce players
+// ============================================================
+
+let businessesCol, studentsCol, feesCol, attendanceCol, resultsCol;
+let homeworkCol, businessChatCol, onlineClassesCol, announcementsCol;
+
+async function connectDB_business() {
+  businessesCol = db.collection('businesses');
+  studentsCol = db.collection('students');
+  feesCol = db.collection('fees');
+  attendanceCol = db.collection('attendance');
+  resultsCol = db.collection('results');
+  homeworkCol = db.collection('homework');
+  businessChatCol = db.collection('businessChat');
+  onlineClassesCol = db.collection('onlineClasses');
+  announcementsCol = db.collection('announcements');
+  // Indexes
+  await businessesCol.createIndex({ ownerId: 1 });
+  await businessesCol.createIndex({ slug: 1 }, { unique: true });
+  await studentsCol.createIndex({ businessId: 1, studentId: 1 }, { unique: true });
+  await studentsCol.createIndex({ parentId: 1 });
+  await feesCol.createIndex({ businessId: 1, studentId: 1 });
+  await attendanceCol.createIndex({ businessId: 1, date: 1 });
+  await resultsCol.createIndex({ businessId: 1, studentId: 1 });
+  await businessChatCol.createIndex({ businessId: 1, createdAt: 1 });
+}
+
+// Register a new business (school, kirana, etc.)
+app.post('/api/business/register', async (req, res) => {
+  const { ownerId, type, name, slug, address, city, state, phone, email, logo, details } = req.body;
+  if (!ownerId || !type || !name || !slug) return res.status(400).json({ error: 'ownerId, type, name, slug required' });
+  if (!businessesCol) return res.status(503).json({ error: 'DB not ready' });
+  const business = {
+    _id: 'biz_' + crypto.randomBytes(6).toString('hex'),
+    id: 'biz_' + crypto.randomBytes(6).toString('hex'),
+    ownerId, type,  // 'school' | 'kirana' | 'medical' | 'restaurant' | 'coaching' | 'tutor'
+    name, slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+    address, city, state, phone, email, logo,
+    details: details || {},  // business-specific info
+    verified: false, featured: false,
+    rating: 0, reviewCount: 0,
+    studentCount: 0,  // for schools
+    productCount: 0,  // for shops
+    createdAt: Date.now(),
+    subscription: 'free',  // 'free' | 'pro' | 'enterprise'
+  };
+  try {
+    await businessesCol.insertOne(business);
+    // Update owner user
+    await usersCol.updateOne({ id: ownerId }, { $set: { businessId: business.id, businessRole: 'owner' } });
+    res.json({ success: true, business });
+  } catch (e) {
+    if (e.code === 11000) return res.status(400).json({ error: 'Slug already taken' });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Get business by slug
+app.get('/api/business/:slug', async (req, res) => {
+  if (!businessesCol) return res.status(503).json({ error: 'DB not ready' });
+  const business = await businessesCol.findOne({ slug: req.params.slug });
+  if (!business) return res.status(404).json({ error: 'Business not found' });
+  const { _id, ...result } = business;
+  res.json({ success: true, business: result });
+});
+
+// Get businesses by owner
+app.get('/api/business/owner/:ownerId', async (req, res) => {
+  if (!businessesCol) return res.status(503).json({ error: 'DB not ready' });
+  const businesses = await businessesCol.find({ ownerId: req.params.ownerId }).toArray();
+  res.json({ success: true, businesses: businesses.map(b => { const { _id, ...r } = b; return r; }) });
+});
+
+// Update business
+app.post('/api/business/:businessId/update', async (req, res) => {
+  const { ownerId, ...updates } = req.body;
+  if (!businessesCol) return res.status(503).json({ error: 'DB not ready' });
+  const business = await businessesCol.findOne({ id: req.params.businessId });
+  if (!business) return res.status(404).json({ error: 'Business not found' });
+  if (business.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+  const allowed = ['name', 'address', 'city', 'state', 'phone', 'email', 'logo', 'details'];
+  const update = {};
+  for (const k of allowed) if (updates[k] !== undefined) update[k] = updates[k];
+  await businessesCol.updateOne({ id: req.params.businessId }, { $set: update });
+  res.json({ success: true });
+});
+
+// List all businesses (discover)
+app.get('/api/businesses', async (req, res) => {
+  if (!businessesCol) return res.status(503).json({ error: 'DB not ready' });
+  const { type, city, search, limit } = req.query;
+  const query = {};
+  if (type) query.type = type;
+  if (city) query.city = { $regex: city, $options: 'i' };
+  if (search) query.name = { $regex: search, $options: 'i' };
+  const lim = parseInt(limit) || 30;
+  const businesses = await businessesCol.find(query).sort({ createdAt: -1 }).limit(lim).toArray();
+  res.json({ success: true, businesses: businesses.map(b => { const { _id, ...r } = b; return r; }) });
+});
+
+// ============================================================
+// STUDENT ADMISSION (Schools/Coaching)
+// ============================================================
+app.post('/api/business/:businessId/students/admit', async (req, res) => {
+  const { ownerId, name, parentName, parentPhone, parentEmail, className, section, dob, address, photo, documents } = req.body;
+  if (!studentsCol) return res.status(503).json({ error: 'DB not ready' });
+  if (!ownerId || !name || !parentPhone) return res.status(400).json({ error: 'Missing fields' });
+  const business = await businessesCol.findOne({ id: req.params.businessId });
+  if (!business) return res.status(404).json({ error: 'Business not found' });
+  if (business.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+  // Generate student ID
+  const studentId = 'stu_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+  const student = {
+    _id: studentId, id: studentId,
+    businessId: business.id, studentId,
+    name, parentName, parentPhone, parentEmail,
+    className: className || '1', section: section || 'A',
+    dob, address, photo: photo || null,
+    documents: documents || [],  // URLs
+    admissionDate: Date.now(),
+    status: 'active',  // 'active' | 'inactive' | 'graduated'
+    rollNumber: null,
+  };
+  await studentsCol.insertOne(student);
+  // Try to link parent user
+  let parentUser = await usersCol.findOne({ name: parentName });
+  if (parentUser) {
+    await studentsCol.updateOne({ id: studentId }, { $set: { parentId: parentUser.id } });
+    student.parentId = parentUser.id;
+  }
+  // Update business student count
+  await businessesCol.updateOne({ id: business.id }, { $inc: { studentCount: 1 } });
+  res.json({ success: true, student });
+});
+
+// Get all students of a business
+app.get('/api/business/:businessId/students', async (req, res) => {
+  if (!studentsCol) return res.status(503).json({ error: 'DB not ready' });
+  const { className, parentId } = req.query;
+  const query = { businessId: req.params.businessId, status: 'active' };
+  if (className) query.className = className;
+  if (parentId) query.parentId = parentId;
+  const students = await studentsCol.find(query).sort({ className: 1, rollNumber: 1, name: 1 }).toArray();
+  res.json({ success: true, students: students.map(s => { const { _id, ...r } = s; return r; }) });
+});
+
+// Get student's parent (for parent dashboard)
+app.get('/api/student/:studentId', async (req, res) => {
+  if (!studentsCol) return res.status(503).json({ error: 'DB not ready' });
+  const student = await studentsCol.findOne({ id: req.params.studentId });
+  if (!student) return res.status(404).json({ error: 'Student not found' });
+  const { _id, ...result } = student;
+  res.json({ success: true, student: result });
+});
+
+// ============================================================
+// FEE MANAGEMENT
+// ============================================================
+app.post('/api/business/:businessId/fees/collect', async (req, res) => {
+  const { studentId, amount, type, month, year, paymentMethod, transactionId, ownerId } = req.body;
+  if (!feesCol) return res.status(503).json({ error: 'DB not ready' });
+  const business = await businessesCol.findOne({ id: req.params.businessId });
+  if (!business) return res.status(404).json({ error: 'Business not found' });
+  if (business.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+  const student = await studentsCol.findOne({ id: studentId, businessId: business.id });
+  if (!student) return res.status(404).json({ error: 'Student not found' });
+  const feeId = 'fee_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+  const fee = {
+    _id: feeId, id: feeId,
+    businessId: business.id, studentId, studentName: student.name,
+    className: student.className,
+    amount: parseFloat(amount),
+    type: type || 'tuition',  // 'tuition' | 'exam' | 'transport' | 'books' | 'other'
+    month, year,
+    paymentMethod: paymentMethod || 'upi',  // 'upi' | 'cash' | 'card' | 'bank'
+    transactionId: transactionId || null,
+    receiptNo: 'RCP' + Date.now().toString().slice(-6),
+    status: 'paid',
+    collectedAt: Date.now(),
+    collectedBy: ownerId,
+  };
+  await feesCol.insertOne(fee);
+  // Notify parent
+  if (student.parentId) {
+    await notificationsCol.insertOne({
+      _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+      id: undefined, userId: student.parentId,
+      type: 'fee_paid', from: ownerId, targetType: 'fee', targetId: feeId,
+      message: `✅ Fee ₹${amount} received for ${student.name} (${type}${month ? ' - ' + month : ''})`,
+      read: false, createdAt: Date.now(),
+    });
+  }
+  const { _id, ...result } = fee;
+  res.json({ success: true, fee: result });
+});
+
+// Get fee records for a student
+app.get('/api/student/:studentId/fees', async (req, res) => {
+  if (!feesCol) return res.status(503).json({ error: 'DB not ready' });
+  const fees = await feesCol.find({ studentId: req.params.studentId }).sort({ collectedAt: -1 }).toArray();
+  // Calculate total
+  const totalPaid = fees.reduce((s, f) => s + (f.amount || 0), 0);
+  res.json({ success: true, totalPaid, fees: fees.map(f => { const { _id, ...r } = f; return r; }) });
+});
+
+// Get all fees for business (admin view)
+app.get('/api/business/:businessId/fees', async (req, res) => {
+  if (!feesCol) return res.status(503).json({ error: 'DB not ready' });
+  const { startDate, endDate } = req.query;
+  const query = { businessId: req.params.businessId };
+  if (startDate) query.collectedAt = { $gte: parseInt(startDate) };
+  if (endDate) { query.collectedAt = query.collectedAt || {}; query.collectedAt.$lte = parseInt(endDate); }
+  const fees = await feesCol.find(query).sort({ collectedAt: -1 }).limit(500).toArray();
+  const total = fees.reduce((s, f) => s + (f.amount || 0), 0);
+  res.json({ success: true, total, count: fees.length, fees: fees.map(f => { const { _id, ...r } = f; return r; }) });
+});
+
+// ============================================================
+// ATTENDANCE
+// ============================================================
+app.post('/api/business/:businessId/attendance', async (req, res) => {
+  const { ownerId, date, records } = req.body;
+  // records: [{ studentId, status: 'present'|'absent'|'late' }]
+  if (!attendanceCol) return res.status(503).json({ error: 'DB not ready' });
+  if (!ownerId || !date || !records) return res.status(400).json({ error: 'Missing fields' });
+  const business = await businessesCol.findOne({ id: req.params.businessId });
+  if (!business) return res.status(404).json({ error: 'Business not found' });
+  if (business.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+  // Upsert each record
+  for (const r of records) {
+    await attendanceCol.updateOne(
+      { businessId: business.id, studentId: r.studentId, date },
+      { $set: { businessId: business.id, studentId: r.studentId, date, status: r.status, markedBy: ownerId, markedAt: Date.now() } },
+      { upsert: true }
+    );
+    // Notify parent if absent
+    if (r.status === 'absent') {
+      const student = await studentsCol.findOne({ id: r.studentId });
+      if (student?.parentId) {
+        await notificationsCol.insertOne({
+          _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+          id: undefined, userId: student.parentId,
+          type: 'attendance', from: ownerId, targetType: 'student', targetId: r.studentId,
+          message: `⚠️ ${student.name} was absent on ${date}`,
+          read: false, createdAt: Date.now(),
+        });
+      }
+    }
+  }
+  res.json({ success: true, count: records.length });
+});
+
+// Get attendance for a student
+app.get('/api/student/:studentId/attendance', async (req, res) => {
+  if (!attendanceCol) return res.status(503).json({ error: 'DB not ready' });
+  const { month, year } = req.query;
+  const query = { studentId: req.params.studentId };
+  if (month && year) {
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+    query.date = { $gte: startDate, $lte: endDate };
+  }
+  const records = await attendanceCol.find(query).sort({ date: -1 }).limit(100).toArray();
+  const stats = {
+    total: records.length,
+    present: records.filter(r => r.status === 'present').length,
+    absent: records.filter(r => r.status === 'absent').length,
+    late: records.filter(r => r.status === 'late').length,
+  };
+  stats.percentage = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
+  res.json({ success: true, stats, records: records.map(r => { const { _id, ...x } = r; return x; }) });
+});
+
+// ============================================================
+// RESULTS / REPORT CARDS
+// ============================================================
+app.post('/api/business/:businessId/results', async (req, res) => {
+  const { ownerId, studentId, className, examName, subjects } = req.body;
+  // subjects: [{ name, marksObtained, maxMarks }]
+  if (!resultsCol) return res.status(503).json({ error: 'DB not ready' });
+  const business = await businessesCol.findOne({ id: req.params.businessId });
+  if (!business) return res.status(404).json({ error: 'Business not found' });
+  if (business.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+  // Calculate total, percentage, grade
+  const totalMarks = subjects.reduce((s, x) => s + (x.marksObtained || 0), 0);
+  const maxTotal = subjects.reduce((s, x) => s + (x.maxMarks || 100), 0);
+  const percentage = maxTotal > 0 ? Math.round((totalMarks / maxTotal) * 100 * 100) / 100 : 0;
+  let grade = 'F';
+  if (percentage >= 90) grade = 'A+';
+  else if (percentage >= 80) grade = 'A';
+  else if (percentage >= 70) grade = 'B+';
+  else if (percentage >= 60) grade = 'B';
+  else if (percentage >= 50) grade = 'C';
+  else if (percentage >= 40) grade = 'D';
+  const resultId = 'res_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+  const result = {
+    _id: resultId, id: resultId,
+    businessId: business.id, studentId, className,
+    examName: examName || 'Final Exam', subjects,
+    totalMarks, maxTotal, percentage, grade,
+    publishedAt: Date.now(),
+    publishedBy: ownerId,
+  };
+  await resultsCol.insertOne(result);
+  // Notify parent
+  const student = await studentsCol.findOne({ id: studentId });
+  if (student?.parentId) {
+    await notificationsCol.insertOne({
+      _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+      id: undefined, userId: student.parentId,
+      type: 'result', from: ownerId, targetType: 'result', targetId: resultId,
+      message: `📊 ${examName} result published for ${student.name}: ${percentage}% (${grade})`,
+      read: false, createdAt: Date.now(),
+    });
+  }
+  const { _id, ...result2 } = result;
+  res.json({ success: true, result: result2 });
+});
+
+// Get results for a student
+app.get('/api/student/:studentId/results', async (req, res) => {
+  if (!resultsCol) return res.status(503).json({ error: 'DB not ready' });
+  const results = await resultsCol.find({ studentId: req.params.studentId }).sort({ publishedAt: -1 }).limit(20).toArray();
+  res.json({ success: true, results: results.map(r => { const { _id, ...x } = r; return x; }) });
+});
+
+// ============================================================
+// PARENT-TEACHER CHAT
+// ============================================================
+app.post('/api/business/:businessId/chat/send', async (req, res) => {
+  const { fromUserId, toUserId, studentId, text, type, mediaUrl } = req.body;
+  // type: 'text' | 'voice' | 'image' | 'file'
+  if (!businessChatCol) return res.status(503).json({ error: 'DB not ready' });
+  if (!fromUserId || !text) return res.status(400).json({ error: 'Missing fields' });
+  const msgId = 'bchat_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+  const msg = {
+    _id: msgId, id: msgId,
+    businessId: req.params.businessId,
+    fromUserId, toUserId, studentId,
+    text: text.slice(0, 1000),
+    type: type || 'text',
+    mediaUrl: mediaUrl || null,
+    read: false,
+    createdAt: Date.now(),
+  };
+  await businessChatCol.insertOne(msg);
+  // Notify receiver
+  if (toUserId) {
+    await notificationsCol.insertOne({
+      _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+      id: undefined, userId: toUserId,
+      type: 'business_chat', from: fromUserId, targetType: 'chat', targetId: msgId,
+      message: `💬 New message: ${text.slice(0, 50)}`,
+      read: false, createdAt: Date.now(),
+    });
+  }
+  const { _id, ...result } = msg;
+  res.json({ success: true, message: result });
+});
+
+// Get chat messages
+app.get('/api/business/:businessId/chat/:userId', async (req, res) => {
+  if (!businessChatCol) return res.status(503).json({ error: 'DB not ready' });
+  const messages = await businessChatCol.find({
+    businessId: req.params.businessId,
+    $or: [
+      { fromUserId: req.params.userId },
+      { toUserId: req.params.userId }
+    ]
+  }).sort({ createdAt: 1 }).limit(100).toArray();
+  res.json({ success: true, messages: messages.map(m => { const { _id, ...x } = m; return x; }) });
+});
+
+// ============================================================
+// HOMEWORK / ASSIGNMENTS
+// ============================================================
+app.post('/api/business/:businessId/homework', async (req, res) => {
+  const { ownerId, className, subject, title, description, dueDate, attachments } = req.body;
+  if (!homeworkCol) return res.status(503).json({ error: 'DB not ready' });
+  const business = await businessesCol.findOne({ id: req.params.businessId });
+  if (!business) return res.status(404).json({ error: 'Business not found' });
+  if (business.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+  const hwId = 'hw_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+  const hw = {
+    _id: hwId, id: hwId,
+    businessId: business.id, className,
+    subject, title, description,
+    dueDate: dueDate ? new Date(dueDate).getTime() : null,
+    attachments: attachments || [],
+    createdAt: Date.now(),
+    createdBy: ownerId,
+    submissions: [],
+  };
+  await homeworkCol.insertOne(hw);
+  // Notify all parents of students in that class
+  const students = await studentsCol.find({ businessId: business.id, className, status: 'active' }).toArray();
+  for (const s of students) {
+    if (s.parentId) {
+      await notificationsCol.insertOne({
+        _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+        id: undefined, userId: s.parentId,
+        type: 'homework', from: ownerId, targetType: 'homework', targetId: hwId,
+        message: `📝 New homework: ${subject} - ${title}`,
+        read: false, createdAt: Date.now(),
+      });
+    }
+  }
+  const { _id, ...result } = hw;
+  res.json({ success: true, homework: result });
+});
+
+// Get homework for class
+app.get('/api/business/:businessId/homework/:className', async (req, res) => {
+  if (!homeworkCol) return res.status(503).json({ error: 'DB not ready' });
+  const hws = await homeworkCol.find({ businessId: req.params.businessId, className: req.params.className }).sort({ createdAt: -1 }).limit(50).toArray();
+  res.json({ success: true, homework: hws.map(h => { const { _id, ...x } = h; return x; }) });
+});
+
+// ============================================================
+// ANNOUNCEMENTS
+// ============================================================
+app.post('/api/business/:businessId/announce', async (req, res) => {
+  const { ownerId, title, message, audience, priority } = req.body;
+  // audience: 'all' | 'parents' | 'teachers' | 'class-X'
+  if (!announcementsCol) return res.status(503).json({ error: 'DB not ready' });
+  const business = await businessesCol.findOne({ id: req.params.businessId });
+  if (!business) return res.status(404).json({ error: 'Business not found' });
+  if (business.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+  const annId = 'ann_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+  const ann = {
+    _id: annId, id: annId,
+    businessId: business.id,
+    title, message,
+    audience: audience || 'all',
+    priority: priority || 'normal',  // 'low' | 'normal' | 'high' | 'urgent'
+    createdAt: Date.now(),
+  };
+  await announcementsCol.insertOne(ann);
+  // Notify audience
+  let userIdsToNotify = [];
+  if (audience === 'all' || audience === 'parents') {
+    const students = await studentsCol.find({ businessId: business.id, status: 'active' }).toArray();
+    userIdsToNotify = students.map(s => s.parentId).filter(Boolean);
+  }
+  for (const uid of [...new Set(userIdsToNotify)]) {
+    await notificationsCol.insertOne({
+      _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+      id: undefined, userId: uid,
+      type: 'announcement', from: ownerId, targetType: 'announcement', targetId: annId,
+      message: `📢 ${title}: ${message.slice(0, 60)}`,
+      read: false, createdAt: Date.now(),
+    });
+  }
+  const { _id, ...result } = ann;
+  res.json({ success: true, announcement: result });
+});
+
+app.get('/api/business/:businessId/announcements', async (req, res) => {
+  if (!announcementsCol) return res.status(503).json({ error: 'DB not ready' });
+  const anns = await announcementsCol.find({ businessId: req.params.businessId }).sort({ createdAt: -1 }).limit(30).toArray();
+  res.json({ success: true, announcements: anns.map(a => { const { _id, ...x } = a; return x; }) });
+});
+
+
 // Uses public Jitsi Meet (https://meet.jit.si) for reliable
 // voice/video calls with ring notifications
 // ============================================================
@@ -1742,6 +2207,11 @@ app.get(/(.*)/, (req, res) => res.sendFile(path.join(__dirname, 'public', 'index
 connectDB().then(async () => {
   console.log('🚀 Initial channel sync...');
   await syncAllChannels();
+  // Initialize business module
+  if (typeof connectDB_business === 'function') {
+    await connectDB_business();
+    console.log('🏢 Business Suite initialized!');
+  }
   setInterval(async () => {
     console.log('🔄 Periodic channel sync...');
     await syncAllChannels();
