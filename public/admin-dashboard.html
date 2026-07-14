@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
+<title>📊 Admin Dashboard - DainikState</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0e1a;
+    color: #e8e8e8;
+    min-height: 100vh;
+  }
+  .login-screen {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 100%);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+  }
+  .login-card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+  }
+  .login-icon { font-size: 60px; margin-bottom: 16px; }
+  .login-title { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+  .login-sub { font-size: 13px; color: #888; margin-bottom: 24px; }
+  .pin-input {
+    width: 100%; padding: 16px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid #ff6b35;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 8px;
+    margin-bottom: 16px;
+    font-weight: 700;
+  }
+  .pin-input:focus { outline: none; background: rgba(255,255,255,0.15); }
+  .login-btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    border: none; border-radius: 12px;
+    color: #fff; font-size: 16px; font-weight: 800;
+    cursor: pointer;
+  }
+  .login-btn:hover { opacity: 0.9; }
+  .login-err { color: #ff3b30; font-size: 13px; margin-top: 12px; }
+  .login-hint { font-size: 11px; color: #666; margin-top: 20px; }
+  /* Main dashboard */
+  .header {
+    background: linear-gradient(135deg, #1a1f3a, #0a0e1a);
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header h1 { font-size: 18px; font-weight: 800; }
+  .header h1 .live {
+    display: inline-block; width: 8px; height: 8px;
+    background: #2ed573; border-radius: 50%;
+    margin-right: 6px; animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .logout-btn {
+    background: rgba(255,59,48,0.15);
+    color: #ff3b30;
+    border: 1px solid #ff3b30;
+    padding: 6px 14px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+  /* Stats grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 18px;
+    transition: transform 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); }
+  .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-size: 28px; font-weight: 900; margin-top: 6px; }
+  .stat-sub { font-size: 11px; color: #666; margin-top: 4px; }
+  .stat-card.total .stat-value { color: #ff6b35; }
+  .stat-card.today .stat-value { color: #2ed573; }
+  .stat-card.week .stat-value { color: #00d4ff; }
+  .stat-card.month .stat-value { color: #f7931e; }
+  .stat-card.live .stat-value { color: #ff3b30; }
+  /* Sections */
+  .section {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 14px; font-weight: 800;
+    color: #ff6b35;
+    margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .refresh-btn {
+    background: rgba(255,107,53,0.15);
+    color: #ff6b35;
+    border: 1px solid #ff6b35;
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 11px; cursor: pointer;
+  }
+  .refresh-btn:hover { background: rgba(255,107,53,0.3); }
+  /* Two columns */
+  .cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 768px) {
+    .cols-2 { grid-template-columns: 1fr; }
+  }
+  /* Table */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th, .data-table td {
+    padding: 8px 10px; text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .data-table th { color: #888; font-weight: 700; font-size: 11px; text-transform: uppercase; }
+  .data-table tr:hover { background: rgba(255,255,255,0.03); }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 700;
+  }
+  .badge-mobile { background: rgba(0,212,255,0.2); color: #00d4ff; }
+  .badge-desktop { background: rgba(255,107,53,0.2); color: #ff6b35; }
+  .badge-tablet { background: rgba(46,213,115,0.2); color: #2ed573; }
+  /* Bar chart for pages */
+  .bar-row {
+    display: grid;
+    grid-template-columns: 200px 1fr 60px;
+    gap: 8px; align-items: center;
+    padding: 6px 0;
+    font-size: 12px;
+  }
+  .bar-label { color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px; height: 16px;
+    position: relative; overflow: hidden;
+  }
+  .bar-fill {
+    background: linear-gradient(90deg, #ff6b35, #f7931e);
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+  .bar-count { color: #ff6b35; font-weight: 700; text-align: right; }
+  /* Chart canvas */
+  .chart-wrap {
+    position: relative;
+    height: 200px;
+    margin-top: 8px;
+  }
+  /* Activity feed */
+  .activity-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 12px;
+  }
+  .activity-time { color: #666; font-size: 11px; min-width: 60px; }
+  .activity-icon { font-size: 16px; }
+  .activity-text { color: #aaa; flex: 1; }
+  .activity-page { color: #ff6b35; font-weight: 600; }
+  /* Sessions list */
+  .session-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .session-header {
+    display: flex; justify-content: space-between;
+    margin-bottom: 6px; font-weight: 700;
+  }
+  .session-meta { color: #888; font-size: 11px; }
+  .session-events {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .session-event {
+    display: flex; gap: 6px; align-items: center;
+    font-size: 11px; padding: 2px 0;
+    color: #aaa;
+  }
+  .event-type {
+    background: rgba(255,107,53,0.2);
+    color: #ff6b35;
+    padding: 1px 6px; border-radius: 4px;
+    font-size: 10px; font-weight: 600;
+  }
+  .hidden { display: none !important; }
+  .empty { text-align: center; color: #666; padding: 30px 10px; font-size: 13px; }
+  .live-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: #2ed573; border-radius: 50%;
+    margin-right: 4px;
+    animation: pulse 1s infinite;
+  }
+  .footer {
+    text-align: center;
+    color: #555; font-size: 11px;
+    padding: 20px; margin-top: 30px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Login screen -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-icon">🔐</div>
+    <div class="login-title">Admin Dashboard</div>
+    <div class="login-sub">DainikState visitor analytics</div>
+    <input type="password" class="pin-input" id="pinInput" placeholder="••••" maxlength="6" />
+    <button class="login-btn" onclick="doLogin()">Login</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-hint">Sirf aapke liye · PIN: 1234 (default)</div>
+  </div>
+</div>
+
+<!-- Main dashboard -->
+<div id="dashboard" class="hidden">
+  <div class="header">
+    <h1><span class="live"></span>DainikState Analytics</h1>
+    <div>
+      <span id="liveNow" style="font-size:12px;color:#2ed573;margin-right:12px"><span class="live-dot"></span><span id="liveCount">0</span> online</span>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Top stats -->
+    <div class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-label">Total Visitors</div>
+        <div class="stat-value" id="totalVisitors">0</div>
+        <div class="stat-sub" id="totalSessions">0 sessions</div>
+      </div>
+      <div class="stat-card today">
+        <div class="stat-label">Aaj</div>
+        <div class="stat-value" id="todayVisitors">0</div>
+        <div class="stat-sub" id="todaySessions">0 new sessions</div>
+      </div>
+      <div class="stat-card week">
+        <div class="stat-label">Is Hafte</div>
+        <div class="stat-value" id="weekVisitors">0</div>
+        <div class="stat-sub">page views</div>
+      </div>
+      <div class="stat-card month">
+        <div class="stat-label">Is Mahine</div>
+        <div class="stat-value" id="monthVisitors">0</div>
+        <div class="stat-sub">page views</div>
+      </div>
+      <div class="stat-card live">
+        <div class="stat-label">Abhi Live</div>
+        <div class="stat-value" id="liveVisitors">0</div>
+        <div class="stat-sub">last 5 min</div>
+      </div>
+      <div class="stat-card total">
+        <div class="stat-label">Total Events</div>
+        <div class="stat-value" id="totalEvents">0</div>
+        <div class="stat-sub">clicks & actions</div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="section">
+      <div class="section-title">
+        <span>📈 Daily visitors (last 30 days)</span>
+        <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chartCanvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Two columns: pages + events -->
+    <div class="cols-2">
+      <div class="section">
+        <div class="section-title">📄 Top Pages (7 days)</div>
+        <div id="topPages"><div class="empty">Loading...</div></div>
+      </div>
+      <div class="section">
+        <div class="section-title">🎯 Top Events (7 days)</div>
+        <div id="topEvents"><div class="empty">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- Devices + Browsers -->
+    <div class="cols-2">
+      <div class="section">
+        <div class="section-title">📱 Devices</div>
+        <div id="devices"><div class="empty">Loading...</div></div>
+      </div>
+      <div class="section">
+        <div class="section-title">🌐 Browsers</div>
+        <div id="browsers"><div class="empty">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- Recent visits -->
+    <div class="section">
+      <div class="section-title">
+        <span>🕐 Recent Activity (last 20)</span>
+      </div>
+      <div id="recentVisits"><div class="empty">Loading...</div></div>
+    </div>
+
+    <!-- Sessions list -->
+    <div class="section">
+      <div class="section-title">
+        <span>👥 Recent Sessions (last 50)</span>
+      </div>
+      <div id="sessionsList"><div class="empty">Loading...</div></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    📊 DainikState Analytics · <span id="lastUpdate">-</span>
+  </div>
+</div>
+
+<script>
+const API = 'https://canyou-uqkp.onrender.com';
+let adminToken = localStorage.getItem('ds_admin_token');
+let refreshInterval = null;
+
+// ==================== LOGIN ====================
+document.getElementById('pinInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') doLogin();
+});
+
+async function doLogin() {
+  const pin = document.getElementById('pinInput').value;
+  if (!pin) return;
+  try {
+    const r = await fetch(API + '/api/admin/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    }).then(r => r.json());
+    if (r.success) {
+      adminToken = r.token;
+      localStorage.setItem('ds_admin_token', adminToken);
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      loadAll();
+      refreshInterval = setInterval(loadAll, 10000);  // Refresh every 10 sec
+    } else {
+      document.getElementById('loginErr').textContent = '❌ ' + (r.error || 'Galat PIN');
+    }
+  } catch (e) {
+    document.getElementById('loginErr').textContent = '❌ Network error';
+  }
+}
+
+function doLogout() {
+  adminToken = null;
+  localStorage.removeItem('ds_admin_token');
+  if (refreshInterval) clearInterval(refreshInterval);
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('pinInput').value = '';
+  document.getElementById('loginErr').textContent = '';
+}
+
+function adminFetch(url) {
+  return fetch(API + url, {
+    headers: { 'Authorization': 'Bearer ' + adminToken }
+  }).then(r => {
+    if (r.status === 401) { doLogout(); throw new Error('Session expired'); }
+    return r.json();
+  });
+}
+
+// ==================== LOAD ALL ====================
+async function loadAll() {
+  try {
+    const [stats, chart, sessions] = await Promise.all([
+      adminFetch('/api/admin/stats'),
+      adminFetch('/api/admin/chart?days=30'),
+      adminFetch('/api/admin/sessions?limit=30')
+    ]);
+    if (stats.success) renderStats(stats.stats);
+    if (chart.success) renderChart(chart.days);
+    if (sessions.success) renderSessions(sessions.sessions);
+    document.getElementById('lastUpdate').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    console.error('Load error:', e);
+  }
+}
+
+// ==================== RENDER ====================
+function renderStats(s) {
+  document.getElementById('totalVisitors').textContent = s.total.sessions;
+  document.getElementById('totalSessions').textContent = s.total.visits + ' page views';
+  document.getElementById('todayVisitors').textContent = s.today.visits;
+  document.getElementById('todaySessions').textContent = s.today.sessions + ' new sessions';
+  document.getElementById('weekVisitors').textContent = s.week.visits;
+  document.getElementById('monthVisitors').textContent = s.month.visits;
+  document.getElementById('liveVisitors').textContent = s.liveVisitors;
+  document.getElementById('liveCount').textContent = s.liveVisitors;
+  document.getElementById('totalEvents').textContent = s.total.events;
+
+  // Top pages (bar chart)
+  const topPages = document.getElementById('topPages');
+  if (s.topPages.length === 0) topPages.innerHTML = '<div class="empty">Abhi tak koi page view nahi</div>';
+  else {
+    const max = Math.max(...s.topPages.map(p => p.count));
+    topPages.innerHTML = s.topPages.map(p => `
+      <div class="bar-row">
+        <div class="bar-label" title="${p.page}">${p.page}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(p.count/max)*100}%"></div></div>
+        <div class="bar-count">${p.count}</div>
+      </div>
+    `).join('');
+  }
+
+  // Top events
+  const topEvents = document.getElementById('topEvents');
+  if (s.topEvents.length === 0) topEvents.innerHTML = '<div class="empty">Koi event nahi abhi</div>';
+  else {
+    const max = Math.max(...s.topEvents.map(e => e.count));
+    topEvents.innerHTML = s.topEvents.map(e => `
+      <div class="bar-row">
+        <div class="bar-label">${e.type} ${e.label ? '· ' + e.label : ''}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(e.count/max)*100}%"></div></div>
+        <div class="bar-count">${e.count}</div>
+      </div>
+    `).join('');
+  }
+
+  // Devices
+  const devices = document.getElementById('devices');
+  if (s.devices.length === 0) devices.innerHTML = '<div class="empty">-</div>';
+  else {
+    const total = s.devices.reduce((a, b) => a + b.count, 0);
+    devices.innerHTML = s.devices.map(d => {
+      const icon = d.device === 'mobile' ? '📱' : d.device === 'tablet' ? '📱' : '🖥️';
+      const pct = total > 0 ? Math.round((d.count / total) * 100) : 0;
+      return `<div class="bar-row">
+        <div class="bar-label">${icon} ${d.device}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="bar-count">${d.count} (${pct}%)</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Browsers
+  const browsers = document.getElementById('browsers');
+  if (s.browsers.length === 0) browsers.innerHTML = '<div class="empty">-</div>';
+  else {
+    const total = s.browsers.reduce((a, b) => a + b.count, 0);
+    browsers.innerHTML = s.browsers.map(b => {
+      const pct = total > 0 ? Math.round((b.count / total) * 100) : 0;
+      return `<div class="bar-row">
+        <div class="bar-label">${b.browser}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="bar-count">${b.count} (${pct}%)</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Recent visits
+  const recent = document.getElementById('recentVisits');
+  if (s.recentVisits.length === 0) recent.innerHTML = '<div class="empty">Koi activity nahi</div>';
+  else {
+    recent.innerHTML = '<div style="max-height:300px;overflow-y:auto">' + s.recentVisits.map(v => {
+      const ago = timeAgo(v.ts);
+      const deviceIcon = v.device === 'mobile' ? '📱' : v.device === 'tablet' ? '📱' : '🖥️';
+      return `<div class="activity-item">
+        <div class="activity-time">${ago}</div>
+        <div class="activity-icon">${deviceIcon}</div>
+        <div class="activity-text">
+          <span class="activity-page">${v.page}</span>
+          · <span class="badge badge-${v.device}">${v.browser}</span>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+}
+
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return 'abhi';
+  if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+  return Math.floor(diff/86400000) + 'd ago';
+}
+
+function renderSessions(sessions) {
+  const wrap = document.getElementById('sessionsList');
+  if (sessions.length === 0) { wrap.innerHTML = '<div class="empty">No sessions yet</div>'; return; }
+  wrap.innerHTML = '<div style="max-height:500px;overflow-y:auto">' + sessions.map(s => {
+    const ago = timeAgo(s.lastSeen);
+    const dur = s.lastSeen - s.firstSeen;
+    const durStr = dur < 60000 ? Math.floor(dur/1000) + 's' : Math.floor(dur/60000) + 'm';
+    const deviceIcon = s.device === 'mobile' ? '📱' : s.device === 'tablet' ? '📱' : '🖥️';
+    const eventsHtml = s.events && s.events.length > 0 ? `
+      <div class="session-events">
+        ${s.events.slice(0, 5).map(e => `<div class="session-event">
+          <span class="event-type">${e.type}</span>
+          ${e.label ? '<span>' + e.label + '</span>' : ''}
+          <span style="color:#666">· ${timeAgo(e.ts)}</span>
+        </div>`).join('')}
+      </div>
+    ` : '';
+    return `<div class="session-card">
+      <div class="session-header">
+        <span>${deviceIcon} ${s.browser} · ${s.os} · ${s.ip}</span>
+        <span style="color:#2ed573">${ago}</span>
+      </div>
+      <div class="session-meta">
+        📄 ${s.pageviews} page views · ⏱️ ${durStr} session · Last: ${s.recentPages[0] || '-'}
+      </div>
+      ${eventsHtml}
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function renderChart(days) {
+  const canvas = document.getElementById('chartCanvas');
+  const ctx = canvas.getContext('2d');
+  // Resize
+  canvas.width = canvas.parentElement.offsetWidth;
+  canvas.height = 200;
+  // Clear
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (days.length === 0) return;
+  const max = Math.max(...days.map(d => d.visits), 1);
+  const padding = 30;
+  const w = canvas.width - padding * 2;
+  const h = canvas.height - padding * 2;
+  const stepX = w / (days.length - 1 || 1);
+  // Background grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padding + (h / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(canvas.width - padding, y);
+    ctx.stroke();
+  }
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, padding, 0, canvas.height - padding);
+  grad.addColorStop(0, 'rgba(255, 107, 53, 0.4)');
+  grad.addColorStop(1, 'rgba(255, 107, 53, 0.0)');
+  // Area path
+  ctx.beginPath();
+  ctx.moveTo(padding, canvas.height - padding);
+  days.forEach((d, i) => {
+    const x = padding + stepX * i;
+    const y = canvas.height - padding - (d.visits / max) * h;
+    if (i === 0) ctx.lineTo(x, y);
+    else {
+      const prevX = padding + stepX * (i - 1);
+      const prevY = canvas.height - padding - (days[i-1].visits / max) * h;
+      const cpX = (prevX + x) / 2;
+      ctx.bezierCurveTo(cpX, prevY, cpX, y, x, y);
+    }
+  });
+  ctx.lineTo(padding + stepX * (days.length - 1), canvas.height - padding);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  // Line
+  ctx.beginPath();
+  days.forEach((d, i) => {
+    const x = padding + stepX * i;
+    const y = canvas.height - padding - (d.visits / max) * h;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  // Dots
+  days.forEach((d, i) => {
+    const x = padding + stepX * i;
+    const y = canvas.height - padding - (d.visits / max) * h;
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff6b35';
+    ctx.fill();
+  });
+  // Labels (every 5th day)
+  ctx.fillStyle = '#666';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  days.forEach((d, i) => {
+    if (i % Math.ceil(days.length / 6) === 0) {
+      const x = padding + stepX * i;
+      const dateLabel = d.day.slice(5);  // MM-DD
+      ctx.fillText(dateLabel, x, canvas.height - 8);
+    }
+  });
+  // Y axis labels
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const y = padding + (h / 4) * (4 - i);
+    const val = Math.round((max / 4) * i);
+    ctx.fillText(val, padding - 5, y + 3);
+  }
+}
+
+// ==================== INIT ====================
+if (adminToken) {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  loadAll();
+  refreshInterval = setInterval(loadAll, 10000);
+}
+window.addEventListener('resize', () => {
+  if (!document.getElementById('dashboard').classList.contains('hidden')) {
+    adminFetch('/api/admin/chart?days=30').then(r => {
+      if (r.success) renderChart(r.days);
+    });
+  }
+});
+</script>
+</body>
+</html>
