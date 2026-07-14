@@ -1,10 +1,11 @@
 // Service Worker for Child's Land School PWA
 // Makes the app installable + offline-capable
 
-const CACHE_NAME = 'childs-land-v2';
+const CACHE_NAME = 'childs-land-v3';
 const urlsToCache = [
   '/school-portal.html',
   '/school-demo.html',
+  '/school-message.html',
   '/manifest.json',
   '/images/icon-192.png',
   '/images/icon-512.png'
