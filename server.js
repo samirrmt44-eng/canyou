@@ -76,6 +76,79 @@ app.use((req, res, next) => {
   }
   next();
 });
+// Analytics tracking middleware (BEFORE static so it catches page views)
+let __analyticsMiddleware = null;
+if (analyticsModule && typeof analyticsModule === 'function') {
+  // Pre-create a placeholder that we'll attach the middleware to later
+  // But we need it BEFORE static. The trick: we'll inject via app param.
+  // For now, the module registers middleware on its own app param, but those
+  // are only applied when module is initialized inside connectDB().then().
+  // To get tracking working, we duplicate the logic here:
+  const crypto2 = require('crypto');
+  let __visitsCol = null, __eventsCol = null, __sessionsCol = null, __pageviewsCol = null;
+  function getClientIp(req) {
+    return (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+      || req.socket.remoteAddress || 'unknown';
+  }
+  function parseUA(ua) {
+    if (!ua) return { browser: 'unknown', os: 'unknown', device: 'unknown' };
+    const lower = ua.toLowerCase();
+    let browser = 'unknown';
+    if (lower.includes('chrome')) browser = 'Chrome';
+    else if (lower.includes('safari')) browser = 'Safari';
+    else if (lower.includes('firefox')) browser = 'Firefox';
+    else if (lower.includes('edge')) browser = 'Edge';
+    let os = 'unknown';
+    if (lower.includes('android')) os = 'Android';
+    else if (lower.includes('iphone') || lower.includes('ipad')) os = 'iOS';
+    else if (lower.includes('windows')) os = 'Windows';
+    else if (lower.includes('mac')) os = 'Mac';
+    else if (lower.includes('linux')) os = 'Linux';
+    let device = 'desktop';
+    if (lower.includes('mobile') || lower.includes('android') || lower.includes('iphone')) device = 'mobile';
+    else if (lower.includes('tablet') || lower.includes('ipad')) device = 'tablet';
+    return { browser, os, device };
+  }
+  app.use(async (req, res, next) => {
+    if (req.method !== 'GET') return next();
+    if (req.path.startsWith('/api/')) return next();
+    if (req.path.startsWith('/admin')) return next();
+    if (req.path.startsWith('/_')) return next();
+    if (req.path.includes('.') && !req.path.endsWith('.html')) return next();
+    // Wait for DB
+    if (!db) return next();
+    try {
+      if (!__sessionsCol) {
+        __visitsCol = db.collection('analytics_visits');
+        __eventsCol = db.collection('analytics_events');
+        __sessionsCol = db.collection('analytics_sessions');
+        __pageviewsCol = db.collection('analytics_pageviews');
+      }
+      const sessionId = req.headers['x-session-id'] || ('sess_' + crypto2.randomBytes(6).toString('hex'));
+      const ip = getClientIp(req);
+      const ua = req.headers['user-agent'] || '';
+      const { browser, os, device } = parseUA(ua);
+      const referrer = req.headers['referer'] || 'direct';
+      const ts = Date.now();
+      const page = req.path === '/' ? '/index.html' : req.path;
+      await __sessionsCol.updateOne(
+        { sessionId },
+        { $set: { lastSeen: ts, lastPage: page, browser, os, device, ip },
+          $setOnInsert: { firstSeen: ts, sessionId },
+          $inc: { pageviews: 1 } },
+        { upsert: true }
+      );
+      await __visitsCol.insertOne({ sessionId, page, ip, browser, os, device, referrer, ts });
+      const day = new Date(ts).toISOString().split('T')[0];
+      await __pageviewsCol.updateOne(
+        { page, day },
+        { $inc: { count: 1 }, $setOnInsert: { page, day, lastTs: ts } },
+        { upsert: true }
+      );
+    } catch (e) { /* silent fail */ }
+    next();
+  });
+}
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ============================================================
