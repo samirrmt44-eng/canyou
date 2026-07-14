@@ -12,6 +12,12 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png" />
 <link rel="apple-touch-icon" href="/images/icon-192.png" />
 <title>🎓 Child's Land School - DainikState</title>
+<script>
+  // First-time visitor → redirect to demo
+  if (!localStorage.getItem('ds_school_demo_seen') && !window.location.search.includes('noDemo')) {
+    window.location.replace('/school-demo.html');
+  }
+</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
@@ -209,6 +215,7 @@
     </div>
     <div class="header-btns">
       <button class="icon-btn" id="installBtn" onclick="installApp()" title="Install App" style="display:none;">📲</button>
+      <button class="icon-btn" onclick="openDemoTour()" title="Demo Tour">🎬</button>
       <button class="icon-btn" onclick="openFeedback()" title="Feedback">💬</button>
       <button class="icon-btn" onclick="goHome()" title="Home">🏠</button>
     </div>
@@ -512,6 +519,11 @@ function installApp() {
 function dismissInstall() {
   document.getElementById('installPrompt').classList.remove('show');
   localStorage.setItem('ds_install_dismissed', '1');
+}
+
+function openDemoTour() {
+  // Open demo in same tab
+  window.location.href = '/school-demo.html';
 }
 
 // Register service worker
