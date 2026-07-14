@@ -657,5 +657,671 @@ module.exports = function(app, db, usersCol, notificationsCol) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // ============================================================
+  // ATTENDANCE (school-specific) - separate from business attendance
+  // ============================================================
+  let schoolAttendanceCol;
+  async function ensureAttendanceCol() {
+    if (!schoolAttendanceCol) schoolAttendanceCol = db.collection('schoolAttendance');
+    await schoolAttendanceCol.createIndex({ schoolId: 1, date: 1, studentId: 1 }, { unique: true });
+  }
+
+  app.post('/api/school/:schoolId/attendance', async (req, res) => {
+    try {
+      const { ownerId, date, records } = req.body;
+      // records: [{ studentId, status: 'present' | 'absent' | 'late' | 'half_day' }]
+      if (!ownerId || !date || !records) return res.status(400).json({ error: 'ownerId, date, records required' });
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      await ensureAttendanceCol();
+      let count = 0;
+      for (const r of records) {
+        await schoolAttendanceCol.updateOne(
+          { schoolId: school.id, date, studentId: r.studentId },
+          { $set: { schoolId: school.id, date, studentId: r.studentId, status: r.status, markedBy: ownerId, markedAt: Date.now() } },
+          { upsert: true }
+        );
+        count++;
+        // Notify parents of absent students
+        if (r.status === 'absent') {
+          const student = await studentsCol.findOne({ id: r.studentId });
+          if (student?.parentId) {
+            await notificationsCol.insertOne({
+              _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+              id: undefined, userId: student.parentId,
+              type: 'attendance_alert', from: ownerId, targetType: 'student', targetId: r.studentId,
+              message: `⚠️ ${student.name} आज (${date}) absent था।`,
+              read: false, createdAt: Date.now(),
+            });
+          }
+        }
+      }
+      res.json({ success: true, count });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/school/:schoolId/attendance', async (req, res) => {
+    try {
+      const { date, studentId, fromDate, toDate } = req.query;
+      await ensureAttendanceCol();
+      const query = { schoolId: req.params.schoolId };
+      if (date) query.date = date;
+      if (studentId) query.studentId = studentId;
+      if (fromDate) query.date = { $gte: fromDate };
+      if (toDate) query.date = { ...(query.date || {}), $lte: toDate };
+      const records = await schoolAttendanceCol.find(query).sort({ date: -1 }).limit(500).toArray();
+      res.json({ success: true, count: records.length, records: records.map(r => { const { _id, ...x } = r; return x; }) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/school/:schoolId/attendance/stats', async (req, res) => {
+    try {
+      const { month, year, studentId } = req.query;
+      await ensureAttendanceCol();
+      const query = { schoolId: req.params.schoolId };
+      if (month && year) {
+        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+        const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+        query.date = { $gte: startDate, $lte: endDate };
+      }
+      if (studentId) query.studentId = studentId;
+      const records = await schoolAttendanceCol.find(query).toArray();
+      const stats = {
+        total: records.length,
+        present: records.filter(r => r.status === 'present').length,
+        absent: records.filter(r => r.status === 'absent').length,
+        late: records.filter(r => r.status === 'late').length,
+        halfDay: records.filter(r => r.status === 'half_day').length,
+      };
+      stats.percentage = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
+      res.json({ success: true, stats, records: records.map(r => { const { _id, ...x } = r; return x; }) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // FEES (school-specific) - Fee collection & tracking
+  // ============================================================
+  let schoolFeesCol;
+  async function ensureFeesCol() {
+    if (!schoolFeesCol) schoolFeesCol = db.collection('schoolFees');
+    await schoolFeesCol.createIndex({ schoolId: 1, studentId: 1, month: 1, year: 1 }, { unique: true });
+  }
+
+  app.post('/api/school/:schoolId/fees/collect', async (req, res) => {
+    try {
+      const { ownerId, studentId, month, year, amount, type, paymentMethod, transactionId, dueDate, notes } = req.body;
+      // type: 'tuition' | 'admission' | 'exam' | 'transport' | 'books' | 'activity' | 'other'
+      if (!ownerId || !studentId || !month || !year || !amount) {
+        return res.status(400).json({ error: 'ownerId, studentId, month, year, amount required' });
+      }
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      const student = await studentsCol.findOne({ id: studentId, schoolId: school.id });
+      if (!student) return res.status(404).json({ error: 'Student not found' });
+      await ensureFeesCol();
+      const feeId = 'fee_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+      const receiptNo = 'RCP' + Date.now().toString().slice(-8);
+      const fee = {
+        _id: feeId, id: feeId,
+        schoolId: school.id, studentId,
+        studentName: student.name, className: student.className, section: student.section,
+        month, year: parseInt(year),
+        amount: parseFloat(amount),
+        type: type || 'tuition',
+        paymentMethod: paymentMethod || 'cash',  // 'cash' | 'upi' | 'bank' | 'cheque'
+        transactionId: transactionId || null,
+        receiptNo,
+        dueDate: dueDate || null,
+        notes: notes || '',
+        status: 'paid',
+        collectedBy: ownerId,
+        collectedAt: Date.now(),
+      };
+      await schoolFeesCol.insertOne(fee);
+      // Notify parent
+      if (student.parentId) {
+        await notificationsCol.insertOne({
+          _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+          id: undefined, userId: student.parentId,
+          type: 'fee_paid', from: ownerId, targetType: 'fee', targetId: feeId,
+          message: `✅ ₹${amount} fee received for ${student.name} (${month} ${year}, ${type}). Receipt: ${receiptNo}`,
+          read: false, createdAt: Date.now(),
+        });
+      }
+      const { _id, ...result } = fee;
+      res.json({ success: true, fee: result });
+    } catch (e) {
+      if (e.code === 11000) return res.status(400).json({ error: 'Fee already collected for this month' });
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/school/:schoolId/fees', async (req, res) => {
+    try {
+      const { studentId, month, year, status, fromDate, toDate } = req.query;
+      await ensureFeesCol();
+      const query = { schoolId: req.params.schoolId };
+      if (studentId) query.studentId = studentId;
+      if (month) query.month = month;
+      if (year) query.year = parseInt(year);
+      if (status) query.status = status;
+      if (fromDate) query.collectedAt = { $gte: parseInt(fromDate) };
+      if (toDate) query.collectedAt = { ...(query.collectedAt || {}), $lte: parseInt(toDate) };
+      const fees = await schoolFeesCol.find(query).sort({ collectedAt: -1 }).limit(500).toArray();
+      const total = fees.reduce((s, f) => s + (f.amount || 0), 0);
+      res.json({ success: true, total, count: fees.length, fees: fees.map(f => { const { _id, ...r } = f; return r; }) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/school/:schoolId/fees/summary', async (req, res) => {
+    try {
+      const { year } = req.query;
+      await ensureFeesCol();
+      const y = year ? parseInt(year) : new Date().getFullYear();
+      const fees = await schoolFeesCol.find({ schoolId: req.params.schoolId, year: y }).toArray();
+      // Monthly breakdown
+      const monthly = {};
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      months.forEach(m => monthly[m] = { count: 0, total: 0 });
+      fees.forEach(f => {
+        if (monthly[f.month]) {
+          monthly[f.month].count++;
+          monthly[f.month].total += f.amount;
+        }
+      });
+      const grandTotal = fees.reduce((s, f) => s + (f.amount || 0), 0);
+      res.json({
+        success: true,
+        year: y,
+        grandTotal,
+        totalCount: fees.length,
+        monthly,
+      });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/school/fees/:feeId/refund', async (req, res) => {
+    try {
+      const { ownerId, reason } = req.body;
+      await ensureFeesCol();
+      const fee = await schoolFeesCol.findOne({ id: req.params.feeId });
+      if (!fee) return res.status(404).json({ error: 'Fee record not found' });
+      const school = await schoolsCol.findOne({ id: fee.schoolId });
+      if (!school || school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      await schoolFeesCol.updateOne(
+        { id: fee.id },
+        { $set: { status: 'refunded', refundReason: reason || '', refundedAt: Date.now(), refundedBy: ownerId } }
+      );
+      // Notify parent
+      const student = await studentsCol.findOne({ id: fee.studentId });
+      if (student?.parentId) {
+        await notificationsCol.insertOne({
+          _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+          id: undefined, userId: student.parentId,
+          type: 'fee_refund', from: ownerId, targetType: 'fee', targetId: fee.id,
+          message: `↩️ ₹${fee.amount} refund for ${student.name} (${fee.month} ${fee.year}). Reason: ${reason || 'N/A'}`,
+          read: false, createdAt: Date.now(),
+        });
+      }
+      res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // TIMETABLE (class schedule)
+  // ============================================================
+  let schoolTimetableCol;
+  async function ensureTimetableCol() {
+    if (!schoolTimetableCol) schoolTimetableCol = db.collection('schoolTimetable');
+    await schoolTimetableCol.createIndex({ schoolId: 1, className: 1, day: 1 });
+  }
+
+  app.post('/api/school/:schoolId/timetable', async (req, res) => {
+    try {
+      const { ownerId, className, section, day, periods } = req.body;
+      // periods: [{ startTime, endTime, subject, teacherName }]
+      // day: 'Monday' | 'Tuesday' | ... | 'Saturday'
+      if (!ownerId || !className || !day || !periods) {
+        return res.status(400).json({ error: 'ownerId, className, day, periods required' });
+      }
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      await ensureTimetableCol();
+      const ttId = `tt_${school.id}_${className}_${section || 'A'}_${day}`;
+      await schoolTimetableCol.updateOne(
+        { _id: ttId },
+        { $set: { _id: ttId, id: ttId, schoolId: school.id, className, section: section || 'A', day, periods, updatedAt: Date.now(), updatedBy: ownerId } },
+        { upsert: true }
+      );
+      res.json({ success: true, id: ttId });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/school/:schoolId/timetable', async (req, res) => {
+    try {
+      const { className, section } = req.query;
+      await ensureTimetableCol();
+      const query = { schoolId: req.params.schoolId };
+      if (className) query.className = className;
+      if (section) query.section = section;
+      const tt = await schoolTimetableCol.find(query).toArray();
+      res.json({ success: true, count: tt.length, timetable: tt.map(t => { const { _id, ...r } = t; return r; }) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // EXAM RESULTS (school-specific)
+  // ============================================================
+  let schoolResultsCol;
+  async function ensureResultsCol() {
+    if (!schoolResultsCol) schoolResultsCol = db.collection('schoolResults');
+    await schoolResultsCol.createIndex({ schoolId: 1, studentId: 1, examName: 1 });
+  }
+
+  app.post('/api/school/:schoolId/results', async (req, res) => {
+    try {
+      const { ownerId, studentId, examName, examType, subjects, maxMarks, totalMarks, percentage, grade, remarks } = req.body;
+      // subjects: [{ name, marksObtained, maxMarks, grade }]
+      if (!ownerId || !studentId || !examName || !subjects) {
+        return res.status(400).json({ error: 'ownerId, studentId, examName, subjects required' });
+      }
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      const student = await studentsCol.findOne({ id: studentId, schoolId: school.id });
+      if (!student) return res.status(404).json({ error: 'Student not found' });
+      await ensureResultsCol();
+      // Auto-calculate total & grade if not provided
+      const totMax = subjects.reduce((s, x) => s + (x.maxMarks || 100), 0);
+      const totObt = subjects.reduce((s, x) => s + (x.marksObtained || 0), 0);
+      const pct = totMax > 0 ? Math.round((totObt / totMax) * 100 * 100) / 100 : 0;
+      let autoGrade = 'F';
+      if (pct >= 90) autoGrade = 'A+';
+      else if (pct >= 80) autoGrade = 'A';
+      else if (pct >= 70) autoGrade = 'B+';
+      else if (pct >= 60) autoGrade = 'B';
+      else if (pct >= 50) autoGrade = 'C';
+      else if (pct >= 40) autoGrade = 'D';
+      const resultId = 'res_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+      const result = {
+        _id: resultId, id: resultId,
+        schoolId: school.id, studentId,
+        studentName: student.name, className: student.className, section: student.section,
+        examName,
+        examType: examType || 'unit_test',  // 'unit_test' | 'midterm' | 'final' | 'annual'
+        subjects,
+        totalMarks: totalMarks || totObt,
+        maxMarks: maxMarks || totMax,
+        percentage: percentage || pct,
+        grade: grade || autoGrade,
+        remarks: remarks || '',
+        publishedBy: ownerId,
+        publishedAt: Date.now(),
+      };
+      await schoolResultsCol.insertOne(result);
+      // Notify parent
+      if (student.parentId) {
+        await notificationsCol.insertOne({
+          _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+          id: undefined, userId: student.parentId,
+          type: 'result_published', from: ownerId, targetType: 'result', targetId: resultId,
+          message: `📊 ${examName} result for ${student.name}: ${result.percentage}% (${result.grade})`,
+          read: false, createdAt: Date.now(),
+        });
+      }
+      const { _id, ...r } = result;
+      res.json({ success: true, result: r });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/school/:schoolId/results', async (req, res) => {
+    try {
+      const { studentId, className, examName, examType } = req.query;
+      await ensureResultsCol();
+      const query = { schoolId: req.params.schoolId };
+      if (studentId) query.studentId = studentId;
+      if (className) query.className = className;
+      if (examName) query.examName = examName;
+      if (examType) query.examType = examType;
+      const results = await schoolResultsCol.find(query).sort({ publishedAt: -1 }).limit(200).toArray();
+      res.json({ success: true, count: results.length, results: results.map(r => { const { _id, ...x } = r; return x; }) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // BIRTHDAYS (today's birthdays)
+  // ============================================================
+  app.get('/api/school/:schoolId/birthdays/today', async (req, res) => {
+    try {
+      const students = await studentsCol.find({ schoolId: req.params.schoolId, status: 'active' }).toArray();
+      const today = new Date();
+      const todayMMDD = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const birthdays = students.filter(s => {
+        if (!s.dob) return false;
+        const parts = s.dob.split('-');
+        if (parts.length < 3) return false;
+        return `${parts[1]}-${parts[2]}` === todayMMDD;
+      });
+      res.json({ success: true, count: birthdays.length, students: birthdays.map(s => { const { _id, ...r } = s; return r; }) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/school/:schoolId/birthdays/upcoming', async (req, res) => {
+    try {
+      const students = await studentsCol.find({ schoolId: req.params.schoolId, status: 'active' }).toArray();
+      const today = new Date();
+      const upcoming = students.filter(s => {
+        if (!s.dob) return false;
+        const parts = s.dob.split('-');
+        if (parts.length < 3) return false;
+        const bday = new Date(today.getFullYear(), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const diff = (bday - today) / (1000 * 60 * 60 * 24);
+        return diff >= 0 && diff <= 7;
+      }).map(s => {
+        const parts = s.dob.split('-');
+        const bday = new Date(today.getFullYear(), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const daysUntil = Math.ceil((bday - today) / (1000 * 60 * 60 * 24));
+        return { ...s, daysUntil, _id: undefined };
+      }).sort((a, b) => a.daysUntil - b.daysUntil);
+      res.json({ success: true, count: upcoming.length, students: upcoming });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // STUDENT PROMOTION (move to next class)
+  // ============================================================
+  app.post('/api/school/:schoolId/students/:studentId/promote', async (req, res) => {
+    try {
+      const { ownerId, newClass, newSection, newRollNo, academicYear } = req.body;
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      const student = await studentsCol.findOne({ id: req.params.studentId, schoolId: school.id });
+      if (!student) return res.status(404).json({ error: 'Student not found' });
+      const update = {};
+      if (newClass) update.className = newClass;
+      if (newSection) update.section = newSection;
+      if (newRollNo) update.rollNo = parseInt(newRollNo);
+      if (academicYear) update.academicYear = parseInt(academicYear);
+      if (newClass === 'Graduated' || newClass === 'Passed') {
+        update.status = 'graduated';
+        update.graduatedAt = Date.now();
+      }
+      await studentsCol.updateOne({ id: student.id }, { $set: update });
+      res.json({ success: true, message: 'Student promoted', student: { ...student, ...update, _id: undefined } });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // BULK PROMOTION (all students of a class)
+  // ============================================================
+  app.post('/api/school/:schoolId/students/bulk-promote', async (req, res) => {
+    try {
+      const { ownerId, fromClass, toClass, academicYear } = req.body;
+      if (!ownerId || !fromClass || !toClass) return res.status(400).json({ error: 'ownerId, fromClass, toClass required' });
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      const students = await studentsCol.find({ schoolId: school.id, className: fromClass, status: 'active' }).toArray();
+      let count = 0;
+      for (const s of students) {
+        await studentsCol.updateOne(
+          { id: s.id },
+          { $set: { className: toClass, rollNo: null, academicYear: parseInt(academicYear) || new Date().getFullYear() } }
+        );
+        count++;
+      }
+      res.json({ success: true, promoted: count });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // DELETE STUDENT (soft delete)
+  // ============================================================
+  app.post('/api/school/student/:studentId/delete', async (req, res) => {
+    try {
+      const { ownerId } = req.body;
+      const student = await studentsCol.findOne({ id: req.params.studentId });
+      if (!student) return res.status(404).json({ error: 'Student not found' });
+      const school = await schoolsCol.findOne({ id: student.schoolId });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      await studentsCol.updateOne({ id: student.id }, { $set: { status: 'inactive', deletedAt: Date.now() } });
+      await schoolsCol.updateOne({ id: school.id }, { $inc: { studentCount: -1 } });
+      res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // SCHOOL PROFILE PUBLIC VIEW
+  // ============================================================
+  app.get('/api/school/:schoolId/public', async (req, res) => {
+    try {
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      // Public-safe fields only
+      const publicData = {
+        id: school.id, slug: school.slug, name: school.name,
+        address: school.address, city: school.city, state: school.state,
+        phone: school.phone, logo: school.logo,
+        studentCount: school.studentCount, classCount: school.defaultClasses?.length || 3,
+        monthlyFee: school.monthlyFee, board: school.board,
+        verified: school.verified, rating: school.rating, reviewCount: school.reviewCount,
+        createdAt: school.createdAt,
+      };
+      res.json({ success: true, school: publicData });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // ENQUIRY (parents can enquire before admission)
+  // ============================================================
+  let schoolEnquiryCol;
+  async function ensureEnquiryCol() {
+    if (!schoolEnquiryCol) schoolEnquiryCol = db.collection('schoolEnquiry');
+    await schoolEnquiryCol.createIndex({ schoolId: 1, createdAt: -1 });
+  }
+
+  app.post('/api/school/:schoolId/enquiry', async (req, res) => {
+    try {
+      const { parentName, parentPhone, childName, childAge, message } = req.body;
+      if (!parentName || !parentPhone) return res.status(400).json({ error: 'parentName, parentPhone required' });
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      await ensureEnquiryCol();
+      const enqId = 'enq_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+      const enq = {
+        _id: enqId, id: enqId, schoolId: school.id,
+        parentName, parentPhone, childName: childName || '', childAge: childAge || '',
+        message: message || '',
+        status: 'new',  // 'new' | 'contacted' | 'interested' | 'admitted' | 'closed'
+        createdAt: Date.now(),
+      };
+      await schoolEnquiryCol.insertOne(enq);
+      // Notify principal
+      await notificationsCol.insertOne({
+        _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+        id: undefined, userId: school.ownerId,
+        type: 'enquiry', from: parentPhone, targetType: 'enquiry', targetId: enqId,
+        message: `📩 New enquiry from ${parentName} (${parentPhone}) for ${childName || 'child'}`,
+        read: false, createdAt: Date.now(),
+      });
+      const { _id, ...result } = enq;
+      res.json({ success: true, enquiry: result });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/school/:schoolId/enquiries', async (req, res) => {
+    try {
+      const { ownerId } = req.query;
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      await ensureEnquiryCol();
+      const enquiries = await schoolEnquiryCol.find({ schoolId: school.id }).sort({ createdAt: -1 }).limit(100).toArray();
+      res.json({ success: true, count: enquiries.length, enquiries: enquiries.map(e => { const { _id, ...r } = e; return r; }) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/school/enquiry/:enquiryId/status', async (req, res) => {
+    try {
+      const { ownerId, status, notes } = req.body;
+      // status: 'new' | 'contacted' | 'interested' | 'admitted' | 'closed'
+      await ensureEnquiryCol();
+      const enq = await schoolEnquiryCol.findOne({ id: req.params.enquiryId });
+      if (!enq) return res.status(404).json({ error: 'Enquiry not found' });
+      const school = await schoolsCol.findOne({ id: enq.schoolId });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      const update = { status, updatedAt: Date.now() };
+      if (notes) update.notes = notes;
+      await schoolEnquiryCol.updateOne({ id: enq.id }, { $set: update });
+      res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // SCHOOL EVENTS (annual day, sports day, trips)
+  // ============================================================
+  let schoolEventsCol;
+  async function ensureEventsCol() {
+    if (!schoolEventsCol) schoolEventsCol = db.collection('schoolEvents');
+    await schoolEventsCol.createIndex({ schoolId: 1, date: 1 });
+  }
+
+  app.post('/api/school/:schoolId/events', async (req, res) => {
+    try {
+      const { ownerId, title, description, date, type, venue, rsvpRequired } = req.body;
+      // type: 'annual_day' | 'sports_day' | 'trip' | 'competition' | 'meeting' | 'function' | 'celebration' | 'other'
+      if (!ownerId || !title || !date) return res.status(400).json({ error: 'ownerId, title, date required' });
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      await ensureEventsCol();
+      const eventId = 'evt_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
+      const event = {
+        _id: eventId, id: eventId, schoolId: school.id,
+        title, description: description || '',
+        date, type: type || 'function',
+        venue: venue || '',
+        rsvpRequired: rsvpRequired || false,
+        rsvps: [],
+        createdAt: Date.now(),
+      };
+      await schoolEventsCol.insertOne(event);
+      // Notify all parents
+      const students = await studentsCol.find({ schoolId: school.id, status: 'active' }).toArray();
+      for (const s of students) {
+        if (s.parentId) {
+          await notificationsCol.insertOne({
+            _id: 'n_' + crypto.randomBytes(8).toString('hex'),
+            id: undefined, userId: s.parentId,
+            type: 'event', from: ownerId, targetType: 'event', targetId: eventId,
+            message: `📅 [${school.name}] ${title} - ${date}${venue ? ' @ ' + venue : ''}`,
+            read: false, createdAt: Date.now(),
+          });
+        }
+      }
+      const { _id, ...result } = event;
+      res.json({ success: true, event: result });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/school/:schoolId/events', async (req, res) => {
+    try {
+      const { fromDate, toDate, type } = req.query;
+      await ensureEventsCol();
+      const query = { schoolId: req.params.schoolId };
+      if (type) query.type = type;
+      if (fromDate) query.date = { $gte: fromDate };
+      if (toDate) query.date = { ...(query.date || {}), $lte: toDate };
+      const events = await schoolEventsCol.find(query).sort({ date: 1 }).limit(50).toArray();
+      res.json({ success: true, count: events.length, events: events.map(e => { const { _id, ...r } = e; return r; }) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/school/event/:eventId/rsvp', async (req, res) => {
+    try {
+      const { parentName, parentPhone, studentId, attending, guests } = req.body;
+      await ensureEventsCol();
+      const event = await schoolEventsCol.findOne({ id: req.params.eventId });
+      if (!event) return res.status(404).json({ error: 'Event not found' });
+      const rsvp = { parentName, parentPhone, studentId, attending: attending !== false, guests: guests || 1, createdAt: Date.now() };
+      // Remove existing RSVP from same phone
+      const existingRsvps = (event.rsvps || []).filter(r => r.parentPhone !== parentPhone);
+      existingRsvps.push(rsvp);
+      await schoolEventsCol.updateOne({ id: event.id }, { $set: { rsvps: existingRsvps } });
+      res.json({ success: true, totalRsvps: existingRsvps.length });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // EXPORT (CSV download for any data)
+  // ============================================================
+  app.get('/api/school/:schoolId/export/students', async (req, res) => {
+    try {
+      const { ownerId, format } = req.query;
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      const students = await studentsCol.find({ schoolId: school.id, status: 'active' }).sort({ className: 1, rollNo: 1 }).toArray();
+      if (format === 'csv') {
+        const header = 'Roll No,Name,Class,Section,Parent Name,Parent Phone,DOB,Blood Group,Allergies,Admission Date\n';
+        const rows = students.map(s => `${s.rollNo || ''},"${s.name}","${s.className}","${s.section}","${s.parentName || ''}","${s.parentPhone}","${s.dob || ''}","${s.bloodGroup || ''}","${(s.allergies || '').replace(/"/g, '""')}","${new Date(s.admissionDate).toLocaleDateString('hi-IN')}"`).join('\n');
+        res.set('Content-Type', 'text/csv; charset=utf-8');
+        res.set('Content-Disposition', `attachment; filename="students_${school.slug}_${Date.now()}.csv"`);
+        res.send(header + rows);
+      } else {
+        res.json({ success: true, count: students.length, students: students.map(s => { const { _id, ...r } = s; return r; }) });
+      }
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/school/:schoolId/export/fees', async (req, res) => {
+    try {
+      const { ownerId, format, year } = req.query;
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      await ensureFeesCol();
+      const query = { schoolId: school.id };
+      if (year) query.year = parseInt(year);
+      const fees = await schoolFeesCol.find(query).sort({ collectedAt: -1 }).toArray();
+      if (format === 'csv') {
+        const header = 'Receipt No,Date,Student,Class,Month,Year,Amount,Type,Method,Status\n';
+        const rows = fees.map(f => `"${f.receiptNo}","${new Date(f.collectedAt).toLocaleDateString('hi-IN')}","${f.studentName}","${f.className}-${f.section}","${f.month}","${f.year}","${f.amount}","${f.type}","${f.paymentMethod}","${f.status}"`).join('\n');
+        res.set('Content-Type', 'text/csv; charset=utf-8');
+        res.set('Content-Disposition', `attachment; filename="fees_${school.slug}_${year || 'all'}.csv"`);
+        res.send(header + rows);
+      } else {
+        res.json({ success: true, count: fees.length, fees: fees.map(f => { const { _id, ...r } = f; return f; }) });
+      }
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/school/:schoolId/export/attendance', async (req, res) => {
+    try {
+      const { ownerId, format, fromDate, toDate } = req.query;
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      if (school.ownerId !== ownerId) return res.status(403).json({ error: 'Not owner' });
+      await ensureAttendanceCol();
+      const query = { schoolId: school.id };
+      if (fromDate) query.date = { $gte: fromDate };
+      if (toDate) query.date = { ...(query.date || {}), $lte: toDate };
+      const records = await schoolAttendanceCol.find(query).sort({ date: -1 }).toArray();
+      if (format === 'csv') {
+        const header = 'Date,Student ID,Status,Marked At\n';
+        const rows = records.map(r => `"${r.date}","${r.studentId}","${r.status}","${new Date(r.markedAt).toLocaleString('hi-IN')}"`).join('\n');
+        res.set('Content-Type', 'text/csv; charset=utf-8');
+        res.set('Content-Disposition', `attachment; filename="attendance_${school.slug}.csv"`);
+        res.send(header + rows);
+      } else {
+        res.json({ success: true, count: records.length, records: records.map(r => { const { _id, ...r2 } = r; return r2; }) });
+      }
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   connectDB_school().catch(e => console.error('School init error:', e.message));
 };
