@@ -1128,10 +1128,23 @@ function playMediaInline(mediaId, videoId, type) {
   const el = document.getElementById(mediaId);
   if (!el) return;
   if (type === 'youtube') {
-    el.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    el.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&enablejsapi=1" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
   } else if (type === 'odysee') {
     el.innerHTML = `<iframe src="https://odysee.com/embed/${videoId}" allowfullscreen></iframe>`;
   }
+  // Track the newly created iframe with SmartVideo (auto-pause on scroll)
+  setTimeout(() => {
+    if (window.SmartVideo) {
+      const iframe = el.querySelector('iframe');
+      if (iframe) {
+        window.SmartVideo.track(iframe, { videoId });
+        // Note: User has manually played this video
+        if (window.SmartVideo && iframe) {
+          // The 'play' event will fire on the iframe and SmartVideo will resume on viewport entry
+        }
+      }
+    }
+  }, 100);
 }
 
 function expandImage(src) {
@@ -1328,7 +1341,7 @@ async function loadHomeFeed() {
     lastFeedData = newDataStr;
     container.innerHTML = allPosts.map(p => renderPost(p)).join('');
     // Track new videos for auto-pause
-    setTimeout(scanForNewMedia, 100);
+    setTimeout(() => window.SmartVideo && window.SmartVideo.scan(), 100);
   } catch (e) {
     if (isFirstLoad) {
       container.innerHTML = '<div class="empty"><div class="emoji">❌</div><div class="text">Failed to load feed</div></div>';
@@ -1561,8 +1574,8 @@ function renderManualOdyseeStreams() {
     `;
   });
   section.innerHTML = html;
-  // Also hide the auto-detected Odysee section if manual is shown (avoid duplicates)
-  // Actually, we'll let auto-detected one show below manual ones
+  // Scan for new iframes so SmartVideo can track them
+  setTimeout(() => window.SmartVideo && window.SmartVideo.scan(), 200);
 }
 
 function removeManualOdyseeStream(idx) {
@@ -1611,6 +1624,10 @@ function playOdyseeStream(embedUrl, streamIdx) {
   if (iframe) {
     iframe.style.display = 'block';
     iframe.src = embedUrl + '?autoplay=1';
+    // Track with SmartVideo (for auto-pause on scroll)
+    if (window.SmartVideo) {
+      window.SmartVideo.track(iframe, { videoId: streamIdx });
+    }
     // Track this view
     if (!odyseeViewedStreams.has(streamIdx)) {
       odyseeViewedStreams.add(streamIdx);
@@ -2309,7 +2326,7 @@ async function loadGroupPosts(groupId) {
     return;
   }
   container.innerHTML = res.posts.map(p => renderPost(p)).join('');
-  setTimeout(scanForNewMedia, 100);
+    setTimeout(() => window.SmartVideo && window.SmartVideo.scan(), 100);
 }
 
 async function joinGroup(groupId) {
@@ -3284,136 +3301,14 @@ async function doUserSearch(query) {
   }, 300);
 }
 
-// === AUTO-PAUSE VIDEOS WHEN OUT OF VIEWPORT ===
-// Tracks all <video> and YouTube <iframe> elements, pauses when scrolled off-screen
-let videoObserver = null;
-let autoPausedVideos = new WeakSet();  // Videos we auto-paused (so user can manually resume)
-const videoTrackingMap = new Map();  // element -> { type, id, lastState }
-
-function initVideoObserver() {
-  if (videoObserver) return;
-  videoObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      const el = entry.target;
-      const meta = videoTrackingMap.get(el);
-      if (!meta) return;
-      if (!entry.isIntersecting || entry.intersectionRatio < 0.5) {
-        // Video is < 50% visible - pause it
-        pauseMediaElement(el, meta);
-      } else {
-        // Video is visible - don't auto-resume (respect user's pause)
-        // But if WE auto-paused it, we could resume
-        if (autoPausedVideos.has(el)) {
-          resumeMediaElement(el, meta);
-        }
-      }
-    });
-  }, {
-    threshold: [0, 0.25, 0.5, 0.75, 1.0],
-    rootMargin: '0px'
-  });
-}
-
-function pauseMediaElement(el, meta) {
-  if (meta.type === 'video') {
-    if (el && !el.paused && el.readyState > 2) {
-      autoPausedVideos.add(el);
-      el.pause();
-    }
-  } else if (meta.type === 'youtube') {
-    // YouTube iframe - send pause message
-    try {
-      el.contentWindow?.postMessage(JSON.stringify({
-        event: 'command',
-        func: 'pauseVideo',
-        args: ''
-      }), '*');
-    } catch (e) { /* ignore */ }
-  } else if (meta.type === 'odysee') {
-    try {
-      el.contentWindow?.postMessage(JSON.stringify({
-        method: 'pause'
-      }), '*');
-    } catch (e) { /* ignore */ }
-  }
-  // Show visual indicator
-  showPauseIndicator(el);
-}
-
-function resumeMediaElement(el, meta) {
-  if (meta.type === 'video') {
-    if (el && el.paused && autoPausedVideos.has(el)) {
-      el.play().catch(() => {});
-      autoPausedVideos.delete(el);
-    }
-  } else if (meta.type === 'youtube') {
-    try {
-      el.contentWindow?.postMessage(JSON.stringify({
-        event: 'command',
-        func: 'playVideo',
-        args: ''
-      }), '*');
-    } catch (e) { /* ignore */ }
-  }
-  hidePauseIndicator(el);
-}
-
-function showPauseIndicator(el) {
-  const wrapper = el.closest('.post-media, .call-videos');
-  if (!wrapper) return;
-  let indicator = wrapper.querySelector('.video-paused-overlay');
-  if (!indicator) {
-    indicator = document.createElement('div');
-    indicator.className = 'video-paused-overlay';
-    indicator.innerHTML = '<div class="play-icon">▶</div><div style="color:#fff;margin-top:8px;font-size:12px;opacity:0.8;">Tap to resume</div>';
-    // Make clickable to resume
-    indicator.style.pointerEvents = 'auto';
-    indicator.style.cursor = 'pointer';
-    indicator.onclick = () => {
-      const meta = videoTrackingMap.get(el);
-      if (meta) resumeMediaElement(el, meta);
-      hidePauseIndicator(el);
-    };
-    wrapper.appendChild(indicator);
-  }
-  indicator.classList.add('show');
-}
-
-function hidePauseIndicator(el) {
-  const wrapper = el.closest('.post-media, .call-videos');
-  if (!wrapper) return;
-  const indicator = wrapper.querySelector('.video-paused-overlay');
-  if (indicator) indicator.classList.remove('show');
-}
-
-// Track a new video/iframe element
-function trackMediaElement(el, type, id) {
-  if (!videoObserver) initVideoObserver();
-  videoTrackingMap.set(el, { type, id });
-  videoObserver.observe(el);
-}
-
-// Untrack element (call this when removing from DOM)
-function untrackMediaElement(el) {
-  if (videoObserver) videoObserver.unobserve(el);
-  videoTrackingMap.delete(el);
-}
-
-// Scan DOM for new media (call after content updates)
-function scanForNewMedia() {
-  // Track all <video> in posts that aren't already tracked
-  document.querySelectorAll('.post-media video, .post-media iframe').forEach(el => {
-    if (!videoTrackingMap.has(el)) {
-      let type = 'video';
-      let id = el.src || Math.random().toString(36).slice(2);
-      if (el.tagName === 'IFRAME') {
-        if (el.src.includes('youtube')) type = 'youtube';
-        else if (el.src.includes('odysee')) type = 'odysee';
-      }
-      trackMediaElement(el, type, id);
-    }
-  });
-}
+// === OLD VIDEO OBSERVER REMOVED ===
+// Replaced by /video-auto-pause.js (loaded at bottom of file)
+// That script handles YouTube/Odysee/Native video with:
+// - Auto-play on viewport entry
+// - Auto-pause on scroll out
+// - Real view tracking (30+ sec watched)
+// - Smart sound management (only 1 video plays sound)
+// - Manual play/pause override
 
 // === BOOT ===
 loadIceServers();
@@ -3445,7 +3340,7 @@ function smartRefresh() {
     checkForIncomingCall();
   }
   // Scan for new media elements to track for auto-pause
-  scanForNewMedia();
+  if (window.SmartVideo) window.SmartVideo.scan();
 }
 refreshInterval = setInterval(smartRefresh, 15000);
 
@@ -4453,5 +4348,7 @@ async function acceptCallById(callId) {
 
 <!-- Analytics tracker (admin only - tracks visitors, not the admin dashboard) -->
 <script src="/analytics-tracker.js"></script>
+<!-- Smart video auto-pause (YouTube/Odysee style) -->
+<script src="/video-auto-pause.js"></script>
 </body>
 </html>
