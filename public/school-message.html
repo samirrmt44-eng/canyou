@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#25D366" />
+<title>📤 Send Message - Child's Land School</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #a18cd1 100%);
+    min-height: 100vh; color: #1a1a2e; overscroll-behavior: none;
+  }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #f7f8fc; box-shadow: 0 0 40px rgba(0,0,0,0.1); position: relative; }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 50%, #075E54 100%);
+    color: #fff; padding: 18px 16px; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3);
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .header-back { background: rgba(255,255,255,0.2); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+  .header-title { flex: 1; text-align: center; }
+  .header-title h1 { font-size: 18px; font-weight: 900; line-height: 1.1; }
+  .header-title .sub { font-size: 11px; opacity: 0.9; font-weight: 600; }
+  .header-spacer { width: 36px; }
+
+  .container { padding: 16px; padding-bottom: 100px; }
+
+  /* BRANDING CARD */
+  .brand-card {
+    background: linear-gradient(135deg, #1a1a2e, #2a1a4e);
+    color: #fff; border-radius: 14px; padding: 14px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .brand-logo { width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
+  .brand-info { flex: 1; min-width: 0; }
+  .brand-name { font-size: 14px; font-weight: 800; }
+  .brand-tag { font-size: 11px; opacity: 0.8; }
+  .brand-verified { background: #25D366; color: #fff; padding: 2px 6px; border-radius: 6px; font-size: 9px; font-weight: 800; }
+
+  /* TAB SWITCH */
+  .method-tabs { display: flex; gap: 6px; background: #fff; padding: 4px; border-radius: 12px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .method-tab { flex: 1; padding: 10px 6px; border: none; background: transparent; border-radius: 8px; font-size: 11px; font-weight: 700; color: #888; cursor: pointer; }
+  .method-tab.active { background: linear-gradient(135deg, #25D366, #128C7E); color: #fff; }
+  .method-tab .icon { font-size: 20px; display: block; margin-bottom: 2px; }
+
+  /* METHOD CONTENT */
+  .method-content { display: none; }
+  .method-content.active { display: block; animation: fadeIn 0.3s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* SECTION */
+  .section-card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .section-title { font-size: 14px; font-weight: 800; color: #1a1a2e; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .section-sub { font-size: 11px; color: #888; margin-bottom: 10px; }
+
+  /* FORM */
+  .form-group { margin-bottom: 12px; }
+  .form-label { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 4px; display: block; }
+  .form-input, .form-select, .form-textarea { width: 100%; padding: 12px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 14px; font-family: inherit; outline: none; background: #fff; }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #25D366; }
+  .form-textarea { min-height: 100px; resize: vertical; }
+
+  /* RECIPIENT CHIPS */
+  .recipient-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+  .recipient-chip { padding: 10px; background: #f5f5f7; border: 2px solid transparent; border-radius: 10px; text-align: center; cursor: pointer; font-size: 11px; font-weight: 700; }
+  .recipient-chip.active { background: #d4f4dd; border-color: #25D366; color: #128C7E; }
+  .recipient-chip .icon { font-size: 20px; display: block; margin-bottom: 4px; }
+
+  /* TEMPLATE CHIPS */
+  .template-grid { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .template-grid::-webkit-scrollbar { display: none; }
+  .template-chip { flex-shrink: 0; padding: 8px 12px; background: #f5f5f7; border: 2px solid transparent; border-radius: 20px; font-size: 11px; font-weight: 700; color: #555; cursor: pointer; white-space: nowrap; }
+  .template-chip.active { background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: #fff; border-color: transparent; }
+
+  /* PREVIEW */
+  .msg-preview { background: #dcf8c6; border-radius: 10px; padding: 12px; margin-top: 12px; position: relative; }
+  .msg-preview::before { content: ''; position: absolute; top: 0; left: -8px; width: 0; height: 0; border: 8px solid transparent; border-top-color: #dcf8c6; border-right-color: #dcf8c6; }
+  .msg-preview-content { font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; color: #1a1a2e; }
+  .msg-preview-footer { font-size: 10px; color: #888; margin-top: 6px; text-align: right; }
+
+  /* BRANDED HEADER IN PREVIEW */
+  .preview-brand { background: linear-gradient(135deg, #1a1a2e, #2a1a4e); color: #fff; padding: 10px 12px; border-radius: 10px 10px 0 0; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .preview-brand-logo { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .preview-brand-text { font-size: 12px; font-weight: 700; }
+  .preview-brand-text .small { font-size: 9px; opacity: 0.7; font-weight: 400; display: block; }
+  .preview-brand-badge { margin-left: auto; background: #25D366; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; }
+
+  /* BUTTONS */
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn-primary { background: linear-gradient(135deg, #25D366, #128C7E); color: #fff; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3); }
+  .btn-secondary { background: rgba(0,0,0,0.05); color: #333; }
+  .btn-whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); color: #fff; }
+  .btn-sms { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #fff; }
+  .btn-copy { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+
+  /* RECIPIENTS LIST */
+  .recipients-list { max-height: 200px; overflow-y: auto; background: #f8f9fa; border-radius: 8px; padding: 6px; margin-top: 8px; }
+  .recipient-item { display: flex; align-items: center; gap: 8px; padding: 6px; border-bottom: 1px solid #e0e0e0; font-size: 12px; }
+  .recipient-item:last-child { border-bottom: none; }
+  .recipient-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #a18cd1, #fbc2eb); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 11px; flex-shrink: 0; }
+  .recipient-info { flex: 1; min-width: 0; }
+  .recipient-name { font-weight: 700; }
+  .recipient-phone { font-size: 10px; color: #888; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #1a1a2e; color: #fff; padding: 10px 20px; border-radius: 24px; font-size: 13px; z-index: 500; opacity: 0; transition: opacity 0.3s; max-width: 90%; }
+  .toast.show { opacity: 1; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 10px auto; }
+  .modal-header { padding: 0 16px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+  .modal-title { font-size: 16px; font-weight: 800; }
+  .modal-close { background: transparent; border: none; font-size: 24px; cursor: pointer; color: #888; }
+  .modal-body { padding: 16px; }
+
+  /* TIPS */
+  .tip-box { background: #fff8e1; border-left: 3px solid #ffc107; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #856404; margin: 8px 0; line-height: 1.5; }
+  .tip-box::before { content: '💡 '; }
+
+  /* STATS */
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .stat-mini { background: #fff; border-radius: 10px; padding: 10px; text-align: center; }
+  .stat-num-mini { font-size: 18px; font-weight: 900; color: #1a1a2e; }
+  .stat-lbl-mini { font-size: 10px; color: #888; }
+
+  /* SELECTION */
+  .check-row { display: flex; align-items: center; gap: 8px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 4px; cursor: pointer; }
+  .check-row input { width: 18px; height: 18px; }
+  .check-row .info { flex: 1; }
+  .check-row .name { font-weight: 700; font-size: 12px; }
+  .check-row .phone { font-size: 10px; color: #888; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <button class="header-back" onclick="goBack()">←</button>
+    <div class="header-title">
+      <h1>📤 Branded Message भेजें</h1>
+      <div class="sub">CANYOU / Child's Land School के नाम से</div>
+    </div>
+    <div class="header-spacer"></div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- BRANDING BANNER -->
+  <div class="brand-card">
+    <div class="brand-logo">🎓</div>
+    <div class="brand-info">
+      <div class="brand-name">Child's Land School</div>
+      <div class="brand-tag">Powered by CANYOU</div>
+    </div>
+    <div class="brand-verified">✓ OFFICIAL</div>
+  </div>
+
+  <!-- SCHOOL SELECTOR -->
+  <div class="section-card" id="schoolSelectCard">
+    <div class="section-title">🏫 School चुनें</div>
+    <select class="form-select" id="schoolSelect">
+      <option value="">-- Loading schools --</option>
+    </select>
+  </div>
+
+  <!-- METHOD TABS -->
+  <div class="method-tabs">
+    <button class="method-tab active" data-method="whatsapp" onclick="setMethod('whatsapp')">
+      <span class="icon">💬</span>WhatsApp
+    </button>
+    <button class="method-tab" data-method="sms" onclick="setMethod('sms')">
+      <span class="icon">📱</span>SMS
+    </button>
+    <button class="method-tab" data-method="copy" onclick="setMethod('copy')">
+      <span class="icon">📋</span>Copy
+    </button>
+  </div>
+
+  <!-- ========== WHATSAPP METHOD ========== -->
+  <div class="method-content active" id="method-whatsapp">
+    <div class="section-card">
+      <div class="section-title">💬 WhatsApp Message</div>
+      <div class="section-sub">Parents को WhatsApp पर branded message भेजें (sender: CANYOU/Child's Land)</div>
+
+      <div class="form-group">
+        <label class="form-label">Message Type</label>
+        <div class="recipient-grid">
+          <div class="recipient-chip active" data-type="all" onclick="selectRecipientType('all')">
+            <div class="icon">👨‍👩‍👧</div>All Parents
+          </div>
+          <div class="recipient-chip" data-type="class" onclick="selectRecipientType('class')">
+            <div class="icon">📚</div>By Class
+          </div>
+          <div class="recipient-chip" data-type="individual" onclick="selectRecipientType('individual')">
+            <div class="icon">👤</div>Individual
+          </div>
+          <div class="recipient-chip" data-type="staff" onclick="selectRecipientType('staff')">
+            <div class="icon">👩‍🏫</div>Staff
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group hidden" id="classSelector">
+        <label class="form-label">Class चुनें</label>
+        <select class="form-select" id="classSelect" onchange="loadRecipients()"></select>
+      </div>
+
+      <div class="form-group hidden" id="individualSelector">
+        <label class="form-label">Parents की List (multiple select)</label>
+        <div id="individualList" style="max-height:200px;overflow-y:auto;background:#f8f9fa;border-radius:8px;padding:6px;"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Quick Templates</label>
+        <div class="template-grid">
+          <div class="template-chip" onclick="applyTemplate('welcome')">👋 Welcome</div>
+          <div class="template-chip" onclick="applyTemplate('holiday')">🏖️ Holiday</div>
+          <div class="template-chip" onclick="applyTemplate('ptm')">👥 PTM</div>
+          <div class="template-chip" onclick="applyTemplate('fee')">💰 Fee Reminder</div>
+          <div class="template-chip" onclick="applyTemplate('event')">🎉 Event</div>
+          <div class="template-chip" onclick="applyTemplate('result')">📊 Result</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">📝 Message *</label>
+        <textarea class="form-textarea" id="messageText" placeholder="अपना message यहाँ लिखें..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">School Name (branding)</label>
+        <input type="text" class="form-input" id="schoolNameInput" placeholder="School name" value="">
+      </div>
+
+      <!-- Live Preview -->
+      <div class="section-title" style="margin-top:14px;">👀 Live Preview (जैसा receiver देखेगा)</div>
+      <div class="msg-preview" id="whatsappPreview">
+        <div class="preview-brand">
+          <div class="preview-brand-logo">🎓</div>
+          <div class="preview-brand-text">
+            Child's Land School
+            <span class="small">via CANYOU • Official</span>
+          </div>
+          <div class="preview-brand-badge">✓ VERIFIED</div>
+        </div>
+        <div class="msg-preview-content" id="previewContent">[Your message will appear here]</div>
+        <div class="msg-preview-footer">via CANYOU School App</div>
+      </div>
+
+      <div class="tip-box">WhatsApp pe message tap karne par directly school ke WhatsApp number se jayega. Parent ko professional branded message dikhega.</div>
+
+      <div class="btn-row mt-12" style="margin-top:12px;">
+        <button class="btn btn-secondary" onclick="copyMessageText()">📋 Copy Text</button>
+        <button class="btn btn-whatsapp" onclick="sendViaWhatsApp()">💬 Send on WhatsApp</button>
+      </div>
+    </div>
+
+    <!-- Recipients List -->
+    <div class="section-card hidden" id="recipientsCard">
+      <div class="section-title">👥 Selected Recipients (<span id="recipientsCount">0</span>)</div>
+      <div class="recipients-list" id="recipientsList"></div>
+      <button class="btn btn-whatsapp mt-12" style="margin-top:10px;" onclick="sendBulkWhatsApp()">💬 Send to All Selected</button>
+    </div>
+  </div>
+
+  <!-- ========== SMS METHOD ========== -->
+  <div class="method-content" id="method-sms">
+    <div class="section-card">
+      <div class="section-title">📱 SMS Message</div>
+      <div class="section-sub">Phone के default SMS app से भेजें (free, multi-recipient)</div>
+
+      <div class="tip-box">
+        <strong>📱 SMS कैसे काम करता है:</strong><br>
+        1. "Open SMS App" दबाएं<br>
+        2. Phone का default SMS app खुलेगा<br>
+        3. सभी numbers + branded message pre-filled होंगे<br>
+        4. Send दबाएं - सबको एक साथ जाएगा!
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Message</label>
+        <textarea class="form-textarea" id="smsMessage" placeholder="SMS message (160 chars limit)"></textarea>
+        <div style="font-size:10px;color:#888;margin-top:4px;" id="smsCharCount">0 / 160 characters</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Template</label>
+        <div class="template-grid">
+          <div class="template-chip" onclick="applySmsTemplate('fee')">💰 Fee Reminder</div>
+          <div class="template-chip" onclick="applySmsTemplate('holiday')">🏖️ Holiday</div>
+          <div class="template-chip" onclick="applySmsTemplate('ptm')">👥 PTM</div>
+        </div>
+      </div>
+
+      <div class="section-title">👥 Recipients (<span id="smsRecipientsCount">0</span>)</div>
+      <div class="recipients-list" id="smsRecipientsList"></div>
+
+      <button class="btn btn-sms mt-12" style="margin-top:12px;" onclick="sendViaSmsApp()">📱 Open SMS App with All Numbers</button>
+    </div>
+  </div>
+
+  <!-- ========== COPY METHOD ========== -->
+  <div class="method-content" id="method-copy">
+    <div class="section-card">
+      <div class="section-title">📋 Copy Branded Message</div>
+      <div class="section-sub">Text को copy करके कहीं भी paste करें (SMS, Email, Notice, etc.)</div>
+
+      <div class="form-group">
+        <label class="form-label">Branded Message Preview</label>
+        <div class="msg-preview" style="margin-top:0;">
+          <div class="preview-brand">
+            <div class="preview-brand-logo">🎓</div>
+            <div class="preview-brand-text">
+              Child's Land School
+              <span class="small">via CANYOU • Official</span>
+            </div>
+            <div class="preview-brand-badge">✓ VERIFIED</div>
+          </div>
+          <div class="msg-preview-content" id="copyPreview">[Your message here]</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-copy" onclick="copyBrandedText()">📋 Copy to Clipboard</button>
+        <button class="btn btn-secondary" onclick="downloadTxt()">⬇️ Download .txt</button>
+      </div>
+    </div>
+
+    <!-- Quick History -->
+    <div class="section-card">
+      <div class="section-title">📜 Sent History (Recent)</div>
+      <div id="msgHistory"><div class="empty" style="text-align:center;padding:14px;color:#999;font-size:12px;">No history yet. Send your first message!</div></div>
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div class="section-card" style="background:linear-gradient(135deg,#fff5e1,#ffe6f0);border:2px dashed #ff9a9e;">
+    <div class="section-title">🎯 Why This Works</div>
+    <ul style="font-size:12px;line-height:1.7;color:#555;padding-left:18px;">
+      <li><strong>✅ Branded Sender:</strong> "Child's Land School via CANYOU" dikhta hai</li>
+      <li><strong>✅ Official Badge:</strong> ✓ VERIFIED badge trust badhata hai</li>
+      <li><strong>✅ FREE Forever:</strong> No SMS gateway cost, no WhatsApp Business fee</li>
+      <li><strong>✅ Hindi + English:</strong> Both supported</li>
+      <li><strong>✅ 100% Delivery:</strong> Receiver ko message definitely milega</li>
+      <li><strong>✅ Multi-recipient:</strong> Ek click se 50+ parents ko</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Title</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const API = 'https://canyou-uqkp.onrender.com';
+let currentSchool = null;
+let currentUser = null;
+let selectedRecipients = [];  // [{ name, phone, childName }]
+let recipientType = 'all';
+let allParents = [];  // Cache
+let allClasses = [];
+
+function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function toast(msg, dur = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), dur);
+}
+function goBack() {
+  if (window.history.length > 1) window.history.back();
+  else window.location.href = '/school-portal.html';
+}
+
+// ============ ON LOAD ============
+window.addEventListener('DOMContentLoaded', async () => {
+  // Load school from localStorage
+  const savedUser = localStorage.getItem('ds_school_user');
+  const savedSchool = localStorage.getItem('ds_school_data');
+  if (!savedUser || !savedSchool) {
+    toast('⚠️ पहले login करें');
+    setTimeout(() => window.location.href = '/school-portal.html', 1500);
+    return;
+  }
+  currentUser = JSON.parse(savedUser);
+  currentSchool = JSON.parse(savedSchool);
+  document.getElementById('schoolNameInput').value = currentSchool.name || 'Child\'s Land School';
+  // Load classes
+  await loadClasses();
+  // Load all parents
+  await loadAllParents();
+  // Set up live preview
+  setupLivePreview();
+  // Show all parents by default
+  selectRecipientType('all');
+});
+
+// ============ LOAD DATA ============
+async function loadClasses() {
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/classes').then(r => r.json());
+    if (r.success) {
+      allClasses = r.classes;
+      const sel = document.getElementById('classSelect');
+      sel.innerHTML = '<option value="">-- Select Class --</option>' + r.classes.map(c =>
+        `<option value="${esc(c.className)}|${esc(c.section)}">${esc(c.className)} - ${esc(c.section)}</option>`
+      ).join('');
+    }
+  } catch (e) { console.error(e); }
+}
+
+async function loadAllParents() {
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/students').then(r => r.json());
+    if (r.success) {
+      // Deduplicate by phone
+      const seen = new Set();
+      allParents = [];
+      r.students.forEach(s => {
+        if (s.parentPhone && !seen.has(s.parentPhone)) {
+          seen.add(s.parentPhone);
+          allParents.push({
+            name: s.parentName || s.name + "'s Parent",
+            phone: s.parentPhone,
+            childName: s.name,
+            className: s.className + '-' + s.section,
+            rollNo: s.rollNo
+          });
+        }
+      });
+    }
+  } catch (e) { console.error(e); }
+}
+
+// ============ RECIPIENT TYPE ============
+function selectRecipientType(type) {
+  recipientType = type;
+  document.querySelectorAll('.recipient-chip').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.recipient-chip[data-type="${type}"]`)?.classList.add('active');
+  document.getElementById('classSelector').classList.toggle('hidden', type !== 'class');
+  document.getElementById('individualSelector').classList.toggle('hidden', type !== 'individual');
+  loadRecipients();
+}
+
+function loadRecipients() {
+  let recipients = [];
+  if (recipientType === 'all') {
+    recipients = allParents;
+  } else if (recipientType === 'class') {
+    const cls = document.getElementById('classSelect').value;
+    if (cls) {
+      const [className, section] = cls.split('|');
+      recipients = allParents.filter(p => p.className === className + '-' + section);
+    }
+  } else if (recipientType === 'individual') {
+    // Render individual selector
+    const el = document.getElementById('individualList');
+    if (allParents.length === 0) {
+      el.innerHTML = '<div style="text-align:center;color:#999;padding:14px;font-size:12px;">कोई parent नहीं मिला</div>';
+    } else {
+      el.innerHTML = allParents.map((p, i) => `
+        <label class="check-row">
+          <input type="checkbox" data-idx="${i}" onchange="toggleIndividual(${i}, this.checked)">
+          <div class="recipient-avatar">${esc(p.childName[0])}</div>
+          <div class="info">
+            <div class="name">${esc(p.childName)} <span style="color:#888;">(${esc(p.className)} #${p.rollNo})</span></div>
+            <div class="phone">${esc(p.name)} • ${esc(p.phone)}</div>
+          </div>
+        </label>
+      `).join('');
+    }
+    return;  // Don't update recipients list for individual
+  } else if (recipientType === 'staff') {
+    // Just the principal for now
+    recipients = [{ name: currentUser.name, phone: currentUser.phone, childName: 'Self (Principal)' }];
+  }
+  selectedRecipients = recipients;
+  renderRecipients();
+  updateRecipientsCount();
+}
+
+function toggleIndividual(idx, checked) {
+  const p = allParents[idx];
+  if (checked && !selectedRecipients.find(r => r.phone === p.phone)) {
+    selectedRecipients.push(p);
+  } else if (!checked) {
+    selectedRecipients = selectedRecipients.filter(r => r.phone !== p.phone);
+  }
+  renderRecipients();
+  updateRecipientsCount();
+}
+
+function renderRecipients() {
+  const list = document.getElementById('recipientsList');
+  const card = document.getElementById('recipientsCard');
+  if (selectedRecipients.length === 0) {
+    card.classList.add('hidden');
+    return;
+  }
+  card.classList.remove('hidden');
+  list.innerHTML = selectedRecipients.slice(0, 20).map(r => `
+    <div class="recipient-item">
+      <div class="recipient-avatar">${esc((r.childName || r.name)[0])}</div>
+      <div class="recipient-info">
+        <div class="recipient-name">${esc(r.childName || r.name)}</div>
+        <div class="recipient-phone">${esc(r.name)} • ${esc(r.phone)}</div>
+      </div>
+    </div>
+  `).join('') + (selectedRecipients.length > 20 ? `<div style="text-align:center;color:#888;font-size:11px;padding:6px;">+ ${selectedRecipients.length - 20} more</div>` : '');
+}
+
+function updateRecipientsCount() {
+  document.getElementById('recipientsCount').textContent = selectedRecipients.length;
+  document.getElementById('smsRecipientsCount').textContent = selectedRecipients.length;
+  // Update SMS list too
+  const smsList = document.getElementById('smsRecipientsList');
+  if (smsList) {
+    smsList.innerHTML = selectedRecipients.slice(0, 30).map(r => `
+      <div class="recipient-item">
+        <div class="recipient-avatar">${esc((r.childName || r.name)[0])}</div>
+        <div class="recipient-info">
+          <div class="recipient-name">${esc(r.childName || r.name)}</div>
+          <div class="recipient-phone">${esc(r.phone)}</div>
+        </div>
+      </div>
+    `).join('') + (selectedRecipients.length > 30 ? `<div style="text-align:center;color:#888;font-size:11px;padding:6px;">+ ${selectedRecipients.length - 30} more</div>` : '');
+  }
+}
+
+// ============ METHOD SWITCH ============
+function setMethod(method) {
+  document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.method-tab[data-method="${method}"]`)?.classList.add('active');
+  document.querySelectorAll('.method-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('method-' + method).classList.add('active');
+}
+
+// ============ TEMPLATES ============
+function applyTemplate(template) {
+  const schoolName = document.getElementById('schoolNameInput').value || 'Child\'s Land School';
+  const templates = {
+    welcome: `🙏 Namaste Parents!
+
+Aapka swagat hai ${schoolName} mein! 🎓
+
+Aapka baccha ab hamare school ka hissa hai. Is app ke through aapko:
+✅ Daily diary updates
+✅ Class photos
+✅ Fee receipts
+✅ Holiday calendar
+✅ Direct chat with principal
+
+Sab kuch ek jagah milega!
+
+📲 ${schoolName} App: ${window.location.origin}/school-portal.html
+🏫 Powered by CANYOU`,
+
+    holiday: `🏖️ Holiday Notice!
+
+${schoolName} ki taraf se sabhi parents ko suchit kiya jata hai ki aaj school BAND rahega.
+
+📅 Date: ${new Date().toLocaleDateString('hi-IN')}
+📋 Reason: Special Occasion
+
+Classes phir se kal se normal schedule pe hongi.
+
+🙏 Dhanyavaad!
+- ${schoolName} (via CANYOU)`,
+
+    ptm: `👥 PTM (Parent-Teacher Meeting)!
+
+${schoolName} mein Parent-Teacher Meeting ka aayojan hai.
+
+📅 Date: ${new Date().toLocaleDateString('hi-IN')}
+⏰ Time: 10:00 AM - 1:00 PM
+📍 Venue: School
+
+Kripya apna time slot book karein:
+📲 ${window.location.origin}/school-portal.html
+
+Aapki upasthiti zaroori hai!
+
+- ${schoolName} (via CANYOU)`,
+
+    fee: `💰 Fee Reminder!
+
+${schoolName} ki taraf se reminder:
+
+Aapke bacche ki is mahine ki fee pending hai.
+
+💵 Monthly Fee: ₹${currentSchool.monthlyFee || 1500}
+📅 Due Date: ${new Date(Date.now() + 7*86400000).toLocaleDateString('hi-IN')}
+
+Kripya jaldi se jaldi fee jama karein. Receipt SMS pe milegi.
+
+- ${schoolName} (via CANYOU)`,
+
+    event: `🎉 Special Event!
+
+${schoolName} ki taraf se sabhi parents ko nimnlikhit event ki suchna:
+
+🎊 Event: Annual Day Celebration
+📅 Date: ${new Date(Date.now() + 7*86400000).toLocaleDateString('hi-IN')}
+⏰ Time: 5:00 PM
+📍 Venue: School Ground
+
+Aap sab parents ka swagat hai! ✨
+
+- ${schoolName} (via CANYOU)`,
+
+    result: `📊 Result Published!
+
+${schoolName} ki taraf se aapke bacche ka exam result publish hua hai.
+
+📋 Exam: Mid-term 2026
+📊 Result: Dekhein app pe
+🏆 Grade: A+
+
+Result dekhne ke liye:
+📲 ${window.location.origin}/school-portal.html
+
+Bahut achha performance! 👏
+
+- ${schoolName} (via CANYOU)`
+  };
+  document.getElementById('messageText').value = templates[template] || '';
+  updatePreview();
+  toast('✅ Template applied!');
+}
+
+function applySmsTemplate(template) {
+  const schoolName = currentSchool.name || 'Child\'s Land School';
+  const templates = {
+    fee: `[${schoolName} via CANYOU] Fee reminder: ₹${currentSchool.monthlyFee || 1500} pending for ${new Date().toLocaleDateString('hi-IN', {month:'long'})}. Please pay soon. App: ${window.location.origin}`,
+    holiday: `[${schoolName} via CANYOU] Holiday notice: Aaj school band hai. Classes kal se normal. - Principal`,
+    ptm: `[${schoolName} via CANYOU] PTM on ${new Date(Date.now() + 3*86400000).toLocaleDateString('hi-IN')} 10am-1pm. Book slot: ${window.location.origin}`
+  };
+  document.getElementById('smsMessage').value = templates[template] || '';
+  updateSmsCharCount();
+}
+
+// ============ LIVE PREVIEW ============
+function setupLivePreview() {
+  const msgEl = document.getElementById('messageText');
+  const schoolEl = document.getElementById('schoolNameInput');
+  msgEl.addEventListener('input', updatePreview);
+  schoolEl.addEventListener('input', updatePreview);
+  updatePreview();
+}
+
+function updatePreview() {
+  const msg = document.getElementById('messageText').value || '[Your message will appear here]';
+  const schoolName = document.getElementById('schoolNameInput').value || 'Child\'s Land School';
+  document.querySelector('#whatsappPreview .preview-brand-text').innerHTML = `${esc(schoolName)}<span class="small">via CANYOU • Official</span>`;
+  document.getElementById('previewContent').textContent = msg;
+  document.getElementById('copyPreview').textContent = msg;
+}
+
+function updateSmsCharCount() {
+  const msg = document.getElementById('smsMessage').value;
+  document.getElementById('smsCharCount').textContent = `${msg.length} / 160 characters ${msg.length > 160 ? '⚠️ (will be split into multiple SMS)' : ''}`;
+}
+
+// ============ SEND FUNCTIONS ============
+function buildBrandedMessage() {
+  const msg = document.getElementById('messageText').value.trim();
+  if (!msg) { toast('⚠️ Message लिखें'); return null; }
+  const schoolName = document.getElementById('schoolNameInput').value.trim() || 'Child\'s Land School';
+  // Build WhatsApp-friendly branded message
+  return `*🎓 ${schoolName}*
+_✓ via CANYOU • Official_
+
+${msg}
+
+_📲 ${window.location.origin}/school-portal.html_`;
+}
+
+function sendViaWhatsApp() {
+  const msg = buildBrandedMessage();
+  if (!msg) return;
+  if (selectedRecipients.length === 0) { toast('⚠️ Recipients select करें'); return; }
+  if (selectedRecipients.length === 1) {
+    // Direct single send
+    const phone = selectedRecipients[0].phone.replace(/[^0-9]/g, '');
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+    saveHistory(msg, selectedRecipients.length, 'whatsapp');
+  } else {
+    // Show bulk option
+    showModal('💬 Send to ' + selectedRecipients.length + ' Parents', `
+      <p style="font-size:13px;color:#888;margin-bottom:12px;">हर parent के लिए अलग WhatsApp chat खुलेगा। आप एक-एक करके send कर सकते हैं।</p>
+      <button class="btn btn-whatsapp" onclick="sendBulkWhatsApp()">💬 Open All Chats</button>
+    `);
+  }
+}
+
+function sendBulkWhatsApp() {
+  const msg = buildBrandedMessage();
+  if (!msg) return;
+  if (selectedRecipients.length === 0) { toast('⚠️ Recipients select करें'); return; }
+  // Open chats with small delay
+  let i = 0;
+  const openNext = () => {
+    if (i >= selectedRecipients.length) return;
+    const phone = selectedRecipients[i].phone.replace(/[^0-9]/g, '');
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+    i++;
+    if (i < selectedRecipients.length) setTimeout(openNext, 600);
+  };
+  openNext();
+  closeModal();
+  saveHistory(msg, selectedRecipients.length, 'whatsapp');
+  toast(`✅ ${selectedRecipients.length} WhatsApp chats खुले!`);
+}
+
+function sendViaSmsApp() {
+  const msg = document.getElementById('smsMessage').value.trim();
+  if (!msg) { toast('⚠️ Message लिखें'); return; }
+  if (selectedRecipients.length === 0) { toast('⚠️ Recipients select करें'); return; }
+  const numbers = selectedRecipients.map(r => r.phone.replace(/[^0-9]/g, '')).join(',');
+  const schoolName = currentSchool.name || "Child's Land School";
+  const fullMsg = `[${schoolName} via CANYOU] ${msg}`;
+  // Open SMS app
+  window.location.href = `sms:${numbers}?body=${encodeURIComponent(fullMsg)}`;
+  saveHistory(fullMsg, selectedRecipients.length, 'sms');
+  toast(`📱 SMS app खुल रहा है with ${selectedRecipients.length} numbers`);
+}
+
+function copyMessageText() {
+  const msg = buildBrandedMessage();
+  if (!msg) return;
+  navigator.clipboard.writeText(msg).then(() => {
+    toast('✅ Branded message copied!');
+    saveHistory(msg, selectedRecipients.length, 'copy');
+  });
+}
+
+function copyBrandedText() {
+  const msg = buildBrandedMessage();
+  if (!msg) return;
+  navigator.clipboard.writeText(msg).then(() => {
+    toast('✅ Branded text copied to clipboard!');
+    saveHistory(msg, selectedRecipients.length, 'copy');
+    renderHistory();
+  });
+}
+
+function downloadTxt() {
+  const msg = buildBrandedMessage();
+  if (!msg) return;
+  const blob = new Blob([msg], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `school_message_${Date.now()}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✅ Message downloaded!');
+}
+
+// ============ HISTORY ============
+function saveHistory(msg, count, method) {
+  const history = JSON.parse(localStorage.getItem('ds_msg_history') || '[]');
+  history.unshift({
+    message: msg.substring(0, 100) + (msg.length > 100 ? '...' : ''),
+    recipients: count,
+    method,
+    sentAt: Date.now()
+  });
+  if (history.length > 20) history.pop();
+  localStorage.setItem('ds_msg_history', JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory() {
+  const history = JSON.parse(localStorage.getItem('ds_msg_history') || '[]');
+  const el = document.getElementById('msgHistory');
+  if (history.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:14px;color:#999;font-size:12px;">No history yet</div>';
+    return;
+  }
+  el.innerHTML = history.map(h => {
+    const methodEmoji = { whatsapp: '💬', sms: '📱', copy: '📋' }[h.method] || '📤';
+    return `<div style="background:#f8f9fa;border-radius:8px;padding:8px;margin-bottom:4px;font-size:11px;">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:6px;">
+        <div style="flex:1;">
+          <strong>${methodEmoji} ${h.recipients} recipients</strong>
+          <div style="color:#888;font-size:10px;margin-top:2px;">${new Date(h.sentAt).toLocaleString('hi-IN')}</div>
+          <div style="color:#555;margin-top:4px;">${esc(h.message)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// SMS message live counter
+document.addEventListener('DOMContentLoaded', () => {
+  const smsMsg = document.getElementById('smsMessage');
+  if (smsMsg) smsMsg.addEventListener('input', updateSmsCharCount);
+});
+</script>
+</body>
+</html>
