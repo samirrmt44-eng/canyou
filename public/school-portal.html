@@ -3,53 +3,97 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-<title>🎓 DainikState School Portal - FREE for Schools</title>
+<meta name="theme-color" content="#ff6b6b" />
+<meta name="description" content="Child's Land School - Free pre-school management for Nursery/LKG/UKG" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Child's Land" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png" />
+<link rel="apple-touch-icon" href="/images/icon-192.png" />
+<title>🎓 Child's Land School - DainikState</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #a18cd1 100%);
     min-height: 100vh; color: #1a1a2e;
+    overscroll-behavior: none;
   }
-  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #f7f8fc; box-shadow: 0 0 40px rgba(0,0,0,0.1); }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #f7f8fc; box-shadow: 0 0 40px rgba(0,0,0,0.1); position: relative; }
   .header {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 50%, #f7931e 100%);
     color: #fff; padding: 18px 16px; position: sticky; top: 0; z-index: 100;
     box-shadow: 0 4px 20px rgba(255,107,107,0.3);
   }
-  .header-top { display: flex; align-items: center; justify-content: space-between; }
-  .logo { display: flex; align-items: center; gap: 10px; }
-  .logo-icon { font-size: 32px; }
-  .logo h1 { font-size: 20px; font-weight: 900; }
-  .logo .tagline { font-size: 11px; opacity: 0.95; }
-  .home-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; width: 38px; height: 38px; border-radius: 50%; font-size: 16px; cursor: pointer; }
-  .container { padding: 16px; padding-bottom: 80px; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .logo { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .logo-icon { font-size: 36px; flex-shrink: 0; }
+  .logo h1 { font-size: 19px; font-weight: 900; line-height: 1.1; }
+  .logo .tagline { font-size: 10px; opacity: 0.95; font-weight: 600; }
+  .install-btn {
+    background: rgba(255,255,255,0.25); border: 2px solid #fff; color: #fff;
+    padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800;
+    cursor: pointer; display: none; align-items: center; gap: 4px;
+  }
+  .install-btn.show { display: flex; }
+  .header-btns { display: flex; gap: 6px; }
+  .icon-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 16px; cursor: pointer; }
+  .container { padding: 16px; padding-bottom: 80px; min-height: calc(100vh - 80px); }
   .role-tabs { display: flex; gap: 6px; background: #fff; padding: 4px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
-  .role-tab { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 8px; font-size: 13px; font-weight: 700; color: #888; cursor: pointer; }
+  .role-tab { flex: 1; padding: 10px 6px; border: none; background: transparent; border-radius: 8px; font-size: 12px; font-weight: 700; color: #888; cursor: pointer; }
   .role-tab.active { background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: #fff; box-shadow: 0 2px 8px rgba(255,107,107,0.3); }
   .login-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-  .login-title { font-size: 18px; font-weight: 800; text-align: center; margin-bottom: 16px; }
+  .login-title { font-size: 17px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+  .login-sub { font-size: 12px; text-align: center; color: #888; margin-bottom: 16px; }
   .form-group { margin-bottom: 14px; }
   .form-label { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 4px; display: block; }
-  .form-input { width: 100%; padding: 12px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 14px; font-family: inherit; outline: none; }
-  .form-input:focus { border-color: #ff6b6b; }
-  .form-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(255,107,107,0.3); }
+  .form-input, .form-select { width: 100%; padding: 14px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 16px; font-family: inherit; outline: none; background: #fff; }
+  .form-input:focus, .form-select:focus { border-color: #ff6b6b; }
+  .form-textarea { min-height: 80px; resize: vertical; }
+  .form-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(255,107,107,0.3); display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .form-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .form-btn.secondary { background: rgba(0,0,0,0.05); color: #333; box-shadow: none; }
-  .form-btn.small { padding: 8px 14px; font-size: 12px; width: auto; }
-  .link-btn { background: transparent; border: none; color: #ff6b6b; font-weight: 700; cursor: pointer; font-size: 13px; padding: 0; }
-  .divider { text-align: center; color: #888; font-size: 12px; margin: 16px 0; }
+  .form-btn.outline { background: transparent; color: #ff6b6b; border: 2px solid #ff6b6b; box-shadow: none; }
+  .form-btn.small { padding: 8px 12px; font-size: 12px; width: auto; }
+  .form-btn.tiny { padding: 4px 8px; font-size: 10px; width: auto; }
+  .divider { text-align: center; color: #aaa; font-size: 11px; margin: 14px 0; }
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-  .stat-card { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
-  .stat-num { font-size: 22px; font-weight: 900; color: #ff6b6b; }
-  .stat-lbl { font-size: 11px; color: #888; margin-top: 2px; }
+  .stat-card { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: -20px; right: -20px; width: 60px; height: 60px; border-radius: 50%; opacity: 0.1; }
+  .stat-card.students::before { background: #ff6b6b; }
+  .stat-card.classes::before { background: #667eea; }
+  .stat-card.diary::before { background: #2ed573; }
+  .stat-card.photos::before { background: #f7931e; }
+  .stat-num { font-size: 24px; font-weight: 900; color: #1a1a2e; }
+  .stat-lbl { font-size: 11px; color: #888; margin-top: 2px; font-weight: 600; }
   .section-card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
   .section-title { font-size: 14px; font-weight: 800; color: #1a1a2e; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
   .section-title .count { font-size: 11px; background: #ff6b6b; color: #fff; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
   .empty { text-align: center; padding: 30px 16px; color: #999; }
-  .empty-icon { font-size: 40px; margin-bottom: 8px; }
+  .empty-icon { font-size: 50px; margin-bottom: 8px; opacity: 0.5; }
   .empty-text { font-size: 13px; }
-  .student-card, .child-card { background: #fff; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-  .child-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #ff9a9e, #fad0c4); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #fff; flex-shrink: 0; }
+  .empty-banner { background: linear-gradient(135deg, #fff5e1, #ffe6f0); border: 2px dashed #ff9a9e; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 16px; }
+  .empty-banner h3 { color: #ff6b6b; margin-bottom: 6px; font-size: 16px; }
+  .empty-banner p { color: #888; font-size: 12px; }
+  .child-card, .student-card { background: #fff; border-radius: 12px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); cursor: pointer; }
+  .child-avatar {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0; position: relative;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(255,154,158,0.3);
+  }
+  /* Child-themed avatars (different for each roll number) */
+  .child-avatar[data-avatar="1"] { background: linear-gradient(135deg, #ff9a9e, #fad0c4); }
+  .child-avatar[data-avatar="2"] { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+  .child-avatar[data-avatar="3"] { background: linear-gradient(135deg, #84fab0, #8fd3f4); }
+  .child-avatar[data-avatar="4"] { background: linear-gradient(135deg, #fccb90, #d57eeb); }
+  .child-avatar[data-avatar="5"] { background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
+  .child-avatar[data-avatar="6"] { background: linear-gradient(135deg, #f093fb, #f5576c); }
+  .child-avatar[data-avatar="7"] { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+  .child-avatar[data-avatar="8"] { background: linear-gradient(135deg, #43e97b, #38f9d7); }
   .child-info { flex: 1; min-width: 0; }
   .child-name { font-size: 14px; font-weight: 800; color: #1a1a2e; }
   .child-meta { font-size: 11px; color: #888; margin-top: 2px; }
@@ -58,24 +102,30 @@
   .badge-orange { background: #fff3cd; color: #856404; }
   .badge-red { background: #f8d7da; color: #721c24; }
   .badge-blue { background: #d1ecf1; color: #0c5460; }
-  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a1a2e; color: #fff; padding: 10px 20px; border-radius: 24px; font-size: 13px; z-index: 500; opacity: 0; transition: opacity 0.3s; }
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #1a1a2e; color: #fff; padding: 10px 20px; border-radius: 24px; font-size: 13px; z-index: 500; opacity: 0; transition: opacity 0.3s; max-width: 90%; }
   .toast.show { opacity: 1; }
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; align-items: flex-end; justify-content: center; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
   .modal-overlay.show { display: flex; }
-  .modal { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+  .modal { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   .modal-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 10px auto; }
   .modal-header { padding: 0 16px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
   .modal-title { font-size: 16px; font-weight: 800; }
   .modal-close { background: transparent; border: none; font-size: 24px; cursor: pointer; color: #888; }
   .modal-body { padding: 16px; }
-  .modal-footer { padding: 12px 16px; border-top: 1px solid #eee; display: flex; gap: 8px; }
-  .modal-footer button { flex: 1; }
-  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #fff; border-top: 1px solid #eee; display: flex; padding: 8px 0; z-index: 100; }
-  .nav-item { flex: 1; background: transparent; border: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: #888; cursor: pointer; }
+  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #fff; border-top: 1px solid #eee; display: flex; padding: 8px 0; z-index: 100; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  .nav-item { flex: 1; background: transparent; border: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: #888; cursor: pointer; padding: 4px; }
   .nav-item.active { color: #ff6b6b; }
-  .nav-item .icon { font-size: 20px; }
-  .diary-entry { background: #fff; border-radius: 12px; padding: 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-  .diary-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #f0f0f0; }
+  .nav-item .icon { font-size: 22px; }
+  .nav-item .badge-num { position: absolute; top: 2px; right: calc(50% - 18px); background: #ff3b30; color: #fff; font-size: 9px; min-width: 14px; height: 14px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; padding: 0 3px; }
+  .nav-item { position: relative; }
+  .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .action-btn { background: #fff; padding: 14px 8px; border-radius: 12px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.15s; }
+  .action-btn:active { transform: scale(0.95); }
+  .action-icon { font-size: 24px; margin-bottom: 4px; }
+  .action-label { font-size: 10px; font-weight: 700; color: #555; }
+  .diary-entry { background: #f8f9fa; border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+  .diary-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8; }
   .diary-student { font-size: 13px; font-weight: 800; }
   .diary-mood { font-size: 24px; }
   .diary-section { margin-top: 8px; font-size: 12px; }
@@ -85,20 +135,63 @@
   .check.no { background: #f0f0f0; color: #888; }
   .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
   .photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; }
-  .tag { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
-  .tag-school { background: #ffd700; color: #000; }
-  .tag-new { background: #ff6b6b; color: #fff; }
-  .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
-  .action-btn { background: #fff; padding: 12px 8px; border-radius: 10px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.15s; }
-  .action-btn:hover { transform: translateY(-2px); }
-  .action-icon { font-size: 22px; margin-bottom: 4px; }
-  .action-label { font-size: 10px; font-weight: 700; color: #555; }
   .row { display: flex; gap: 8px; }
   .row > * { flex: 1; }
   .hidden { display: none !important; }
-  .empty-banner { background: linear-gradient(135deg, #fff5e1, #ffe6f0); border: 2px dashed #ff9a9e; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 16px; }
-  .empty-banner h3 { color: #ff6b6b; margin-bottom: 6px; }
-  .empty-banner p { color: #888; font-size: 12px; }
+  .big-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 18px 8px; border-radius: 14px;
+    background: linear-gradient(135deg, #fff, #f8f9fa);
+    border: 2px solid #ff6b6b;
+    font-size: 11px; font-weight: 800; color: #ff6b6b;
+    cursor: pointer; text-align: center;
+    box-shadow: 0 2px 8px rgba(255,107,107,0.15);
+  }
+  .big-btn:active { transform: scale(0.95); }
+  .big-btn .icon { font-size: 32px; margin-bottom: 6px; }
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .welcome-card { background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: #fff; padding: 18px; border-radius: 16px; margin-bottom: 16px; }
+  .welcome-card h2 { font-size: 18px; margin-bottom: 4px; }
+  .welcome-card p { font-size: 12px; opacity: 0.9; }
+  .share-banner { background: linear-gradient(135deg, #fff3e0, #ffe0b2); border: 2px solid #ff6b6b; border-radius: 12px; padding: 14px; margin-bottom: 16px; text-align: center; }
+  .share-banner h3 { color: #ff6b6b; font-size: 14px; margin-bottom: 6px; }
+  .share-banner p { color: #666; font-size: 11px; margin-bottom: 10px; }
+  /* Chat UI */
+  .chat-list-item { background: #fff; border-radius: 12px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .chat-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .chat-info { flex: 1; min-width: 0; }
+  .chat-name { font-size: 14px; font-weight: 800; }
+  .chat-preview { font-size: 12px; color: #888; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chat-unread { background: #ff3b30; color: #fff; font-size: 11px; min-width: 20px; height: 20px; border-radius: 10px; padding: 0 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+  .chat-messages { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+  .msg { max-width: 75%; padding: 10px 12px; border-radius: 12px; font-size: 14px; line-height: 1.4; position: relative; }
+  .msg.sent { background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .msg.received { background: #fff; color: #1a1a2e; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  .msg-sender { font-size: 10px; font-weight: 800; opacity: 0.7; margin-bottom: 3px; }
+  .msg-time { font-size: 9px; opacity: 0.7; margin-top: 4px; }
+  .msg-input-bar { position: sticky; bottom: 56px; left: 0; right: 0; background: #fff; padding: 10px 12px; display: flex; gap: 8px; align-items: center; border-top: 1px solid #eee; max-width: 480px; margin: 0 auto; }
+  .msg-input-bar input { flex: 1; padding: 10px 14px; background: #f5f5f5; border: none; border-radius: 20px; font-size: 14px; outline: none; }
+  .msg-send-btn { background: linear-gradient(135deg, #ff6b6b, #ee5a6f); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+  /* Feedback form */
+  .star-rating { display: flex; gap: 4px; justify-content: center; margin: 8px 0; }
+  .star { font-size: 32px; cursor: pointer; opacity: 0.3; transition: all 0.15s; }
+  .star.active, .star:hover { opacity: 1; transform: scale(1.1); }
+  .feedback-type { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .feedback-type-btn { padding: 10px; border: 2px solid #e0e0e0; border-radius: 10px; background: #fff; text-align: center; cursor: pointer; font-size: 12px; font-weight: 700; color: #555; }
+  .feedback-type-btn.active { border-color: #ff6b6b; background: #fff5e1; color: #ff6b6b; }
+  .feedback-type-btn .icon { font-size: 20px; margin-bottom: 2px; }
+  /* Floating chat button */
+  .chat-fab { position: fixed; bottom: 80px; right: 16px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: #fff; border: none; box-shadow: 0 4px 20px rgba(255,107,107,0.5); font-size: 24px; cursor: pointer; z-index: 99; display: flex; align-items: center; justify-content: center; }
+  .chat-fab .badge-num { position: absolute; top: -4px; right: -4px; background: #ffd700; color: #000; font-size: 10px; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-weight: 800; padding: 0 4px; }
+  .empty-illustration { font-size: 70px; margin-bottom: 10px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .install-prompt { background: linear-gradient(135deg, #fff3e0, #fff8e1); border: 2px solid #ff6b6b; border-radius: 12px; padding: 14px; margin-bottom: 16px; display: none; }
+  .install-prompt.show { display: block; }
+  .install-prompt .icon { font-size: 32px; margin-bottom: 6px; }
+  .install-prompt h3 { color: #ff6b6b; font-size: 14px; margin-bottom: 4px; font-weight: 800; }
+  .install-prompt p { font-size: 12px; color: #666; margin-bottom: 10px; }
+  .install-prompt-btns { display: flex; gap: 8px; }
+  .install-prompt-btns button { flex: 1; }
 </style>
 </head>
 <body>
@@ -110,19 +203,34 @@
     <div class="logo">
       <div class="logo-icon">🎓</div>
       <div>
-        <h1>DainikState School</h1>
-        <div class="tagline">🏫 Free Pre-School Management</div>
+        <h1>Child's Land</h1>
+        <div class="tagline">🏫 Free Pre-School App</div>
       </div>
     </div>
-    <button class="home-btn" onclick="goHome()" title="Home">🏠</button>
+    <div class="header-btns">
+      <button class="icon-btn" id="installBtn" onclick="installApp()" title="Install App" style="display:none;">📲</button>
+      <button class="icon-btn" onclick="openFeedback()" title="Feedback">💬</button>
+      <button class="icon-btn" onclick="goHome()" title="Home">🏠</button>
+    </div>
   </div>
 </div>
 
-<!-- MAIN CONTAINER -->
+<!-- CONTAINER -->
 <div class="container">
 
 <!-- LOGIN SCREEN -->
 <div id="loginScreen">
+  <!-- Install prompt (shows once) -->
+  <div class="install-prompt" id="installPrompt">
+    <div class="icon">📲</div>
+    <h3>App Install करें</h3>
+    <p>Phone में "Add to Home Screen" से APK जैसा install हो जाएगा। Offline भी चलेगा!</p>
+    <div class="install-prompt-btns">
+      <button class="form-btn small" onclick="installApp()">📲 Install</button>
+      <button class="form-btn secondary small" onclick="dismissInstall()">बाद में</button>
+    </div>
+  </div>
+
   <div class="role-tabs">
     <button class="role-tab active" data-role="principal" onclick="setLoginRole('principal')">🏫 Principal</button>
     <button class="role-tab" data-role="parent" onclick="setLoginRole('parent')">👨‍👩‍👧 Parent</button>
@@ -130,48 +238,35 @@
   </div>
 
   <div class="login-card">
-    <div class="login-title" id="loginTitle">🏫 School Principal Login</div>
+    <div class="login-title" id="loginTitle">🏫 School Principal</div>
+    <div class="login-sub" id="loginSub">100% FREE • Unlimited Schools</div>
 
     <div id="principalLogin">
-      <div class="form-group">
-        <label class="form-label">आपका नाम (Your Name)</label>
-        <input type="text" class="form-input" id="principalName" placeholder="Mr./Mrs. Sharma" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">📱 Phone Number</label>
-        <input type="tel" class="form-input" id="principalPhone" placeholder="+91 98765 43210" />
-      </div>
-      <button class="form-btn" onclick="principalRegister()">🚀 Register / Login</button>
-      <p style="text-align:center;margin-top:12px;font-size:12px;color:#888;">
-        First time? Auto-creates your school account. Already have? Just login.
+      <div class="form-group"><label class="form-label">👤 आपका नाम</label>
+        <input type="text" class="form-input" id="principalName" placeholder="Mr. Sharma"></div>
+      <div class="form-group"><label class="form-label">📱 Phone (Login के लिए)</label>
+        <input type="tel" class="form-input" id="principalPhone" placeholder="+91 98765 43210"></div>
+      <button class="form-btn" onclick="principalRegister()">🚀 शुरू करें (FREE)</button>
+      <p style="text-align:center;margin-top:12px;font-size:11px;color:#888;">
+        First time? आपकी school अभी बनेगी। पहले से है? सीधे login।
       </p>
     </div>
 
     <div id="parentLogin" class="hidden">
-      <div class="form-group">
-        <label class="form-label">📱 आपका Phone Number (Parent)</label>
-        <input type="tel" class="form-input" id="parentPhoneLogin" placeholder="+91 98765 43210" />
-      </div>
-      <button class="form-btn" onclick="parentLogin()">🔍 Find My Children</button>
-      <p style="text-align:center;margin-top:12px;font-size:12px;color:#888;">
-        OTP-free login - bas apna phone number dalo jo school me register hai
+      <div class="form-group"><label class="form-label">📱 आपका Phone Number</label>
+        <input type="tel" class="form-input" id="parentPhoneLogin" placeholder="+91 98765 43210"></div>
+      <button class="form-btn" onclick="parentLogin()">🔍 मेरे बच्चे खोजें</button>
+      <p style="text-align:center;margin-top:12px;font-size:11px;color:#888;">
+        बस phone number dalo। OTP नहीं चाहिए!
       </p>
     </div>
 
     <div id="teacherLogin" class="hidden">
-      <div class="form-group">
-        <label class="form-label">School Code (Principal se milega)</label>
-        <input type="text" class="form-input" id="teacherSchoolCode" placeholder="sch_xxxx" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">📱 Phone Number</label>
-        <input type="tel" class="form-input" id="teacherPhone" placeholder="+91 98765 43210" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">आपका नाम (Your Name)</label>
-        <input type="text" class="form-input" id="teacherName" placeholder="Ms. Priya" />
-      </div>
-      <button class="form-btn" onclick="teacherRegister()">🚀 Join as Teacher</button>
+      <p style="font-size:12px;color:#888;text-align:center;margin-bottom:12px;">
+        School Code principal से मिलेगा।<br>जल्द आ रहा है! ⏳
+      </p>
+      <div class="form-group"><label class="form-label">School Code</label>
+        <input type="text" class="form-input" id="teacherSchoolCode" placeholder="sch_xxxx" disabled></div>
     </div>
 
     <div class="divider">───── या ─────</div>
@@ -181,59 +276,68 @@
 
 <!-- PRINCIPAL DASHBOARD -->
 <div id="principalDash" class="hidden">
-  <div class="section-card" style="background:linear-gradient(135deg,#ff6b6b,#ee5a6f);color:#fff;">
+  <div class="welcome-card">
     <div style="display:flex;align-items:center;gap:12px;">
-      <div style="width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;">🏫</div>
-      <div style="flex:1;">
-        <div style="font-size:16px;font-weight:800;" id="schoolName">Loading...</div>
-        <div style="font-size:11px;opacity:0.9;" id="schoolSubtitle">📍 Loading...</div>
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:28px;">🏫</div>
+      <div style="flex:1;min-width:0;">
+        <h2 id="schoolName">Loading...</h2>
+        <p id="schoolSubtitle">📍 Loading...</p>
       </div>
       <button onclick="showSchoolSettings()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;">⚙️</button>
     </div>
   </div>
 
-  <!-- Stats -->
-  <div class="stats-grid">
-    <div class="stat-card"><div class="stat-num" id="statStudents">0</div><div class="stat-lbl">👶 Students</div></div>
-    <div class="stat-card"><div class="stat-num" id="statClasses">0</div><div class="stat-lbl">📚 Classes</div></div>
-    <div class="stat-card"><div class="stat-num" id="statTodayDiary">0</div><div class="stat-lbl">📝 Today's Diary</div></div>
-    <div class="stat-card"><div class="stat-num" id="statPhotos">0</div><div class="stat-lbl">📸 Photos</div></div>
+  <!-- Share banner - LINK SHARE KARO -->
+  <div class="share-banner">
+    <h3>📤 School App Link Share करें</h3>
+    <p>Parents और Teachers को यह link भेजें - वो भी app install कर सकें</p>
+    <button class="form-btn small" onclick="shareSchoolLink()">📲 Link Copy / Share</button>
   </div>
 
-  <!-- Quick actions -->
-  <div class="section-title">⚡ जल्दी काम करें</div>
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card students"><div class="stat-num" id="statStudents">0</div><div class="stat-lbl">👶 Students</div></div>
+    <div class="stat-card classes"><div class="stat-num" id="statClasses">0</div><div class="stat-lbl">📚 Classes</div></div>
+    <div class="stat-card diary"><div class="stat-num" id="statTodayDiary">0</div><div class="stat-lbl">📝 Today's Diary</div></div>
+    <div class="stat-card photos"><div class="stat-num" id="statPhotos">0</div><div class="stat-lbl">📸 Photos</div></div>
+  </div>
+
+  <!-- BIG Quick actions - EASY for principal -->
+  <div class="feature-grid">
+    <div class="big-btn" onclick="openAdmitStudent()">
+      <div class="icon">👶</div>
+      <div>नया Student जोड़ें</div>
+    </div>
+    <div class="big-btn" onclick="openDiary()">
+      <div class="icon">📝</div>
+      <div>Daily Diary लिखें</div>
+    </div>
+  </div>
+
   <div class="quick-actions">
-    <div class="action-btn" onclick="openAdmitStudent()">
-      <div class="action-icon">👶</div>
-      <div class="action-label">नया Student</div>
-    </div>
     <div class="action-btn" onclick="openAttendance()">
-      <div class="action-icon">✅</div>
-      <div class="action-label">Attendance</div>
-    </div>
-    <div class="action-btn" onclick="openDiary()">
-      <div class="action-icon">📝</div>
-      <div class="action-label">Daily Diary</div>
-    </div>
-    <div class="action-btn" onclick="openFees()">
-      <div class="action-icon">💰</div>
-      <div class="action-label">Fees</div>
+      <div class="action-icon">✅</div><div class="action-label">Attendance</div>
     </div>
     <div class="action-btn" onclick="openPhotos()">
-      <div class="action-icon">📸</div>
-      <div class="action-label">Photos</div>
+      <div class="action-icon">📸</div><div class="action-label">Photos</div>
+    </div>
+    <div class="action-btn" onclick="openFees()">
+      <div class="action-icon">💰</div><div class="action-label">Fees</div>
     </div>
     <div class="action-btn" onclick="openPTM()">
-      <div class="action-icon">📅</div>
-      <div class="action-label">PTM</div>
+      <div class="action-icon">📅</div><div class="action-label">PTM</div>
     </div>
     <div class="action-btn" onclick="openHoliday()">
-      <div class="action-icon">🗓️</div>
-      <div class="action-label">Holiday</div>
+      <div class="action-icon">🗓️</div><div class="action-label">Holiday</div>
     </div>
     <div class="action-btn" onclick="openAlert()">
-      <div class="action-icon">🚨</div>
-      <div class="action-label">Alert</div>
+      <div class="action-icon">🚨</div><div class="action-label">Alert</div>
+    </div>
+    <div class="action-btn" onclick="openChatList()">
+      <div class="action-icon">💬</div><div class="action-label">Chat</div>
+    </div>
+    <div class="action-btn" onclick="showAllStudents()">
+      <div class="action-icon">📋</div><div class="action-label">All</div>
     </div>
   </div>
 
@@ -243,39 +347,65 @@
       <span>👶 Students by Class</span>
       <span class="count" id="classBreakdownCount">0</span>
     </div>
-    <div id="classBreakdownList"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No students yet</div></div></div>
+    <div id="classBreakdownList"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">अभी कोई student नहीं</div></div></div>
+  </div>
+
+  <!-- Feedback received -->
+  <div class="section-card">
+    <div class="section-title">
+      <span>💬 Feedback (${userType})</span>
+      <span class="count" id="feedbackCount">0</span>
+    </div>
+    <div id="feedbackList"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">कोई feedback नहीं</div></div></div>
   </div>
 </div>
 
 <!-- PARENT DASHBOARD -->
 <div id="parentDash" class="hidden">
-  <div class="section-card" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb);color:#fff;">
+  <div class="welcome-card" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb);">
     <div style="display:flex;align-items:center;gap:12px;">
-      <div style="width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;">👨‍👩‍👧</div>
-      <div style="flex:1;">
-        <div style="font-size:16px;font-weight:800;" id="parentName">Welcome!</div>
-        <div style="font-size:11px;opacity:0.9;" id="parentSubtitle">📱 Phone-based login</div>
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:28px;">👨‍👩‍👧</div>
+      <div style="flex:1;min-width:0;">
+        <h2 id="parentName">Welcome!</h2>
+        <p id="parentSubtitle">📱 Phone-based login</p>
       </div>
     </div>
   </div>
 
+  <div class="share-banner">
+    <h3>📤 App Link Share करें</h3>
+    <p>दूसरे parents को भी बताएं - यह app FREE है</p>
+    <button class="form-btn small" onclick="sharePortalLink()">📲 Link Share</button>
+  </div>
+
   <div id="parentNoChildren" class="empty-banner hidden">
-    <h3>📭 No children found</h3>
-    <p>आपका phone number किसी भी school में register नहीं है।<br>School से contact karein.</p>
+    <div class="empty-illustration">📭</div>
+    <h3>कोई बच्चा नहीं मिला</h3>
+    <p>आपका phone number किसी school में register नहीं है।<br>School से संपर्क करें।</p>
   </div>
 
   <div id="parentChildrenList"></div>
 </div>
 
-<!-- TEACHER DASHBOARD -->
-<div id="teacherDash" class="hidden">
-  <div class="section-card" style="background:linear-gradient(135deg,#4facfe,#00f2fe);color:#fff;">
-    <div style="font-size:16px;font-weight:800;" id="teacherWelcome">👩‍🏫 Teacher Dashboard</div>
-    <div style="font-size:11px;opacity:0.9;" id="teacherSubtitle">Loading...</div>
+<!-- CHAT LIST -->
+<div id="chatListView" class="hidden">
+  <div class="section-title">
+    <span>💬 Chats</span>
+    <button class="form-btn secondary small" onclick="newChat()">+ New Chat</button>
   </div>
-  <div class="empty-banner">
-    <h3>👩‍🏫 Teacher Portal</h3>
-    <p>Coming soon! Principal se class assign hone ke baad active hoga.</p>
+  <div id="chatsList"><div class="empty"><div class="empty-icon">💬</div><div class="empty-text">No chats yet</div></div></div>
+</div>
+
+<!-- CHAT CONVERSATION -->
+<div id="chatView" class="hidden">
+  <div class="section-title" style="position:sticky;top:80px;background:#fff;padding:8px 0;z-index:50;">
+    <span id="chatTitle">Chat</span>
+    <button class="form-btn secondary small" onclick="closeChat()">← Back</button>
+  </div>
+  <div class="chat-messages" id="chatMessages"><div class="empty">Loading...</div></div>
+  <div class="msg-input-bar">
+    <input type="text" id="msgInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter')sendMessage()" />
+    <button class="msg-send-btn" onclick="sendMessage()">➤</button>
   </div>
 </div>
 
@@ -302,19 +432,25 @@
   </div>
 </div>
 
+<!-- Floating Chat Button (for quick access) -->
+<button class="chat-fab" id="chatFab" onclick="openChatList()" style="display:none;">
+  💬
+  <span class="badge-num" id="chatUnreadCount" style="display:none;">0</span>
+</button>
+
 <!-- BOTTOM NAV -->
 <div class="bottom-nav" id="bottomNav" style="display:none;">
-  <button class="nav-item active" data-nav="home" onclick="goHome()">
+  <button class="nav-item active" data-nav="home" onclick="goToTab('home')">
     <div class="icon">🏠</div><div>Home</div>
   </button>
-  <button class="nav-item" data-nav="students" onclick="showTab('students')">
-    <div class="icon">👶</div><div>Students</div>
+  <button class="nav-item" data-nav="chat" onclick="goToTab('chat')">
+    <div class="icon">💬</div><div>Chat</div>
   </button>
-  <button class="nav-item" data-nav="diary" onclick="showTab('diary')">
-    <div class="icon">📝</div><div>Diary</div>
+  <button class="nav-item" data-nav="feedback" onclick="openFeedback()">
+    <div class="icon">⭐</div><div>Feedback</div>
   </button>
-  <button class="nav-item" data-nav="more" onclick="showTab('more')">
-    <div class="icon">📋</div><div>More</div>
+  <button class="nav-item" data-nav="install" onclick="installApp()">
+    <div class="icon">📲</div><div>App</div>
   </button>
 </div>
 
@@ -322,13 +458,69 @@
 
 <script>
 const API = 'https://canyou-uqkp.onrender.com';
-let currentUser = null;  // For principal/parent/teacher
+let currentUser = null;
 let currentSchool = null;
-let currentRole = null;  // 'principal' | 'parent' | 'teacher'
+let currentRole = null;
 let parentChildren = [];
 let currentParentChild = null;
+let currentChat = null;
+let deferredInstallPrompt = null;
 
-function esc(s) { return (s || '').toString().replace(/[&<>\"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;' }[c])); }
+// ============ PWA: INSTALL APP ============
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('installBtn').style.display = 'flex';
+  // Show install prompt on login screen
+  if (!localStorage.getItem('ds_install_dismissed')) {
+    setTimeout(() => {
+      const p = document.getElementById('installPrompt');
+      if (p) p.classList.add('show');
+    }, 2000);
+  }
+});
+
+function installApp() {
+  if (!deferredInstallPrompt) {
+    // Manual install instructions
+    showModal('📲 App Install करें', `
+      <div style="text-align:center;padding:16px;">
+        <div style="font-size:60px;margin-bottom:12px;">📱</div>
+        <h3 style="color:#ff6b6b;margin-bottom:12px;">Phone में Install करें</h3>
+        <div style="background:#f8f9fa;border-radius:12px;padding:14px;text-align:left;font-size:13px;line-height:1.7;">
+          <b>Android (Chrome):</b><br>
+          1. Browser menu (⋮) खोलें<br>
+          2. "Add to Home Screen" या "Install App" tap करें<br>
+          3. "Install" confirm करें<br><br>
+          <b>iPhone (Safari):</b><br>
+          1. Share button (⬆️) tap करें<br>
+          2. "Add to Home Screen" select करें<br>
+          3. "Add" tap करें
+        </div>
+        <p style="margin-top:12px;color:#888;font-size:12px;">App install होने पर phone के home screen पर icon आ जाएगा। APK जैसा काम करेगा - offline भी चलेगा!</p>
+      </div>
+    `);
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then((choice) => {
+    if (choice.outcome === 'accepted') toast('✅ App installed!');
+    deferredInstallPrompt = null;
+  });
+}
+
+function dismissInstall() {
+  document.getElementById('installPrompt').classList.remove('show');
+  localStorage.setItem('ds_install_dismissed', '1');
+}
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// ============ UTILITIES ============
+function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function toast(msg, dur = 2500) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
@@ -339,8 +531,8 @@ function timeAgo(ts) {
   if (!ts) return '';
   const d = Date.now() - ts;
   if (d < 60000) return 'अभी';
-  if (d < 3600000) return Math.floor(d/60000) + ' min पहले';
-  if (d < 86400000) return Math.floor(d/3600000) + ' hr पहले';
+  if (d < 3600000) return Math.floor(d/60000) + ' min';
+  if (d < 86400000) return Math.floor(d/3600000) + ' hr';
   return new Date(ts).toLocaleDateString('hi-IN');
 }
 function showModal(title, body) {
@@ -349,19 +541,44 @@ function showModal(title, body) {
   document.getElementById('modalOverlay').classList.add('show');
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+function getChildAvatar(rollNo, name) {
+  // Different color/style avatar per child (1-8 variants)
+  const variant = ((rollNo || name.charCodeAt(0)) % 8) + 1;
+  const emoji = name[0].toUpperCase();
+  return `<div class="child-avatar" data-avatar="${variant}">${emoji}</div>`;
+}
 function goHome() {
-  currentUser = null; currentSchool = null; currentRole = null; parentChildren = [];
+  currentUser = null; currentSchool = null; currentRole = null;
+  parentChildren = []; currentParentChild = null; currentChat = null;
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('principalDash').classList.add('hidden');
   document.getElementById('parentDash').classList.add('hidden');
-  document.getElementById('teacherDash').classList.add('hidden');
+  document.getElementById('chatListView').classList.add('hidden');
+  document.getElementById('chatView').classList.add('hidden');
   document.getElementById('browseSchools').classList.add('hidden');
   document.getElementById('bottomNav').style.display = 'none';
+  document.getElementById('chatFab').style.display = 'none';
   localStorage.removeItem('ds_school_user');
   localStorage.removeItem('ds_school_data');
 }
 
-// Login role tabs
+function goToTab(tab) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.nav-item[data-nav="${tab}"]`)?.classList.add('active');
+  if (tab === 'home') {
+    if (currentRole === 'principal') showPrincipalDash();
+    else if (currentRole === 'parent' && currentParentChild) showParentChildDetail();
+    else if (currentRole === 'parent') showParentChildrenList();
+  } else if (tab === 'chat') {
+    openChatList();
+  } else if (tab === 'feedback') {
+    openFeedback();
+  } else if (tab === 'install') {
+    installApp();
+  }
+}
+
+// ============ LOGIN ROLE TABS ============
 function setLoginRole(role) {
   currentRole = role;
   document.querySelectorAll('.role-tab').forEach(b => b.classList.remove('active'));
@@ -370,28 +587,28 @@ function setLoginRole(role) {
   document.getElementById('parentLogin').classList.toggle('hidden', role !== 'parent');
   document.getElementById('teacherLogin').classList.toggle('hidden', role !== 'teacher');
   const titles = { principal: '🏫 School Principal', parent: '👨‍👩‍👧 Parent Login', teacher: '👩‍🏫 Teacher Login' };
+  const subs = { principal: 'अपनी school register/login करें', parent: 'बच्चे की info देखें', teacher: 'जल्द आ रहा है' };
   document.getElementById('loginTitle').textContent = titles[role];
+  document.getElementById('loginSub').textContent = subs[role];
 }
 
-// ============ PRINCIPAL ============
+// ============ PRINCIPAL REGISTRATION ============
 async function principalRegister() {
   const name = document.getElementById('principalName').value.trim();
   const phone = document.getElementById('principalPhone').value.trim();
-  if (!name || !phone) { toast('⚠️ Name और Phone दोनों ज़रूरी हैं'); return; }
+  if (!name || !phone) { toast('⚠️ Name और Phone दोनों भरें'); return; }
   try {
-    // 1. Register user
+    // 1. Register/login user
     const userRes = await fetch(API + '/api/auth/register', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, phone, country: 'India', location: 'India' })
     }).then(r => r.json());
     if (!userRes.success) { toast('❌ ' + (userRes.error || 'Failed')); return; }
     currentUser = userRes.user;
-    // 2. Check if school already exists for this user
-    const ownerSchools = await fetch(API + '/api/business/owner/' + currentUser.id).then(r => r.json());
-    if (ownerSchools.businesses && ownerSchools.businesses.length > 0) {
-      // Use existing
-      const sch = ownerSchools.businesses[0];
-      currentSchool = sch;
+    // 2. Check if school already exists
+    const ownerSchools = await fetch(API + '/api/school/owner/' + currentUser.id).then(r => r.json());
+    if (ownerSchools.schools && ownerSchools.schools.length > 0) {
+      currentSchool = ownerSchools.schools[0];
       currentRole = 'principal';
       localStorage.setItem('ds_school_user', JSON.stringify(currentUser));
       localStorage.setItem('ds_school_data', JSON.stringify(currentSchool));
@@ -399,19 +616,21 @@ async function principalRegister() {
       showPrincipalDash();
       return;
     }
-    // 3. Register new school
+    // 3. Create school
     const slug = (name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + phone.slice(-4));
-    showModal('🏫 अपनी School बनाएं', `
+    showModal('🏫 अपनी School बनाएं (FREE)', `
       <div class="form-group"><label class="form-label">School का नाम *</label>
         <input type="text" class="form-input" id="newSchoolName" placeholder="जैसे: Sunshine Pre-School" value="${esc(name)}"></div>
-      <div class="form-group"><label class="form-label">Slug (URL me dikhega)</label>
+      <div class="form-group"><label class="form-label">🌐 URL Slug (auto-generated)</label>
         <input type="text" class="form-input" id="newSchoolSlug" value="${esc(slug)}"></div>
-      <div class="form-group"><label class="form-label">🏙️ City</label>
-        <input type="text" class="form-input" id="newSchoolCity" placeholder="Hazaribagh"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">🏙️ City</label>
+          <input type="text" class="form-input" id="newSchoolCity" placeholder="Hazaribagh"></div>
+        <div class="form-group"><label class="form-label">💰 Monthly Fee (₹)</label>
+          <input type="number" class="form-input" id="newSchoolFee" placeholder="1500"></div>
+      </div>
       <div class="form-group"><label class="form-label">📍 Address</label>
         <input type="text" class="form-input" id="newSchoolAddress" placeholder="Main Road, near bus stand"></div>
-      <div class="form-group"><label class="form-label">💰 Monthly Fee (₹)</label>
-        <input type="number" class="form-input" id="newSchoolFee" placeholder="1500"></div>
       <div class="form-group"><label class="form-label">📋 Board</label>
         <select class="form-input" id="newSchoolBoard">
           <option value="state">State Board</option>
@@ -419,7 +638,7 @@ async function principalRegister() {
           <option value="icse">ICSE</option>
           <option value="cambridge">Cambridge</option>
         </select></div>
-      <button class="form-btn mt-12" onclick="createSchool()">🚀 Create School (FREE)</button>
+      <button class="form-btn" onclick="createSchool()">🚀 Create School (FREE)</button>
     `);
   } catch (e) { toast('❌ Network error: ' + e.message); }
 }
@@ -457,12 +676,13 @@ async function showPrincipalDash() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('browseSchools').classList.add('hidden');
   document.getElementById('parentDash').classList.add('hidden');
-  document.getElementById('teacherDash').classList.add('hidden');
+  document.getElementById('chatListView').classList.add('hidden');
+  document.getElementById('chatView').classList.add('hidden');
   document.getElementById('principalDash').classList.remove('hidden');
   document.getElementById('bottomNav').style.display = 'flex';
+  document.getElementById('chatFab').style.display = 'flex';
   document.getElementById('schoolName').textContent = '🏫 ' + currentSchool.name;
   document.getElementById('schoolSubtitle').textContent = '📍 ' + (currentSchool.city || '') + ' • ' + (currentSchool.phone || '');
-  // Load stats
   try {
     const r = await fetch(API + '/api/school/' + currentSchool.id + '/stats').then(r => r.json());
     if (r.success) {
@@ -475,10 +695,10 @@ async function showPrincipalDash() {
       if (s.classBreakdown && s.classBreakdown.length > 0) {
         document.getElementById('classBreakdownList').innerHTML = s.classBreakdown.map(c =>
           `<div class="child-card">
-            <div class="child-avatar">${esc(c._id.className[0])}</div>
+            ${getChildAvatar(c._id.className.charCodeAt(0), c._id.className)}
             <div class="child-info">
               <div class="child-name">${esc(c._id.className)} - ${esc(c._id.section)}</div>
-              <div class="child-meta">${c.count} students</div>
+              <div class="child-meta">${c.count} students enrolled</div>
             </div>
             <button class="form-btn small" onclick="viewClassStudents('${esc(c._id.className)}','${esc(c._id.section)}')">View</button>
           </div>`).join('');
@@ -487,25 +707,33 @@ async function showPrincipalDash() {
       }
     }
   } catch (e) { console.error(e); }
+  loadFeedback();
 }
 
-function showTab(tab) {
-  // Switch between sections
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.querySelector(`.nav-item[data-nav="${tab}"]`)?.classList.add('active');
-  if (currentRole === 'principal') {
-    if (tab === 'home') showPrincipalDash();
-    else if (tab === 'students') showAllStudents();
-    else if (tab === 'diary') showAllDiaries();
-    else if (tab === 'more') showPrincipalMenu();
-  } else if (currentRole === 'parent' && currentParentChild) {
-    if (tab === 'home') showParentChildDetail();
-    else if (tab === 'diary') showChildDiary();
-    else if (tab === 'more') showParentMenu();
-  }
+function loadFeedback() {
+  fetch(API + '/api/school/' + currentSchool.id + '/feedback?limit=10').then(r => r.json()).then(d => {
+    if (d.success && d.feedbacks && d.feedbacks.length > 0) {
+      document.getElementById('feedbackCount').textContent = d.feedbacks.length;
+      document.getElementById('feedbackList').innerHTML = d.feedbacks.map(f => {
+        const stars = f.rating ? '⭐'.repeat(f.rating) : '';
+        const typeEmoji = { bug: '🐛', feature: '💡', praise: '👍', complaint: '⚠️', general: '💬' }[f.type] || '💬';
+        return `<div style="background:#f8f9fa;border-radius:10px;padding:10px;margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+            <div style="flex:1;">
+              <div style="font-weight:800;font-size:12px;">${typeEmoji} ${esc(f.fromName)} <span style="color:#888;font-size:10px;">(${esc(f.fromRole)})</span></div>
+              <div style="font-size:12px;margin-top:4px;">${esc(f.message)}</div>
+              ${stars ? `<div style="margin-top:4px;">${stars}</div>` : ''}
+              <div style="font-size:10px;color:#888;margin-top:4px;">${timeAgo(f.createdAt)}</div>
+            </div>
+            <span class="badge ${f.status === 'new' ? 'badge-orange' : 'badge-active'}">${esc(f.status)}</span>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  });
 }
 
-// ============ PARENT ============
+// ============ PARENT LOGIN ============
 async function parentLogin() {
   const phone = document.getElementById('parentPhoneLogin').value.trim();
   if (!phone) { toast('⚠️ Phone number dalo'); return; }
@@ -514,56 +742,73 @@ async function parentLogin() {
     if (r.success && r.students.length > 0) {
       parentChildren = r.students;
       currentRole = 'parent';
+      currentUser = { id: 'parent_' + phone, name: 'Parent', phone, role: 'parent' };
+      localStorage.setItem('ds_school_user', JSON.stringify(currentUser));
       document.getElementById('loginScreen').classList.add('hidden');
-      document.getElementById('browseSchools').classList.add('hidden');
       document.getElementById('principalDash').classList.add('hidden');
+      document.getElementById('browseSchools').classList.add('hidden');
       document.getElementById('parentDash').classList.remove('hidden');
       document.getElementById('bottomNav').style.display = 'flex';
-      document.getElementById('parentName').textContent = '👋 ' + phone;
-      document.getElementById('parentSubtitle').textContent = '👶 ' + r.students.length + ' children found';
+      document.getElementById('chatFab').style.display = 'flex';
+      document.getElementById('parentName').textContent = '👋 नमस्ते!';
+      document.getElementById('parentSubtitle').textContent = '📱 ' + phone + ' • ' + r.students.length + ' children';
       document.getElementById('parentNoChildren').classList.add('hidden');
-      document.getElementById('parentChildrenList').innerHTML = r.students.map(s =>
-        `<div class="child-card" onclick="viewParentChild('${s.id}')">
-          <div class="child-avatar">${esc(s.name[0])}</div>
-          <div class="child-info">
-            <div class="child-name">${esc(s.name)}</div>
-            <div class="child-meta">🎒 ${esc(s.className)}-${esc(s.section)} • Roll #${s.rollNo} • 🏫 ${esc(s.school?.name || 'School')}</div>
-          </div>
-          <span class="badge badge-active">→</span>
-        </div>`).join('');
-      toast('✅ ' + r.students.length + ' children found!');
+      showParentChildrenList();
+      toast('✅ ' + r.students.length + ' बच्चे मिले!');
     } else {
       document.getElementById('parentNoChildren').classList.remove('hidden');
       document.getElementById('parentChildrenList').innerHTML = '';
-      toast('📭 No children found for this phone');
+      toast('📭 No children found');
     }
   } catch (e) { toast('❌ Network error'); }
+}
+
+function showParentChildrenList() {
+  document.getElementById('parentChildrenList').innerHTML = `
+    <div class="section-card">
+      <div class="section-title"><span>👶 आपके बच्चे</span><span class="count">${parentChildren.length}</span></div>
+    </div>
+  ` + parentChildren.map(s =>
+    `<div class="child-card" onclick="viewParentChild('${s.id}')">
+      ${getChildAvatar(s.rollNo || 1, s.name)}
+      <div class="child-info">
+        <div class="child-name">${esc(s.name)}</div>
+        <div class="child-meta">🎒 ${esc(s.className)}-${esc(s.section)} • Roll #${s.rollNo} • 🏫 ${esc(s.school?.name || '')}</div>
+      </div>
+      <span class="badge badge-active">→</span>
+    </div>`).join('');
 }
 
 async function viewParentChild(studentId) {
   const child = parentChildren.find(s => s.id === studentId);
   if (!child) return;
   currentParentChild = child;
+  currentSchool = { id: child.schoolId, name: child.school?.name || 'School' };
   showParentChildDetail();
 }
 
 async function showParentChildDetail() {
   const c = currentParentChild;
   if (!c) return;
-  // Show overview: attendance %, fees, latest diary
   document.getElementById('parentChildrenList').innerHTML = `
     <div class="section-card">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-        <div class="child-avatar" style="width:60px;height:60px;font-size:24px;">${esc(c.name[0])}</div>
+        ${getChildAvatar(c.rollNo, c.name).replace('class="child-avatar"', 'class="child-avatar" style="width:64px;height:64px;font-size:28px;"')}
         <div>
           <div style="font-size:18px;font-weight:800;">${esc(c.name)}</div>
           <div style="font-size:12px;color:#888;">${esc(c.className)}-${esc(c.section)} • Roll #${c.rollNo}</div>
           <div style="font-size:11px;color:#ff6b6b;font-weight:700;">🏫 ${esc(c.school?.name || '')}</div>
         </div>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-num" id="childAttendance">-</div><div class="stat-lbl">✅ Attendance (month)</div></div>
-        <div class="stat-card"><div class="stat-num" id="childFeesDue">-</div><div class="stat-lbl">💰 Fee Due</div></div>
+    </div>
+    <div class="feature-grid">
+      <div class="big-btn" onclick="openPickupAuth()">
+        <div class="icon">🚌</div>
+        <div>Pickup OTP</div>
+      </div>
+      <div class="big-btn" onclick="openChatWithSchool()">
+        <div class="icon">💬</div>
+        <div>School Chat</div>
       </div>
     </div>
     <div class="section-card">
@@ -571,87 +816,63 @@ async function showParentChildDetail() {
       <div id="todayDiaryView"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></div>
     </div>
     <div class="section-card">
-      <div class="section-title">📅 Last 7 days Diary</div>
+      <div class="section-title">📅 Last 7 days</div>
       <div id="weekDiaryView"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></div>
     </div>
     <div class="section-card">
       <div class="section-title">📸 Class Photos</div>
       <div id="classPhotosView"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></div>
     </div>
-    <button class="form-btn" onclick="openPickupAuth()" style="margin-top:8px;">🚌 Generate Pickup OTP (आज के लिए)</button>
   `;
-  // Fetch today's diary
   const today = new Date().toISOString().split('T')[0];
   try {
     const d = await fetch(API + '/api/school/diary?studentId=' + c.id + '&date=' + today).then(r => r.json());
-    if (d.success && d.entries && d.entries.length > 0) {
-      renderDiaryEntry(document.getElementById('todayDiaryView'), d.entries[0]);
-    } else {
-      document.getElementById('todayDiaryView').innerHTML = '<div class="empty"><div class="empty-icon">📝</div><div class="empty-text">आज की diary अभी तक update नहीं हुई</div></div>';
-    }
-    // Last 7 days
+    if (d.success && d.entries && d.entries.length > 0) renderDiaryEntry(document.getElementById('todayDiaryView'), d.entries[0]);
+    else document.getElementById('todayDiaryView').innerHTML = '<div class="empty"><div class="empty-icon">📝</div><div class="empty-text">आज की diary अभी नहीं आई</div></div>';
     const weekAgo = new Date(Date.now() - 7*86400000).toISOString().split('T')[0];
     const w = await fetch(API + '/api/school/diary?studentId=' + c.id + '&fromDate=' + weekAgo).then(r => r.json());
     if (w.success && w.entries && w.entries.length > 0) {
-      document.getElementById('weekDiaryView').innerHTML = w.entries.map(e => `<div style="background:#f8f9fa;border-radius:8px;padding:10px;margin-bottom:6px;">${renderDiaryEntryInline(e)}</div>`).join('');
-    } else {
-      document.getElementById('weekDiaryView').innerHTML = '<div class="empty"><div class="empty-text">No diary entries</div></div>';
+      document.getElementById('weekDiaryView').innerHTML = w.entries.map(e =>
+        `<div style="background:#f8f9fa;border-radius:8px;padding:10px;margin-bottom:6px;">
+          <div style="font-size:11px;color:#888;">${e.date} ${getMoodEmoji(e.mood)}</div>
+          <div>🍳 ${e.meals?.breakfast ? '✅' : '⬜'} 🍎 ${e.meals?.snack ? '✅' : '⬜'} 🍛 ${e.meals?.lunch ? '✅' : '⬜'}</div>
+        </div>`).join('');
     }
-  } catch (e) { console.error(e); }
-  // Photos
+  } catch (e) {}
   try {
     const p = await fetch(API + '/api/school/' + c.schoolId + '/photos?classId=' + c.className + '&limit=10').then(r => r.json());
     if (p.success && p.albums && p.albums.length > 0) {
       const allPhotos = [];
       p.albums.forEach(a => (a.photos || []).forEach(url => allPhotos.push(url)));
-      document.getElementById('classPhotosView').innerHTML = allPhotos.length > 0 ?
-        `<div class="photo-grid">${allPhotos.slice(0, 9).map(url => `<img src="${esc(url)}" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>` :
-        '<div class="empty"><div class="empty-text">No photos yet</div></div>';
-    } else {
-      document.getElementById('classPhotosView').innerHTML = '<div class="empty"><div class="empty-text">No photos yet</div></div>';
+      if (allPhotos.length > 0) {
+        document.getElementById('classPhotosView').innerHTML = `<div class="photo-grid">${allPhotos.slice(0, 9).map(url => `<img src="${esc(url)}" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>`;
+      } else document.getElementById('classPhotosView').innerHTML = '<div class="empty"><div class="empty-text">No photos</div></div>';
     }
   } catch (e) {}
 }
 
+function getMoodEmoji(mood) { return ({ 'happy': '😊', 'sad': '😢', 'crying': '😭', 'sick': '🤒', 'neutral': '😐' }[mood] || '😊'); }
+
 function renderDiaryEntry(container, entry) {
   const meals = entry.meals || {};
   const nap = entry.nap || {};
-  container.innerHTML = `
-    <div class="diary-entry">
-      <div class="diary-header">
-        <div class="diary-student">${esc(entry.studentId || '')}</div>
-        <div class="diary-mood">${getMoodEmoji(entry.mood)}</div>
-      </div>
-      <div class="diary-section">
-        <div class="label">🍱 Meals:</div>
-        <div class="diary-checks">
-          <span class="check ${meals.breakfast ? '' : 'no'}">${meals.breakfast ? '✅' : '⬜'} Breakfast</span>
-          <span class="check ${meals.snack ? '' : 'no'}">${meals.snack ? '✅' : '⬜'} Snack</span>
-          <span class="check ${meals.lunch ? '' : 'no'}">${meals.lunch ? '✅' : '⬜'} Lunch</span>
-        </div>
-      </div>
-      <div class="diary-section">
-        <div class="label">😴 Nap: ${nap.slept ? `Slept ${nap.duration} min` : 'No nap'}</div>
-      </div>
-      ${entry.bottleCount > 0 ? `<div class="diary-section"><div class="label">🍼 Bottles: ${entry.bottleCount}</div></div>` : ''}
-      ${entry.diaperCount > 0 ? `<div class="diary-section"><div class="label">👶 Diapers: ${entry.diaperCount}</div></div>` : ''}
-      ${entry.activities && entry.activities.length > 0 ? `<div class="diary-section"><div class="label">🎨 Activities: ${entry.activities.join(', ')}</div></div>` : ''}
-      ${entry.notes ? `<div class="diary-section"><div class="label">📝 Note:</div><div style="margin-top:4px;">${esc(entry.notes)}</div></div>` : ''}
+  container.innerHTML = `<div class="diary-entry">
+    <div class="diary-header">
+      <div class="diary-student">📅 ${entry.date}</div>
+      <div class="diary-mood">${getMoodEmoji(entry.mood)}</div>
     </div>
-  `;
-}
-
-function renderDiaryEntryInline(entry) {
-  return `<div style="font-size:11px;color:#888;">${entry.date}</div>
-    <div style="display:flex;gap:6px;align-items:center;margin-top:4px;">
-      <span style="font-size:18px;">${getMoodEmoji(entry.mood)}</span>
-      <span>${(entry.meals?.breakfast ? '🍳' : '')}${(entry.meals?.lunch ? '🍛' : '')}${(entry.meals?.snack ? '🍎' : '')}</span>
-      <span>${entry.activities?.length || 0} activities</span>
-    </div>`;
-}
-
-function getMoodEmoji(mood) {
-  return ({ 'happy': '😊', 'sad': '😢', 'crying': '😭', 'sick': '🤒', 'neutral': '😐' }[mood] || '😊');
+    <div class="diary-section"><div class="label">🍱 Meals:</div>
+      <div class="diary-checks">
+        <span class="check ${meals.breakfast ? '' : 'no'}">${meals.breakfast ? '✅' : '⬜'} Breakfast</span>
+        <span class="check ${meals.snack ? '' : 'no'}">${meals.snack ? '✅' : '⬜'} Snack</span>
+        <span class="check ${meals.lunch ? '' : 'no'}">${meals.lunch ? '✅' : '⬜'} Lunch</span>
+      </div>
+    </div>
+    <div class="diary-section"><div class="label">😴 Nap: ${nap.slept ? `Slept ${nap.duration} min` : 'No nap'}</div></div>
+    ${entry.bottleCount > 0 ? `<div class="diary-section"><div class="label">🍼 Bottles: ${entry.bottleCount}</div></div>` : ''}
+    ${entry.activities?.length > 0 ? `<div class="diary-section"><div class="label">🎨 Activities: ${entry.activities.join(', ')}</div></div>` : ''}
+    ${entry.notes ? `<div class="diary-section"><div class="label">📝 Note:</div><div style="margin-top:4px;">${esc(entry.notes)}</div></div>` : ''}
+  </div>`;
 }
 
 async function openPickupAuth() {
@@ -662,20 +883,216 @@ async function openPickupAuth() {
       body: JSON.stringify({ authorizedPerson: 'Self', relation: 'Parent', parentPhone: currentParentChild.parentPhone })
     }).then(r => r.json());
     if (r.success) {
-      showModal('🚌 Pickup OTP Generated', `
-        <div style="text-align:center;padding:20px;background:linear-gradient(135deg,#d4edda,#c3e6cb);border-radius:12px;margin-bottom:16px;">
+      showModal('🚌 Pickup OTP', `
+        <div style="text-align:center;padding:20px;background:linear-gradient(135deg,#d4edda,#c3e6cb);border-radius:12px;">
           <div style="font-size:13px;color:#155724;margin-bottom:6px;">आज का OTP</div>
           <div style="font-size:48px;font-weight:900;color:#155724;letter-spacing:8px;">${r.pickupAuth.otp}</div>
         </div>
-        <p style="text-align:center;color:#888;font-size:12px;">Driver/Teacher को यह OTP बताएं जब वे बच्चे को pickup करें</p>
+        <p style="text-align:center;color:#888;font-size:12px;margin-top:12px;">Driver/Teacher को यह OTP बताएं</p>
       `);
     }
   } catch (e) { toast('❌ Network error'); }
 }
 
-// ============ TEACHER ============
-async function teacherRegister() {
-  toast('👩‍🏫 Teacher portal coming soon! Principal se class assign karein.');
+// ============ CHAT SYSTEM ============
+async function openChatList() {
+  document.getElementById('principalDash').classList.add('hidden');
+  document.getElementById('parentDash').classList.add('hidden');
+  document.getElementById('browseSchools').classList.add('hidden');
+  document.getElementById('chatView').classList.add('hidden');
+  document.getElementById('chatListView').classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('.nav-item[data-nav="chat"]')?.classList.add('active');
+  // Load chats
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/chats?userId=' + currentUser.id).then(r => r.json());
+    if (r.success && r.chats.length > 0) {
+      document.getElementById('chatsList').innerHTML = r.chats.map(c => {
+        const otherName = Object.values(c.participantNames || {}).find(n => n !== currentUser.name) || c.type;
+        return `<div class="chat-list-item" onclick="openChat('${c.id}')">
+          <div class="chat-avatar">${c.type === 'school' ? '🏫' : c.type === 'class' ? '📚' : '💬'}</div>
+          <div class="chat-info">
+            <div class="chat-name">${esc(otherName)}</div>
+            <div class="chat-preview">${esc(c.lastMessage || 'No messages yet')}</div>
+          </div>
+          <span class="chat-meta" style="font-size:10px;color:#888;">${timeAgo(c.lastMessageAt)}</span>
+        </div>`;
+      }).join('');
+    } else {
+      document.getElementById('chatsList').innerHTML = '<div class="empty"><div class="empty-illustration">💬</div><div class="empty-text">No chats yet. Start one!</div></div>';
+    }
+  } catch (e) { console.error(e); }
+}
+
+function newChat() {
+  showModal('+ New Chat', `
+    <p style="font-size:13px;color:#888;margin-bottom:12px;">Select chat type:</p>
+    <button class="form-btn secondary mb-12" onclick="createChat('school')">🏫 School-wide Group</button>
+    <button class="form-btn secondary mb-12" onclick="createChat('teachers')">👩‍🏫 Teachers Group</button>
+    <button class="form-btn secondary mb-12" onclick="createChat('parents')">👨‍👩‍👧 Parents Group</button>
+  `);
+}
+
+async function createChat(type) {
+  closeModal();
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/chat/get-or-create', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: currentUser.id,
+        userName: currentUser.name,
+        userRole: currentRole,
+        type,
+      })
+    }).then(r => r.json());
+    if (r.success) {
+      openChat(r.chat.id);
+      toast('✅ Chat ready!');
+    }
+  } catch (e) { toast('❌ Failed'); }
+}
+
+async function openChat(chatId) {
+  document.getElementById('chatListView').classList.add('hidden');
+  document.getElementById('chatView').classList.remove('hidden');
+  currentChat = chatId;
+  loadMessages();
+  // Mark as read
+  fetch(API + '/api/school/chat/' + chatId + '/read', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: currentUser.id })
+  });
+}
+
+function closeChat() {
+  document.getElementById('chatView').classList.add('hidden');
+  document.getElementById('chatListView').classList.remove('hidden');
+  currentChat = null;
+}
+
+async function loadMessages() {
+  if (!currentChat) return;
+  try {
+    const r = await fetch(API + '/api/school/chat/' + currentChat + '/messages?limit=50').then(r => r.json());
+    if (r.success) {
+      document.getElementById('chatMessages').innerHTML = r.messages.map(m => {
+        const isSent = m.senderId === currentUser.id;
+        return `<div class="msg ${isSent ? 'sent' : 'received'}">
+          ${!isSent ? `<div class="msg-sender">${esc(m.senderName)}</div>` : ''}
+          <div>${esc(m.text)}</div>
+          <div class="msg-time">${timeAgo(m.createdAt)}</div>
+        </div>`;
+      }).join('');
+      // Scroll to bottom
+      const msgs = document.getElementById('chatMessages');
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+  } catch (e) {}
+}
+
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text || !currentChat) return;
+  try {
+    await fetch(API + '/api/school/chat/' + currentChat + '/message', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        senderRole: currentRole,
+        text,
+      })
+    }).then(r => r.json());
+    input.value = '';
+    loadMessages();
+  } catch (e) { toast('❌ Network error'); }
+}
+
+function openChatWithSchool() {
+  if (!currentSchool) return;
+  createChat('school');
+}
+
+// ============ FEEDBACK SYSTEM ============
+let selectedFeedbackType = 'general';
+let selectedRating = 0;
+
+function openFeedback() {
+  selectedFeedbackType = 'general';
+  selectedRating = 0;
+  showModal('💬 Feedback / सुझाव दें', `
+    <p style="font-size:13px;color:#888;margin-bottom:12px;">आपकी राय हमारे लिए बहुत ज़रूरी है! कोई भी बेझिझक feedback भेजें।</p>
+    <div class="form-group">
+      <label class="form-label">Feedback Type</label>
+      <div class="feedback-type">
+        <div class="feedback-type-btn active" data-type="general" onclick="selectFbType('general')">
+          <div class="icon">💬</div><div>General</div>
+        </div>
+        <div class="feedback-type-btn" data-type="bug" onclick="selectFbType('bug')">
+          <div class="icon">🐛</div><div>Bug</div>
+        </div>
+        <div class="feedback-type-btn" data-type="feature" onclick="selectFbType('feature')">
+          <div class="icon">💡</div><div>Feature</div>
+        </div>
+        <div class="feedback-type-btn" data-type="praise" onclick="selectFbType('praise')">
+          <div class="icon">👍</div><div>Praise</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">⭐ Rating (optional)</label>
+      <div class="star-rating" id="starRating">
+        <span class="star" onclick="setRating(1)">⭐</span>
+        <span class="star" onclick="setRating(2)">⭐</span>
+        <span class="star" onclick="setRating(3)">⭐</span>
+        <span class="star" onclick="setRating(4)">⭐</span>
+        <span class="star" onclick="setRating(5)">⭐</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">📝 Your Message *</label>
+      <textarea class="form-input form-textarea" id="fbMessage" placeholder="अपना feedback/suggestion यहाँ लिखें...&#10;&#10;Hindi ya English - जो भी आप comfortable हों"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">📧 Optional Email (for reply)</label>
+      <input type="email" class="form-input" id="fbEmail" placeholder="your@email.com">
+    </div>
+    <button class="form-btn" onclick="sendFeedback()">📤 Send Feedback</button>
+  `);
+}
+
+function selectFbType(type) {
+  selectedFeedbackType = type;
+  document.querySelectorAll('.feedback-type-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.feedback-type-btn[data-type="${type}"]`).classList.add('active');
+}
+
+function setRating(r) {
+  selectedRating = r;
+  document.querySelectorAll('.star').forEach((s, i) => {
+    s.classList.toggle('active', i < r);
+  });
+}
+
+async function sendFeedback() {
+  const message = document.getElementById('fbMessage').value.trim();
+  if (!message) { toast('⚠️ Message ज़रूरी'); return; }
+  try {
+    const r = await fetch(API + (currentSchool ? '/api/school/' + currentSchool.id : '/api/admin/feedback') + '/feedback', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fromUserId: currentUser?.id || 'anonymous',
+        fromName: currentUser?.name || 'Anonymous',
+        fromRole: currentRole || 'user',
+        type: selectedFeedbackType,
+        message,
+        rating: selectedRating || null,
+      })
+    }).then(r => r.json());
+    if (r.success) { toast('✅ Feedback sent! Thank you 🙏'); closeModal(); }
+    else { toast('❌ ' + (r.error || 'Failed')); }
+  } catch (e) { toast('❌ Network error'); }
 }
 
 // ============ PRINCIPAL ACTIONS ============
@@ -687,21 +1104,25 @@ function openAdmitStudent() {
       <input type="text" class="form-input" id="newStudParent" placeholder="Rakesh Kumar"></div>
     <div class="form-group"><label class="form-label">📱 Parent Phone *</label>
       <input type="tel" class="form-input" id="newStudPhone" placeholder="+91 98765 43210"></div>
-    <div class="form-group"><label class="form-label">🎒 Class *</label>
-      <select class="form-input" id="newStudClass">
-        <option value="Nursery">Nursery</option>
-        <option value="LKG">LKG</option>
-        <option value="UKG">UKG</option>
-      </select></div>
-    <div class="form-group"><label class="form-label">Section</label>
-      <select class="form-input" id="newStudSection"><option>A</option><option>B</option><option>C</option></select></div>
-    <div class="form-group"><label class="form-label">📅 Date of Birth</label>
-      <input type="date" class="form-input" id="newStudDOB"></div>
-    <div class="form-group"><label class="form-label">🩸 Blood Group</label>
-      <select class="form-input" id="newStudBlood"><option value="">--</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
-    <div class="form-group"><label class="form-label">⚠️ Allergies (if any)</label>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">🎒 Class *</label>
+        <select class="form-input" id="newStudClass">
+          <option value="Nursery">Nursery</option>
+          <option value="LKG">LKG</option>
+          <option value="UKG">UKG</option>
+        </select></div>
+      <div class="form-group"><label class="form-label">Section</label>
+        <select class="form-input" id="newStudSection"><option>A</option><option>B</option><option>C</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">📅 DOB</label>
+        <input type="date" class="form-input" id="newStudDOB"></div>
+      <div class="form-group"><label class="form-label">🩸 Blood</label>
+        <select class="form-input" id="newStudBlood"><option value="">--</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+    </div>
+    <div class="form-group"><label class="form-label">⚠️ Allergies (optional)</label>
       <input type="text" class="form-input" id="newStudAllergies" placeholder="Peanuts, dust"></div>
-    <button class="form-btn" onclick="saveStudent()">✅ Admit Student (Free)</button>
+    <button class="form-btn" onclick="saveStudent()">✅ Admit Student (FREE)</button>
   `);
 }
 
@@ -723,11 +1144,8 @@ async function saveStudent() {
         allergies: document.getElementById('newStudAllergies').value.trim(),
       })
     }).then(r => r.json());
-    if (res.success) {
-      toast('✅ ' + res.student.name + ' admitted! Roll #' + res.student.rollNo);
-      closeModal();
-      showPrincipalDash();
-    } else { toast('❌ ' + (res.error || 'Failed')); }
+    if (res.success) { toast('✅ ' + res.student.name + ' admitted! Roll #' + res.student.rollNo); closeModal(); showPrincipalDash(); }
+    else { toast('❌ ' + (res.error || 'Failed')); }
   } catch (e) { toast('❌ Network error'); }
 }
 
@@ -744,24 +1162,22 @@ function showAllStudents() {
       document.getElementById('allStudentsList').innerHTML = Object.entries(byClass).map(([k, students]) => `
         <div style="margin-bottom:14px;">
           <div style="font-weight:800;margin-bottom:6px;color:#ff6b6b;">📚 ${k} (${students.length})</div>
-          ${students.map(s => `<div class="child-card" onclick="viewStudentDetail('${s.id}')">
-            <div class="child-avatar">${esc(s.name[0])}</div>
+          ${students.map(s => `<div class="child-card">
+            ${getChildAvatar(s.rollNo, s.name)}
             <div class="child-info">
               <div class="child-name">#${s.rollNo} ${esc(s.name)}</div>
               <div class="child-meta">📱 ${esc(s.parentPhone)} • ${s.parentId ? '✅ linked' : '⚠️ not linked'}</div>
             </div>
           </div>`).join('')}
-        </div>
-      `).join('');
+        </div>`).join('');
     } else {
-      document.getElementById('allStudentsList').innerHTML = '<div class="empty"><div class="empty-text">No students yet</div></div>';
+      document.getElementById('allStudentsList').innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No students yet</div></div>';
     }
   });
 }
 
-function openAttendance() {
-  toast('✅ Attendance - Coming in Phase 1.2! (Reuses existing /api/business/:id/attendance)');
-}
+function openAttendance() { toast('✅ Attendance - reuse /api/business/:id/attendance'); }
+function openFees() { toast('💰 Fee Management - existing /api/business/:id/fees/collect endpoint ready'); }
 
 function openDiary() {
   showModal('📝 Daily Diary', '<div id="diaryListArea">Loading...</div>');
@@ -783,33 +1199,37 @@ function openDiary() {
 function loadClassStudents(date) {
   const classId = document.getElementById('diaryClass').value;
   if (!classId) return;
-  fetch(API + '/api/school/' + currentSchool.id + '/students?className=' + classId.split('_').slice(-2, -1)[0] + '&section=' + classId.split('_').slice(-1)[0]).then(r => r.json()).then(sd => {
+  const className = classId.split('_').slice(-2, -1)[0];
+  const section = classId.split('_').slice(-1)[0];
+  fetch(API + '/api/school/' + currentSchool.id + '/students?className=' + className + '&section=' + section).then(r => r.json()).then(sd => {
     if (!sd.success) return;
     const students = sd.students;
     const form = document.getElementById('diaryForm');
     if (!students.length) { form.innerHTML = '<div class="empty">No students in this class</div>'; return; }
-    form.innerHTML = '<div style="margin-bottom:8px;font-size:12px;color:#888;">' + students.length + ' students. Fill diary for each:</div>' +
+    form.innerHTML = '<div style="margin-bottom:8px;font-size:12px;color:#888;">' + students.length + ' students. Fill diary:</div>' +
       students.map((s, i) => `
         <div style="background:#f8f9fa;border-radius:10px;padding:10px;margin-bottom:8px;">
-          <div style="font-weight:800;margin-bottom:6px;">${i+1}. ${esc(s.name)} (Roll #${s.rollNo})</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
-            <select class="form-input" id="mood_${s.id}" style="font-size:12px;padding:6px;">
-              <option value="happy">😊 Happy</option><option value="neutral">😐 Neutral</option>
-              <option value="sad">😢 Sad</option><option value="crying">😭 Crying</option>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            ${getChildAvatar(s.rollNo, s.name).replace('width:50px;height:50px;font-size:24px', 'width:32px;height:32px;font-size:14px')}
+            <div style="font-weight:800;font-size:13px;">${i+1}. ${esc(s.name)} (#${s.rollNo})</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
+            <select class="form-input" id="mood_${s.id}" style="font-size:11px;padding:6px;">
+              <option value="happy">😊 Happy</option><option value="neutral">😐</option>
+              <option value="sad">😢 Sad</option><option value="crying">😭</option>
             </select>
-            <input type="number" class="form-input" id="bottle_${s.id}" placeholder="🍼 Bottles" min="0" style="font-size:12px;padding:6px;">
-            <input type="number" class="form-input" id="diaper_${s.id}" placeholder="👶 Diapers" min="0" style="font-size:12px;padding:6px;">
+            <input type="number" class="form-input" id="bottle_${s.id}" placeholder="🍼" min="0" style="font-size:12px;padding:6px;">
+            <input type="number" class="form-input" id="diaper_${s.id}" placeholder="👶" min="0" style="font-size:12px;padding:6px;">
           </div>
-          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;font-size:11px;">
-            <label><input type="checkbox" id="bf_${s.id}" checked> 🍳 Breakfast</label>
-            <label><input type="checkbox" id="snack_${s.id}" checked> 🍎 Snack</label>
-            <label><input type="checkbox" id="lunch_${s.id}" checked> 🍛 Lunch</label>
-            <label><input type="checkbox" id="nap_${s.id}"> 😴 Napped</label>
+          <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;font-size:10px;">
+            <label><input type="checkbox" id="bf_${s.id}" checked> 🍳</label>
+            <label><input type="checkbox" id="snack_${s.id}" checked> 🍎</label>
+            <label><input type="checkbox" id="lunch_${s.id}" checked> 🍛</label>
+            <label><input type="checkbox" id="nap_${s.id}"> 😴</label>
           </div>
-          <input type="text" class="form-input" id="note_${s.id}" placeholder="📝 Special note (optional)" style="margin-top:6px;font-size:12px;padding:6px;">
+          <input type="text" class="form-input" id="note_${s.id}" placeholder="📝 Note (optional)" style="margin-top:4px;font-size:11px;padding:6px;">
         </div>
       `).join('') + '<button class="form-btn" onclick="saveDiary()">✅ Save Diary</button>';
-    window._currentDiaryDate = date;
   });
 }
 
@@ -818,9 +1238,8 @@ async function saveDiary() {
   const date = document.getElementById('diaryDate').value;
   const className = classId.split('_').slice(-2, -1)[0];
   const section = classId.split('_').slice(-1)[0];
-  // Get all students of this class
   const sd = await fetch(API + '/api/school/' + currentSchool.id + '/students?className=' + className + '&section=' + section).then(r => r.json());
-  if (!sd.success) { toast('❌ Failed to get students'); return; }
+  if (!sd.success) { toast('❌ Failed'); return; }
   const entries = sd.students.map(s => ({
     studentId: s.id,
     mood: document.getElementById('mood_' + s.id)?.value || 'happy',
@@ -844,14 +1263,10 @@ async function saveDiary() {
   } catch (e) { toast('❌ Network error'); }
 }
 
-function openFees() {
-  toast('💰 Fee Management - already exists at /api/business/:id/fees/collect. UI coming in Phase 1.3');
-}
-
 function openPhotos() {
   showModal('📸 Photos', `
     <div class="form-group"><label class="form-label">Photo URLs (one per line)</label>
-      <textarea class="form-input" id="photoUrls" rows="4" placeholder="https://example.com/photo1.jpg
+      <textarea class="form-input form-textarea" id="photoUrls" rows="4" placeholder="https://example.com/photo1.jpg
 https://example.com/photo2.jpg"></textarea></div>
     <div class="form-group"><label class="form-label">Album Title</label>
       <input type="text" class="form-input" id="photoTitle" placeholder="Annual Day 2025"></div>
@@ -879,35 +1294,8 @@ async function savePhotos() {
   } catch (e) { toast('❌ Network error'); }
 }
 
-function openPTM() {
-  showModal('📅 PTM Schedule', '<div id="ptmList">Loading...</div>');
-  fetch(API + '/api/school/' + currentSchool.id + '/ptm').then(r => r.json()).then(d => {
-    if (d.success && d.meetings.length > 0) {
-      document.getElementById('ptmList').innerHTML = d.meetings.map(m =>
-        `<div class="section-card" style="margin-bottom:8px;">
-          <div style="font-weight:800;">${esc(m.date)} • ${esc(m.startTime)}-${esc(m.endTime)}</div>
-          <div style="font-size:12px;color:#888;">Class: ${esc(m.classId.split('_').slice(-2, -1)[0] || m.classId)} • ${m.bookings.length}/${m.maxParents} booked</div>
-        </div>`).join('');
-    } else {
-      document.getElementById('ptmList').innerHTML = '<div class="empty"><div class="empty-text">No PTM scheduled. Coming soon!</div></div>';
-    }
-  });
-}
-
-function openHoliday() {
-  showModal('🗓️ Holiday Calendar', '<div id="holidayList">Loading...</div>');
-  fetch(API + '/api/school/' + currentSchool.id + '/holidays').then(r => r.json()).then(d => {
-    if (d.success && d.holidays.length > 0) {
-      document.getElementById('holidayList').innerHTML = d.holidays.map(h =>
-        `<div class="section-card" style="margin-bottom:8px;">
-          <div style="font-weight:800;">📅 ${esc(h.date)} - ${esc(h.name)}</div>
-          <div style="font-size:11px;color:#888;">${esc(h.type)}${h.description ? ' • ' + esc(h.description) : ''}</div>
-        </div>`).join('');
-    } else {
-      document.getElementById('holidayList').innerHTML = '<div class="empty"><div class="empty-text">No holidays added yet</div></div>';
-    }
-  });
-}
+function openPTM() { toast('📅 PTM - coming soon, see existing /api/school/:id/ptm endpoints'); }
+function openHoliday() { toast('🗓️ Holiday - coming soon, see existing /api/school/:id/holidays endpoints'); }
 
 function openAlert() {
   showModal('🚨 Send Emergency Alert', `
@@ -918,14 +1306,8 @@ function openAlert() {
         <option value="event">📅 Event</option>
         <option value="general">📢 General</option>
       </select></div>
-    <div class="form-group"><label class="form-label">Message (हिंदी/English)</label>
-      <textarea class="form-input" id="alertMsg" rows="3" placeholder="कल बारिश के कारण school बंद रहेगा।"></textarea></div>
-    <div class="form-group"><label class="form-label">Severity</label>
-      <select class="form-input" id="alertSev">
-        <option value="normal">Normal</option>
-        <option value="high">🚨 High</option>
-        <option value="critical">⛔ Critical</option>
-      </select></div>
+    <div class="form-group"><label class="form-label">Message</label>
+      <textarea class="form-input form-textarea" id="alertMsg" rows="3" placeholder="कल बारिश के कारण school बंद रहेगा।"></textarea></div>
     <button class="form-btn" onclick="sendAlert()">📤 Send to All Parents</button>
   `);
 }
@@ -936,11 +1318,7 @@ async function sendAlert() {
   try {
     const res = await fetch(API + '/api/school/' + currentSchool.id + '/alert', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ownerId: currentUser.id,
-        type: document.getElementById('alertType').value,
-        message, severity: document.getElementById('alertSev').value,
-      })
+      body: JSON.stringify({ ownerId: currentUser.id, type: 'general', message, severity: 'normal' })
     }).then(r => r.json());
     if (res.success) { toast('✅ Alert sent to ' + res.sent + ' parents!'); closeModal(); }
     else { toast('❌ ' + (res.error || 'Failed')); }
@@ -953,8 +1331,6 @@ function showSchoolSettings() {
       <input type="text" class="form-input" id="setSchoolName" value="${esc(currentSchool.name)}"></div>
     <div class="form-group"><label class="form-label">Principal</label>
       <input type="text" class="form-input" id="setPrincipal" value="${esc(currentSchool.principalName || '')}"></div>
-    <div class="form-group"><label class="form-label">📱 Phone</label>
-      <input type="tel" class="form-input" id="setSchoolPhone" value="${esc(currentSchool.phone || '')}"></div>
     <div class="form-group"><label class="form-label">💰 Monthly Fee (₹)</label>
       <input type="number" class="form-input" id="setSchoolFee" value="${esc(currentSchool.monthlyFee || 0)}"></div>
     <button class="form-btn" onclick="saveSchoolSettings()">💾 Save</button>
@@ -965,7 +1341,6 @@ async function saveSchoolSettings() {
   const updates = {
     name: document.getElementById('setSchoolName').value.trim(),
     principalName: document.getElementById('setPrincipal').value.trim(),
-    phone: document.getElementById('setSchoolPhone').value.trim(),
     monthlyFee: parseInt(document.getElementById('setSchoolFee').value) || 0,
   };
   try {
@@ -973,80 +1348,108 @@ async function saveSchoolSettings() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ownerId: currentUser.id, ...updates })
     }).then(r => r.json());
-    if (res.success) {
-      Object.assign(currentSchool, updates);
-      localStorage.setItem('ds_school_data', JSON.stringify(currentSchool));
-      toast('✅ Settings saved!'); closeModal();
-      showPrincipalDash();
-    } else { toast('❌ ' + (res.error || 'Failed')); }
+    if (res.success) { Object.assign(currentSchool, updates); localStorage.setItem('ds_school_data', JSON.stringify(currentSchool)); toast('✅ Saved!'); closeModal(); showPrincipalDash(); }
   } catch (e) { toast('❌ Network error'); }
 }
 
-function viewClassStudents(className, section) {
-  showAllStudents();
-}
-
-function showAllDiaries() {
-  showModal('📝 All Diaries', '<div class="empty"><div class="empty-text">Use Daily Diary button to add new entries</div></div>');
-}
-
-function showPrincipalMenu() {
-  showModal('📋 More Options', `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <button class="form-btn secondary" onclick="openAdmitStudent()">👶 New Student</button>
-      <button class="form-btn secondary" onclick="openAttendance()">✅ Attendance</button>
-      <button class="form-btn secondary" onclick="openDiary()">📝 Daily Diary</button>
-      <button class="form-btn secondary" onclick="openFees()">💰 Fees</button>
-      <button class="form-btn secondary" onclick="openPhotos()">📸 Photos</button>
-      <button class="form-btn secondary" onclick="openPTM()">📅 PTM</button>
-      <button class="form-btn secondary" onclick="openHoliday()">🗓️ Holiday</button>
-      <button class="form-btn secondary" onclick="openAlert()">🚨 Alert</button>
-    </div>
-  `);
-}
-
-function showParentMenu() {
-  showModal('📋 More Options', '<button class="form-btn secondary" onclick="openPickupAuth()">🚌 Generate Pickup OTP</button>');
-}
-
-function showChildDiary() {
-  if (!currentParentChild) return;
-  openDiary();
-}
+function viewClassStudents(className, section) { showAllStudents(); }
 
 function browseAllSchools() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('principalDash').classList.add('hidden');
   document.getElementById('parentDash').classList.add('hidden');
-  document.getElementById('teacherDash').classList.add('hidden');
+  document.getElementById('chatListView').classList.add('hidden');
+  document.getElementById('chatView').classList.add('hidden');
   document.getElementById('browseSchools').classList.remove('hidden');
   document.getElementById('bottomNav').style.display = 'none';
+  document.getElementById('chatFab').style.display = 'none';
   fetch(API + '/api/schools?limit=30').then(r => r.json()).then(d => {
     if (d.success && d.schools.length > 0) {
       document.getElementById('allSchoolsList').innerHTML = d.schools.map(s =>
         `<div class="child-card">
-          <div class="child-avatar">🏫</div>
+          <div class="child-avatar" style="background:linear-gradient(135deg,#667eea,#764ba2)">🏫</div>
           <div class="child-info">
             <div class="child-name">${esc(s.name)}</div>
             <div class="child-meta">📍 ${esc(s.city || 'India')} • 👶 ${s.studentCount || 0} students • 💰 ₹${s.monthlyFee || 0}/mo</div>
           </div>
         </div>`).join('');
     } else {
-      document.getElementById('allSchoolsList').innerHTML = '<div class="empty"><div class="empty-text">No schools registered yet. Be the first!</div></div>';
+      document.getElementById('allSchoolsList').innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No schools yet. Be the first!</div></div>';
     }
   });
 }
 
-// Auto-login from localStorage
+// ============ SHARE LINK ============
+function getShareLink() {
+  return window.location.origin + '/school-portal.html';
+}
+
+function shareSchoolLink() {
+  const link = getShareLink();
+  const text = `🎓 ${currentSchool?.name || 'Our School'} - Child's Land School App\nFree pre-school management for parents\n${link}`;
+  if (navigator.share) {
+    navigator.share({ title: 'Child\'s Land School', text, url: link });
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text);
+    toast('✅ Link copied! WhatsApp pe paste karo');
+  } else {
+    showModal('📤 Share Link', `
+      <div class="form-group">
+        <input type="text" class="form-input" value="${esc(link)}" readonly onclick="this.select()">
+      </div>
+      <p style="font-size:12px;color:#888;">Ye link parents aur teachers ko share karo</p>
+      <div class="form-group mt-12">
+        <a href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" class="form-btn" style="text-decoration:none;background:#25D366;display:block;text-align:center;">💬 WhatsApp pe Share</a>
+      </div>
+    `);
+  }
+}
+
+function sharePortalLink() {
+  shareSchoolLink();
+}
+
+// Auto-load saved session
 window.addEventListener('DOMContentLoaded', () => {
+  // Check URL for role param
+  const params = new URLSearchParams(window.location.search);
+  const role = params.get('role');
+  if (role && ['principal', 'parent', 'teacher'].includes(role)) {
+    setLoginRole(role);
+  }
+  // Auto-login
   const savedUser = localStorage.getItem('ds_school_user');
   const savedSchool = localStorage.getItem('ds_school_data');
   if (savedUser && savedSchool) {
     try {
       currentUser = JSON.parse(savedUser);
-      currentSchool = JSON.parse(savedSchool);
-      currentRole = 'principal';
-      showPrincipalDash();
+      const school = JSON.parse(savedSchool);
+      // For parent role, we need parentChildren to be loaded
+      if (savedUser.includes('"role":"parent"') || currentUser.id?.startsWith('parent_')) {
+        currentRole = 'parent';
+        currentUser.role = 'parent';
+        currentSchool = school;
+        // Re-fetch parent children
+        fetch(API + '/api/school/parent/' + encodeURIComponent(currentUser.phone || '') + '/students').then(r => r.json()).then(d => {
+          if (d.success && d.students.length > 0) {
+            parentChildren = d.students;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('browseSchools').classList.add('hidden');
+            document.getElementById('principalDash').classList.add('hidden');
+            document.getElementById('parentDash').classList.remove('hidden');
+            document.getElementById('bottomNav').style.display = 'flex';
+            document.getElementById('chatFab').style.display = 'flex';
+            document.getElementById('parentName').textContent = '👋 नमस्ते!';
+            document.getElementById('parentSubtitle').textContent = '📱 ' + currentUser.phone + ' • ' + d.students.length + ' children';
+            document.getElementById('parentNoChildren').classList.add('hidden');
+            showParentChildrenList();
+          }
+        });
+      } else {
+        currentSchool = school;
+        currentRole = 'principal';
+        showPrincipalDash();
+      }
     } catch (e) { localStorage.clear(); }
   }
 });
