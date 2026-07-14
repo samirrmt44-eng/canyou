@@ -408,6 +408,15 @@
 
       <div id="adminNewsList"><div class="empty">Loading news...</div></div>
     </div>
+
+    <!-- SCHOOL MANAGEMENT (FREE - multi-school) -->
+    <div class="section">
+      <div class="section-title">
+        <span>🎓 School Management (Free for schools)</span>
+        <a href="/school-portal.html" class="refresh-btn" style="background:rgba(255,107,53,0.15);color:#ff6b35;border-color:#ff6b35;text-decoration:none;">🎓 Open School Portal</a>
+      </div>
+      <div id="adminSchoolList"><div class="empty">⏳ Loading schools...</div></div>
+    </div>
   </div>
 
   <div class="footer">
@@ -480,6 +489,7 @@ async function loadAll() {
     if (sessions.success) renderSessions(sessions.sessions);
     // Also load news
     loadAdminNews();
+    loadAdminSchools();
     document.getElementById('lastUpdate').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
   } catch (e) {
     console.error('Load error:', e);
@@ -488,6 +498,41 @@ async function loadAll() {
 
 // ==================== NEWS MANAGEMENT ====================
 let editingNewsId = null;
+
+// ==================== SCHOOLS (view only - management is in /school-portal.html) ====================
+async function loadAdminSchools() {
+  try {
+    const r = await fetch(API + '/api/schools?limit=30').then(r => r.json());
+    if (r.success) renderAdminSchools(r.schools);
+  } catch (e) {
+    document.getElementById('adminSchoolList').innerHTML = '<div class="empty">❌ Failed to load schools</div>';
+  }
+}
+
+function renderAdminSchools(schools) {
+  const wrap = document.getElementById('adminSchoolList');
+  if (!schools || schools.length === 0) {
+    wrap.innerHTML = '<div class="empty">📭 No schools registered yet. <a href="/school-portal.html" style="color:#ff6b35;">Be the first!</a></div>';
+    return;
+  }
+  const total = schools.reduce((s, x) => s + (x.studentCount || 0), 0);
+  let html = `<div style="font-size:11px;color:#888;margin-bottom:8px;">📊 ${schools.length} schools, ${total} total students</div>`;
+  html += schools.map(s =>
+    `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;margin-bottom:6px;font-size:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:13px;color:#ffd700;">🏫 ${esc(s.name)}</div>
+          <div style="font-size:11px;color:#888;margin-top:2px;">
+            📍 ${esc(s.city || 'India')} • 👶 ${s.studentCount || 0} students • 💰 ₹${s.monthlyFee || 0}/mo
+            ${s.slug ? ` • <a href="/school-portal.html" style="color:#00d4ff;">portal</a>` : ''}
+          </div>
+        </div>
+        <div style="font-size:10px;background:rgba(255,107,53,0.2);color:#ff6b35;padding:2px 8px;border-radius:6px;font-weight:800;">FREE</div>
+      </div>
+    </div>`
+  ).join('');
+  wrap.innerHTML = html;
+}
 async function loadAdminNews() {
   try {
     const r = await adminFetch('/api/news/admin/list');
