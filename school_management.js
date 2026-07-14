@@ -134,6 +134,14 @@ module.exports = function(app, db, usersCol, notificationsCol) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  // Get schools owned by a user (for principal auto-login)
+  app.get('/api/school/owner/:ownerId', async (req, res) => {
+    try {
+      const schools = await schoolsCol.find({ ownerId: req.params.ownerId }).sort({ createdAt: -1 }).toArray();
+      res.json({ success: true, count: schools.length, schools: schools.map(s => { const { _id, ...r } = s; return r; }) });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   // Update school
   app.post('/api/school/:schoolId/update', async (req, res) => {
     try {
