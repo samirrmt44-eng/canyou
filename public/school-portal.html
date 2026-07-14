@@ -198,6 +198,56 @@
   .install-prompt p { font-size: 12px; color: #666; margin-bottom: 10px; }
   .install-prompt-btns { display: flex; gap: 8px; }
   .install-prompt-btns button { flex: 1; }
+
+  /* TAB BAR (sub-pages) */
+  .tab-bar { display: flex; gap: 4px; background: #f5f5f7; padding: 4px; border-radius: 10px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none; }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-pill { flex-shrink: 0; padding: 8px 14px; border: none; background: transparent; border-radius: 8px; font-size: 11px; font-weight: 700; color: #888; cursor: pointer; white-space: nowrap; }
+  .tab-pill.active { background: #fff; color: #ff6b6b !important; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 0.3s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th { background: #f5f5f7; padding: 8px; text-align: left; font-weight: 800; color: #555; font-size: 10px; text-transform: uppercase; }
+  .data-table td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
+  .data-table tr:hover td { background: #fafafa; }
+
+  /* PROGRESS BAR */
+  .progress-bar { background: #f0f0f0; border-radius: 8px; height: 8px; overflow: hidden; position: relative; }
+  .progress-fill { background: linear-gradient(90deg, #ff6b6b, #ee5a6f); height: 100%; border-radius: 8px; transition: width 0.5s; }
+  .progress-bar.green .progress-fill { background: linear-gradient(90deg, #43e97b, #38f9d7); }
+
+  /* CHIPS */
+  .chip { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; background: #f0f0f0; color: #555; }
+  .chip-present { background: #d4edda; color: #155724; }
+  .chip-absent { background: #f8d7da; color: #721c24; }
+  .chip-late { background: #fff3cd; color: #856404; }
+  .chip-paid { background: #d4edda; color: #155724; }
+  .chip-pending { background: #fff3cd; color: #856404; }
+  .chip-refunded { background: #e2e3e5; color: #383d41; }
+
+  /* BIRTHDAY CARD */
+  .birthday-card { background: linear-gradient(135deg, #ffd700, #ff6b6b); color: #fff; border-radius: 14px; padding: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+  .birthday-card .cake { font-size: 40px; }
+  .birthday-card .name { font-size: 14px; font-weight: 800; }
+  .birthday-card .age { font-size: 11px; opacity: 0.9; }
+
+  /* FEATURE BUTTON GRID */
+  .feature-btn { background: #fff; border-radius: 12px; padding: 12px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.2s; }
+  .feature-btn:active { transform: scale(0.95); }
+  .feature-btn .icon { font-size: 24px; margin-bottom: 4px; }
+  .feature-btn .label { font-size: 10px; font-weight: 700; color: #555; }
+  .feature-btn.disabled { opacity: 0.5; pointer-events: none; }
+
+  /* ATTENDANCE TOGGLE */
+  .attend-toggle { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 4px; }
+  .attend-btn { padding: 6px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fff; text-align: center; cursor: pointer; font-size: 11px; font-weight: 700; }
+  .attend-btn.active-present { background: #d4edda; border-color: #28a745; color: #155724; }
+  .attend-btn.active-absent { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+  .attend-btn.active-late { background: #fff3cd; border-color: #ffc107; color: #856404; }
+  .attend-btn.active-half { background: #d1ecf1; border-color: #17a2b8; color: #0c5460; }
 </style>
 </head>
 <body>
@@ -309,61 +359,217 @@
     <div class="stat-card photos"><div class="stat-num" id="statPhotos">0</div><div class="stat-lbl">📸 Photos</div></div>
   </div>
 
-  <!-- BIG Quick actions - EASY for principal -->
-  <div class="feature-grid">
-    <div class="big-btn" onclick="openAdmitStudent()">
-      <div class="icon">👶</div>
-      <div>नया Student जोड़ें</div>
+  <!-- Birthday today -->
+  <div class="section-card" id="birthdayCard" style="display:none;">
+    <div class="section-title">🎂 आज का Birthday</div>
+    <div id="birthdayList"></div>
+  </div>
+
+  <!-- Tab Bar (sub-pages) -->
+  <div class="tab-bar">
+    <button class="tab-pill active" data-tab="overview" onclick="switchPrincipalTab('overview')">🏠 Home</button>
+    <button class="tab-pill" data-tab="students" onclick="switchPrincipalTab('students')">👶 Students</button>
+    <button class="tab-pill" data-tab="attendance" onclick="switchPrincipalTab('attendance')">✅ Attendance</button>
+    <button class="tab-pill" data-tab="diary" onclick="switchPrincipalTab('diary')">📝 Diary</button>
+    <button class="tab-pill" data-tab="fees" onclick="switchPrincipalTab('fees')">💰 Fees</button>
+    <button class="tab-pill" data-tab="results" onclick="switchPrincipalTab('results')">📊 Results</button>
+    <button class="tab-pill" data-tab="timetable" onclick="switchPrincipalTab('timetable')">📅 Timetable</button>
+    <button class="tab-pill" data-tab="events" onclick="switchPrincipalTab('events')">🎉 Events</button>
+    <button class="tab-pill" data-tab="reports" onclick="switchPrincipalTab('reports')">📈 Reports</button>
+  </div>
+
+  <!-- ===== OVERVIEW TAB ===== -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="feature-grid">
+      <div class="big-btn" onclick="openAdmitStudent()">
+        <div class="icon">👶</div>
+        <div>नया Student जोड़ें</div>
+      </div>
+      <div class="big-btn" onclick="openDiary()">
+        <div class="icon">📝</div>
+        <div>Daily Diary लिखें</div>
+      </div>
     </div>
-    <div class="big-btn" onclick="openDiary()">
-      <div class="icon">📝</div>
-      <div>Daily Diary लिखें</div>
+
+    <div class="quick-actions">
+      <div class="action-btn" onclick="switchPrincipalTab('attendance')">
+        <div class="action-icon">✅</div><div class="action-label">Attendance</div>
+      </div>
+      <div class="action-btn" onclick="openPhotos()">
+        <div class="action-icon">📸</div><div class="action-label">Photos</div>
+      </div>
+      <div class="action-btn" onclick="switchPrincipalTab('fees')">
+        <div class="action-icon">💰</div><div class="action-label">Fees</div>
+      </div>
+      <div class="action-btn" onclick="openPTM()">
+        <div class="action-icon">📅</div><div class="action-label">PTM</div>
+      </div>
+      <div class="action-btn" onclick="openHoliday()">
+        <div class="action-icon">🗓️</div><div class="action-label">Holiday</div>
+      </div>
+      <div class="action-btn" onclick="openAlert()">
+        <div class="action-icon">🚨</div><div class="action-label">Alert</div>
+      </div>
+      <div class="action-btn" onclick="openChatList()">
+        <div class="action-icon">💬</div><div class="action-label">Chat</div>
+      </div>
+      <div class="action-btn" onclick="showAllStudents()">
+        <div class="action-icon">📋</div><div class="action-label">All</div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">
+        <span>👶 Students by Class</span>
+        <span class="count" id="classBreakdownCount">0</span>
+      </div>
+      <div id="classBreakdownList"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">अभी कोई student नहीं</div></div></div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">
+        <span>💬 Feedback</span>
+        <span class="count" id="feedbackCount">0</span>
+      </div>
+      <div id="feedbackList"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">कोई feedback नहीं</div></div></div>
     </div>
   </div>
 
-  <div class="quick-actions">
-    <div class="action-btn" onclick="openAttendance()">
-      <div class="action-icon">✅</div><div class="action-label">Attendance</div>
+  <!-- ===== STUDENTS TAB ===== -->
+  <div class="tab-content" id="tab-students">
+    <div class="feature-grid">
+      <div class="big-btn" onclick="openAdmitStudent()">
+        <div class="icon">➕</div>
+        <div>Admit Student</div>
+      </div>
+      <div class="big-btn" onclick="openBulkPromote()">
+        <div class="icon">🎓</div>
+        <div>Bulk Promote</div>
+      </div>
     </div>
-    <div class="action-btn" onclick="openPhotos()">
-      <div class="action-icon">📸</div><div class="action-label">Photos</div>
-    </div>
-    <div class="action-btn" onclick="openFees()">
-      <div class="action-icon">💰</div><div class="action-label">Fees</div>
-    </div>
-    <div class="action-btn" onclick="openPTM()">
-      <div class="action-icon">📅</div><div class="action-label">PTM</div>
-    </div>
-    <div class="action-btn" onclick="openHoliday()">
-      <div class="action-icon">🗓️</div><div class="action-label">Holiday</div>
-    </div>
-    <div class="action-btn" onclick="openAlert()">
-      <div class="action-icon">🚨</div><div class="action-label">Alert</div>
-    </div>
-    <div class="action-btn" onclick="openChatList()">
-      <div class="action-icon">💬</div><div class="action-label">Chat</div>
-    </div>
-    <div class="action-btn" onclick="showAllStudents()">
-      <div class="action-icon">📋</div><div class="action-label">All</div>
+    <div class="section-card">
+      <div class="section-title">
+        <span>👶 All Students</span>
+        <button class="form-btn secondary tiny" onclick="exportStudentsCSV()">📥 Export CSV</button>
+      </div>
+      <div id="allStudentsOverview"></div>
     </div>
   </div>
 
-  <!-- Class-wise students -->
-  <div class="section-card">
-    <div class="section-title">
-      <span>👶 Students by Class</span>
-      <span class="count" id="classBreakdownCount">0</span>
+  <!-- ===== ATTENDANCE TAB ===== -->
+  <div class="tab-content" id="tab-attendance">
+    <div class="section-card">
+      <div class="section-title">📅 Mark Attendance</div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="attDate" onchange="loadAttendanceForDate()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Class & Section</label>
+        <select class="form-input" id="attClassSelect" onchange="loadAttendanceForDate()"></select>
+      </div>
+      <div id="attendanceList"></div>
+      <button class="form-btn mt-12 hidden" id="saveAttendanceBtn" onclick="saveAttendance()">💾 Save Attendance</button>
     </div>
-    <div id="classBreakdownList"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">अभी कोई student नहीं</div></div></div>
+    <div class="section-card">
+      <div class="section-title">📊 Today's Summary</div>
+      <div id="attendanceSummary"></div>
+    </div>
   </div>
 
-  <!-- Feedback received -->
-  <div class="section-card">
-    <div class="section-title">
-      <span>💬 Feedback (${userType})</span>
-      <span class="count" id="feedbackCount">0</span>
+  <!-- ===== DIARY TAB ===== -->
+  <div class="tab-content" id="tab-diary">
+    <div class="section-card">
+      <div class="section-title">📝 Daily Diary</div>
+      <div class="form-group">
+        <label class="form-label">Class</label>
+        <select class="form-input" id="diaryClassOverview" onchange="loadDiaryOverview()"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="diaryDateOverview" onchange="loadDiaryOverview()">
+      </div>
+      <button class="form-btn" onclick="openDiaryEditor()">📝 Fill Today's Diary</button>
+      <div id="diaryListOverview" style="margin-top:12px;"></div>
     </div>
-    <div id="feedbackList"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">कोई feedback नहीं</div></div></div>
+  </div>
+
+  <!-- ===== FEES TAB ===== -->
+  <div class="tab-content" id="tab-fees">
+    <div class="section-card">
+      <div class="section-title">💰 Fee Management</div>
+      <div class="form-row">
+        <button class="form-btn" onclick="openCollectFee()">💵 Collect Fee</button>
+        <button class="form-btn secondary" onclick="openFeeReport()">📊 Monthly Report</button>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">
+        <span>📋 Recent Collections</span>
+        <button class="form-btn secondary tiny" onclick="exportFeesCSV()">📥 CSV</button>
+      </div>
+      <div id="feesList"></div>
+    </div>
+  </div>
+
+  <!-- ===== RESULTS TAB ===== -->
+  <div class="tab-content" id="tab-results">
+    <div class="section-card">
+      <div class="section-title">📊 Exam Results</div>
+      <button class="form-btn" onclick="openAddResult()">➕ Add Result</button>
+    </div>
+    <div class="section-card">
+      <div class="section-title">📋 Published Results</div>
+      <div id="resultsList"></div>
+    </div>
+  </div>
+
+  <!-- ===== TIMETABLE TAB ===== -->
+  <div class="tab-content" id="tab-timetable">
+    <div class="section-card">
+      <div class="section-title">📅 Class Timetable</div>
+      <div class="form-group">
+        <label class="form-label">Class</label>
+        <select class="form-input" id="ttClassSelect" onchange="loadTimetable()"></select>
+      </div>
+      <button class="form-btn" onclick="openAddTimetable()">➕ Add/Edit Timetable</button>
+      <div id="timetableView" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- ===== EVENTS TAB ===== -->
+  <div class="tab-content" id="tab-events">
+    <div class="section-card">
+      <div class="section-title">🎉 School Events</div>
+      <button class="form-btn" onclick="openAddEvent()">➕ Create Event</button>
+    </div>
+    <div class="section-card">
+      <div class="section-title">📅 Upcoming Events</div>
+      <div id="eventsList"></div>
+    </div>
+  </div>
+
+  <!-- ===== REPORTS TAB ===== -->
+  <div class="tab-content" id="tab-reports">
+    <div class="section-card">
+      <div class="section-title">📈 Reports & Analytics</div>
+      <div class="form-row">
+        <button class="form-btn secondary" onclick="exportStudentsCSV()">📥 Students CSV</button>
+        <button class="form-btn secondary" onclick="exportFeesCSV()">💰 Fees CSV</button>
+      </div>
+      <div class="form-row" style="margin-top:8px;">
+        <button class="form-btn secondary" onclick="exportAttendanceCSV()">✅ Attendance CSV</button>
+        <button class="form-btn secondary" onclick="openFeeReport()">💵 Fee Report</button>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">📊 Quick Stats</div>
+      <div id="quickStats"></div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">📩 Enquiries</div>
+      <div id="enquiryList"></div>
+    </div>
   </div>
 </div>
 
@@ -420,6 +626,11 @@
 <div id="browseSchools" class="hidden">
   <div class="section-title">🔍 सभी Schools</div>
   <div id="allSchoolsList"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></div>
+</div>
+
+<!-- VIEW CHILD (Parent) -->
+<div id="parentChildDetail" class="hidden">
+  <div id="parentChildDetailContent"></div>
 </div>
 
 </div>
@@ -720,6 +931,733 @@ async function showPrincipalDash() {
     }
   } catch (e) { console.error(e); }
   loadFeedback();
+  loadBirthdays();
+  loadClassDropdowns();
+}
+
+// ============ TAB SWITCHING (Principal) ============
+function switchPrincipalTab(tab) {
+  document.querySelectorAll('#principalDash .tab-pill').forEach(b => b.classList.remove('active'));
+  document.querySelector(`#principalDash .tab-pill[data-tab="${tab}"]`)?.classList.add('active');
+  document.querySelectorAll('#principalDash .tab-content').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + tab)?.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Load tab-specific data
+  if (tab === 'students') loadAllStudentsOverview();
+  else if (tab === 'attendance') loadAttendanceTab();
+  else if (tab === 'diary') loadDiaryOverview();
+  else if (tab === 'fees') loadFeesTab();
+  else if (tab === 'results') loadResultsTab();
+  else if (tab === 'timetable') loadTimetable();
+  else if (tab === 'events') loadEventsTab();
+  else if (tab === 'reports') loadReportsTab();
+}
+
+// ============ TAB SWITCHING (Parent) ============
+function switchParentTab(tab) {
+  document.querySelectorAll('#parentDash .tab-pill').forEach(b => b.classList.remove('active'));
+  document.querySelector(`#parentDash .tab-pill[data-ptab="${tab}"]`)?.classList.add('active');
+  document.querySelectorAll('#parentDash .tab-content').forEach(s => s.classList.remove('active'));
+  document.getElementById('ptab-' + tab)?.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Load tab-specific data
+  if (tab === 'attendance') loadParentAttendance();
+  else if (tab === 'fees') loadParentFees();
+  else if (tab === 'results') loadParentResults();
+  else if (tab === 'timetable') loadParentTimetable();
+  else if (tab === 'events') loadParentEvents();
+  else if (tab === 'notices') loadParentNotices();
+}
+
+// ============ LOAD CLASS DROPDOWNS ============
+async function loadClassDropdowns() {
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/classes').then(r => r.json());
+    if (r.success) {
+      const opts = '<option value="">-- Select Class --</option>' + r.classes.map(c =>
+        `<option value="${esc(c.className)}|${esc(c.section)}">${esc(c.className)} - ${esc(c.section)}</option>`
+      ).join('');
+      ['attClassSelect', 'diaryClassOverview', 'ttClassSelect'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = opts;
+      });
+    }
+  } catch (e) { console.error(e); }
+}
+
+// ============ BIRTHDAYS ============
+async function loadBirthdays() {
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/birthdays/today').then(r => r.json());
+    const card = document.getElementById('birthdayCard');
+    if (r.success && r.students && r.students.length > 0) {
+      card.style.display = 'block';
+      document.getElementById('birthdayList').innerHTML = r.students.map(s => {
+        const age = s.dob ? new Date().getFullYear() - new Date(s.dob).getFullYear() : '?';
+        return `<div class="birthday-card">
+          <div class="cake">🎂</div>
+          <div style="flex:1;">
+            <div class="name">${esc(s.name)}</div>
+            <div class="age">${esc(s.className)}-${esc(s.section)} • ${age} years • Roll #${s.rollNo}</div>
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      card.style.display = 'none';
+    }
+  } catch (e) { console.error(e); }
+}
+
+// ============ ALL STUDENTS OVERVIEW (with edit/delete) ============
+async function loadAllStudentsOverview() {
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/students').then(r => r.json());
+    const el = document.getElementById('allStudentsOverview');
+    if (r.success && r.students.length > 0) {
+      const byClass = {};
+      r.students.forEach(s => {
+        const k = s.className + '-' + s.section;
+        if (!byClass[k]) byClass[k] = [];
+        byClass[k].push(s);
+      });
+      el.innerHTML = Object.entries(byClass).map(([k, students]) => `
+        <div style="margin-bottom:14px;">
+          <div style="font-weight:800;margin-bottom:8px;color:#ff6b6b;font-size:13px;">📚 ${k} (${students.length})</div>
+          ${students.map(s => `<div class="child-card">
+            ${getChildAvatar(s.rollNo, s.name)}
+            <div class="child-info">
+              <div class="child-name">#${s.rollNo} ${esc(s.name)}</div>
+              <div class="child-meta">📱 ${esc(s.parentPhone)} • ${s.parentId ? '✅ linked' : '⚠️ not linked'}</div>
+            </div>
+            <button class="form-btn tiny secondary" onclick="viewStudentDetail('${s.id}')">👁</button>
+            <button class="form-btn tiny secondary" onclick="editStudent('${s.id}')">✏️</button>
+          </div>`).join('')}
+        </div>`).join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No students yet. Click "Admit Student" above!</div></div>';
+    }
+  } catch (e) { console.error(e); }
+}
+
+async function viewStudentDetail(studentId) {
+  try {
+    const r = await fetch(API + '/api/school/student/' + studentId).then(r => r.json());
+    if (!r.success) return;
+    const s = r.student;
+    showModal('👶 Student Details', `
+      <div style="text-align:center;margin-bottom:14px;">
+        ${getChildAvatar(s.rollNo, s.name).replace('class="child-avatar"', 'class="child-avatar" style="width:80px;height:80px;font-size:36px;margin:0 auto;"')}
+        <h2 style="margin:8px 0 4px;">${esc(s.name)}</h2>
+        <div style="font-size:12px;color:#888;">Roll #${s.rollNo} • ${esc(s.className)}-${esc(s.section)}</div>
+      </div>
+      <table class="data-table">
+        <tr><th>Parent</th><td>${esc(s.parentName || 'N/A')}</td></tr>
+        <tr><th>Phone</th><td>${esc(s.parentPhone)}</td></tr>
+        <tr><th>Email</th><td>${esc(s.parentEmail || '-')}</td></tr>
+        <tr><th>DOB</th><td>${esc(s.dob || '-')}</td></tr>
+        <tr><th>Blood</th><td>${esc(s.bloodGroup || '-')}</td></tr>
+        <tr><th>Allergies</th><td>${esc(s.allergies || 'None')}</td></tr>
+        <tr><th>Admission</th><td>${new Date(s.admissionDate).toLocaleDateString('hi-IN')}</td></tr>
+        <tr><th>Pickup By</th><td>${esc(s.pickupPerson || '-')}</td></tr>
+      </table>
+      <div class="form-row mt-12">
+        <button class="form-btn secondary" onclick="closeModal();editStudent('${s.id}')">✏️ Edit</button>
+        <button class="form-btn" style="background:linear-gradient(135deg,#ff3b30,#ff6b6b);" onclick="deleteStudent('${s.id}')">🗑️ Delete</button>
+      </div>
+    `);
+  } catch (e) { toast('❌ Failed'); }
+}
+
+async function editStudent(studentId) {
+  try {
+    const r = await fetch(API + '/api/school/student/' + studentId).then(r => r.json());
+    if (!r.success) return;
+    const s = r.student;
+    showModal('✏️ Edit Student', `
+      <div class="form-group"><label class="form-label">Name</label>
+        <input type="text" class="form-input" id="editStudName" value="${esc(s.name)}"></div>
+      <div class="form-group"><label class="form-label">Parent Name</label>
+        <input type="text" class="form-input" id="editStudParent" value="${esc(s.parentName || '')}"></div>
+      <div class="form-group"><label class="form-label">Parent Phone</label>
+        <input type="tel" class="form-input" id="editStudPhone" value="${esc(s.parentPhone)}"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Class</label>
+          <select class="form-input" id="editStudClass">
+            <option ${s.className === 'Nursery' ? 'selected' : ''}>Nursery</option>
+            <option ${s.className === 'LKG' ? 'selected' : ''}>LKG</option>
+            <option ${s.className === 'UKG' ? 'selected' : ''}>UKG</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Section</label>
+          <select class="form-input" id="editStudSection">
+            <option ${s.section === 'A' ? 'selected' : ''}>A</option>
+            <option ${s.section === 'B' ? 'selected' : ''}>B</option>
+            <option ${s.section === 'C' ? 'selected' : ''}>C</option>
+          </select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Allergies</label>
+        <input type="text" class="form-input" id="editStudAllergies" value="${esc(s.allergies || '')}"></div>
+      <div class="form-group"><label class="form-label">Pickup Person</label>
+        <input type="text" class="form-input" id="editStudPickup" value="${esc(s.pickupPerson || '')}"></div>
+      <button class="form-btn" onclick="saveStudentEdit('${s.id}')">💾 Save Changes</button>
+    `);
+  } catch (e) { toast('❌ Failed'); }
+}
+
+async function saveStudentEdit(studentId) {
+  const updates = {
+    name: document.getElementById('editStudName').value.trim(),
+    parentName: document.getElementById('editStudParent').value.trim(),
+    parentPhone: document.getElementById('editStudPhone').value.trim(),
+    className: document.getElementById('editStudClass').value,
+    section: document.getElementById('editStudSection').value,
+    allergies: document.getElementById('editStudAllergies').value.trim(),
+    pickupPerson: document.getElementById('editStudPickup').value.trim(),
+  };
+  try {
+    const r = await fetch(API + '/api/school/student/' + studentId + '/update', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId: currentUser.id, ...updates })
+    }).then(r => r.json());
+    if (r.success) { toast('✅ Student updated!'); closeModal(); loadAllStudentsOverview(); }
+    else { toast('❌ ' + (r.error || 'Failed')); }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+async function deleteStudent(studentId) {
+  if (!confirm('Are you sure? Student will be marked inactive.')) return;
+  try {
+    const r = await fetch(API + '/api/school/student/' + studentId + '/delete', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId: currentUser.id })
+    }).then(r => r.json());
+    if (r.success) { toast('✅ Student removed'); closeModal(); loadAllStudentsOverview(); showPrincipalDash(); }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+function openBulkPromote() {
+  showModal('🎓 Bulk Promote Students', `
+    <p style="font-size:13px;color:#888;margin-bottom:12px;">सभी students एक class से दूसरी class में move करें</p>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">From Class</label>
+        <select class="form-input" id="promoFrom">
+          <option>Nursery</option><option>LKG</option><option>UKG</option>
+        </select></div>
+      <div class="form-group"><label class="form-label">To Class</label>
+        <select class="form-input" id="promoTo">
+          <option>LKG</option><option>UKG</option><option>Graduated</option>
+        </select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Academic Year</label>
+      <input type="number" class="form-input" id="promoYear" value="${new Date().getFullYear() + 1}"></div>
+    <button class="form-btn" onclick="doBulkPromote()">🎓 Promote All</button>
+  `);
+}
+
+async function doBulkPromote() {
+  const fromClass = document.getElementById('promoFrom').value;
+  const toClass = document.getElementById('promoTo').value;
+  const academicYear = parseInt(document.getElementById('promoYear').value);
+  if (!confirm(`${fromClass} के सभी students को ${toClass} में promote करें?`)) return;
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/students/bulk-promote', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId: currentUser.id, fromClass, toClass, academicYear })
+    }).then(r => r.json());
+    if (r.success) { toast('✅ ' + r.promoted + ' students promoted!'); closeModal(); showPrincipalDash(); }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+// ============ ATTENDANCE TAB ============
+let attendanceDraft = {};
+function loadAttendanceTab() {
+  const today = new Date().toISOString().split('T')[0];
+  if (!document.getElementById('attDate').value) document.getElementById('attDate').value = today;
+  loadAttendanceForDate();
+}
+
+async function loadAttendanceForDate() {
+  const date = document.getElementById('attDate').value;
+  const cls = document.getElementById('attClassSelect').value;
+  if (!cls) {
+    document.getElementById('attendanceList').innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Class select करें</div></div>';
+    document.getElementById('saveAttendanceBtn').classList.add('hidden');
+    return;
+  }
+  const [className, section] = cls.split('|');
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/students?className=' + className + '&section=' + section).then(r => r.json());
+    if (!r.success || r.students.length === 0) {
+      document.getElementById('attendanceList').innerHTML = '<div class="empty"><div class="empty-text">No students in this class</div></div>';
+      return;
+    }
+    // Load existing attendance
+    const attRes = await fetch(API + '/api/school/' + currentSchool.id + '/attendance?date=' + date).then(r => r.json());
+    const existing = {};
+    (attRes.records || []).forEach(rec => { existing[rec.studentId] = rec.status; });
+    attendanceDraft = { ...existing };
+    document.getElementById('attendanceList').innerHTML = '<div style="margin-bottom:8px;font-size:12px;color:#888;">' + r.students.length + ' students - mark each:</div>' +
+      r.students.map(s => {
+        const current = existing[s.id] || 'present';
+        return `<div style="background:#f8f9fa;border-radius:10px;padding:10px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            ${getChildAvatar(s.rollNo, s.name).replace('width:50px;height:50px;font-size:24px', 'width:32px;height:32px;font-size:14px')}
+            <div style="font-weight:800;font-size:13px;">#${s.rollNo} ${esc(s.name)}</div>
+          </div>
+          <div class="attend-toggle" data-student="${s.id}">
+            <div class="attend-btn ${current === 'present' ? 'active-present' : ''}" onclick="setAtt('${s.id}','present',this)">✅ Present</div>
+            <div class="attend-btn ${current === 'absent' ? 'active-absent' : ''}" onclick="setAtt('${s.id}','absent',this)">❌ Absent</div>
+            <div class="attend-btn ${current === 'late' ? 'active-late' : ''}" onclick="setAtt('${s.id}','late',this)">⏰ Late</div>
+            <div class="attend-btn ${current === 'half_day' ? 'active-half' : ''}" onclick="setAtt('${s.id}','half_day',this)">½ Half</div>
+          </div>
+        </div>`;
+      }).join('');
+    document.getElementById('saveAttendanceBtn').classList.remove('hidden');
+    updateAttendanceSummary();
+  } catch (e) { console.error(e); }
+}
+
+function setAtt(studentId, status, el) {
+  const group = el.parentElement;
+  group.querySelectorAll('.attend-btn').forEach(b => b.className = 'attend-btn');
+  const cls = { present: 'active-present', absent: 'active-absent', late: 'active-late', half_day: 'active-half' };
+  el.classList.add(cls[status]);
+  attendanceDraft[studentId] = status;
+  updateAttendanceSummary();
+}
+
+function updateAttendanceSummary() {
+  const total = Object.keys(attendanceDraft).length;
+  const present = Object.values(attendanceDraft).filter(s => s === 'present').length;
+  const absent = Object.values(attendanceDraft).filter(s => s === 'absent').length;
+  const late = Object.values(attendanceDraft).filter(s => s === 'late').length;
+  const half = Object.values(attendanceDraft).filter(s => s === 'half_day').length;
+  document.getElementById('attendanceSummary').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;">
+      <div><div style="font-size:20px;font-weight:900;color:#28a745;">${present}</div><div style="font-size:10px;color:#888;">Present</div></div>
+      <div><div style="font-size:20px;font-weight:900;color:#dc3545;">${absent}</div><div style="font-size:10px;color:#888;">Absent</div></div>
+      <div><div style="font-size:20px;font-weight:900;color:#ffc107;">${late}</div><div style="font-size:10px;color:#888;">Late</div></div>
+      <div><div style="font-size:20px;font-weight:900;color:#17a2b8;">${half}</div><div style="font-size:10px;color:#888;">Half</div></div>
+    </div>
+    <div style="margin-top:10px;"><strong>${total} students total</strong> • ${total > 0 ? Math.round((present/total)*100) : 0}% present</div>
+  `;
+}
+
+async function saveAttendance() {
+  const date = document.getElementById('attDate').value;
+  const records = Object.entries(attendanceDraft).map(([studentId, status]) => ({ studentId, status }));
+  if (records.length === 0) { toast('⚠️ No students'); return; }
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/attendance', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId: currentUser.id, date, records })
+    }).then(r => r.json());
+    if (r.success) { toast('✅ ' + r.count + ' students attendance saved!'); loadAttendanceForDate(); }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+function exportAttendanceCSV() {
+  window.open(API + '/api/school/' + currentSchool.id + '/export/attendance?ownerId=' + currentUser.id + '&format=csv', '_blank');
+}
+
+// ============ DIARY OVERVIEW (Principal) ============
+function loadDiaryOverview() {
+  const today = new Date().toISOString().split('T')[0];
+  if (!document.getElementById('diaryDateOverview').value) document.getElementById('diaryDateOverview').value = today;
+  const date = document.getElementById('diaryDateOverview').value;
+  const cls = document.getElementById('diaryClassOverview').value;
+  if (!cls) { document.getElementById('diaryListOverview').innerHTML = ''; return; }
+  const [className, section] = cls.split('|');
+  const classId = currentSchool.id + '_' + className + section;
+  fetch(API + '/api/school/diary?classId=' + classId + '&date=' + date).then(r => r.json()).then(d => {
+    const el = document.getElementById('diaryListOverview');
+    if (d.success && d.entries.length > 0) {
+      el.innerHTML = '<div style="font-size:12px;color:#888;margin-bottom:8px;">' + d.entries.length + ' entries filled</div>' +
+        d.entries.map(e => renderDiaryEntry(document.createElement('div'), e).outerHTML || '').join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📝</div><div class="empty-text">No diary filled yet for this date</div></div>';
+    }
+  });
+}
+
+function openDiaryEditor() {
+  openDiary();  // Reuse existing function
+}
+
+// ============ FEES TAB ============
+async function loadFeesTab() {
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/fees?limit=50').then(r => r.json());
+    const el = document.getElementById('feesList');
+    if (r.success && r.fees.length > 0) {
+      el.innerHTML = `<div style="background:linear-gradient(135deg,#d4edda,#c3e6cb);padding:10px;border-radius:8px;margin-bottom:10px;text-align:center;">
+        <div style="font-size:11px;color:#155724;">Total Collected (Recent)</div>
+        <div style="font-size:22px;font-weight:900;color:#155724;">₹${r.total}</div>
+      </div>` + r.fees.map(f => `
+        <div style="background:#f8f9fa;border-radius:8px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:800;font-size:13px;">${esc(f.studentName)}</div>
+            <div style="font-size:11px;color:#888;">${esc(f.className)}-${esc(f.section)} • ${esc(f.month)} ${f.year} • ${esc(f.type)}</div>
+            <div style="font-size:10px;color:#888;">${esc(f.receiptNo)} • ${timeAgo(f.collectedAt)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:14px;font-weight:900;color:#28a745;">₹${f.amount}</div>
+            <span class="chip chip-${f.status}">${esc(f.status)}</span>
+          </div>
+        </div>`).join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">💰</div><div class="empty-text">No fees collected yet. Click "Collect Fee" above!</div></div>';
+    }
+  } catch (e) { console.error(e); }
+}
+
+function openCollectFee() {
+  fetch(API + '/api/school/' + currentSchool.id + '/students').then(r => r.json()).then(d => {
+    if (!d.success) return;
+    const opts = d.students.map(s => `<option value="${s.id}">${esc(s.name)} (${esc(s.className)}-${esc(s.section)} #${s.rollNo})</option>`).join('');
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const monthOpts = months.map(m => `<option value="${m}" ${m === months[new Date().getMonth()] ? 'selected' : ''}>${m}</option>`).join('');
+    showModal('💵 Collect Fee', `
+      <div class="form-group"><label class="form-label">Student *</label>
+        <select class="form-input" id="feeStudent">${opts}</select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Month *</label>
+          <select class="form-input" id="feeMonth">${monthOpts}</select></div>
+        <div class="form-group"><label class="form-label">Year *</label>
+          <input type="number" class="form-input" id="feeYear" value="${new Date().getFullYear()}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Amount (₹) *</label>
+          <input type="number" class="form-input" id="feeAmount" value="${currentSchool.monthlyFee || 1500}"></div>
+        <div class="form-group"><label class="form-label">Type</label>
+          <select class="form-input" id="feeType">
+            <option value="tuition">Tuition</option>
+            <option value="admission">Admission</option>
+            <option value="exam">Exam</option>
+            <option value="transport">Transport</option>
+            <option value="books">Books</option>
+            <option value="activity">Activity</option>
+            <option value="other">Other</option>
+          </select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Payment Method</label>
+        <select class="form-input" id="feeMethod">
+          <option value="cash">💵 Cash</option>
+          <option value="upi">📱 UPI</option>
+          <option value="bank">🏦 Bank Transfer</option>
+          <option value="cheque">📝 Cheque</option>
+        </select></div>
+      <div class="form-group"><label class="form-label">Transaction ID (optional)</label>
+        <input type="text" class="form-input" id="feeTxn" placeholder="UPI ref / Cheque no"></div>
+      <button class="form-btn" onclick="saveCollectFee()">✅ Collect & Notify Parent</button>
+    `);
+  });
+}
+
+async function saveCollectFee() {
+  const payload = {
+    ownerId: currentUser.id,
+    studentId: document.getElementById('feeStudent').value,
+    month: document.getElementById('feeMonth').value,
+    year: parseInt(document.getElementById('feeYear').value),
+    amount: parseFloat(document.getElementById('feeAmount').value),
+    type: document.getElementById('feeType').value,
+    paymentMethod: document.getElementById('feeMethod').value,
+    transactionId: document.getElementById('feeTxn').value.trim(),
+  };
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/fees/collect', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(r => r.json());
+    if (r.success) { toast('✅ Fee collected! Receipt: ' + r.fee.receiptNo); closeModal(); loadFeesTab(); }
+    else { toast('❌ ' + (r.error || 'Failed')); }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+function openFeeReport() {
+  const year = new Date().getFullYear();
+  fetch(API + '/api/school/' + currentSchool.id + '/fees/summary?year=' + year).then(r => r.json()).then(d => {
+    if (!d.success) return;
+    showModal('📊 Fee Report ' + year, `
+      <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px;border-radius:10px;margin-bottom:12px;text-align:center;">
+        <div style="font-size:11px;opacity:0.9;">Total Collection</div>
+        <div style="font-size:26px;font-weight:900;">₹${d.grandTotal}</div>
+        <div style="font-size:11px;opacity:0.9;">${d.totalCount} transactions</div>
+      </div>
+      <table class="data-table">
+        <tr><th>Month</th><th>Count</th><th>Amount</th></tr>
+        ${Object.entries(d.monthly).map(([m, info]) => `<tr>
+          <td>${m}</td><td>${info.count}</td><td><strong>₹${info.total}</strong></td>
+        </tr>`).join('')}
+      </table>
+    `);
+  });
+}
+
+function exportFeesCSV() {
+  const year = new Date().getFullYear();
+  window.open(API + '/api/school/' + currentSchool.id + '/export/fees?ownerId=' + currentUser.id + '&format=csv&year=' + year, '_blank');
+}
+
+function exportStudentsCSV() {
+  window.open(API + '/api/school/' + currentSchool.id + '/export/students?ownerId=' + currentUser.id + '&format=csv', '_blank');
+}
+
+// ============ RESULTS TAB ============
+async function loadResultsTab() {
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/results?limit=20').then(r => r.json());
+    const el = document.getElementById('resultsList');
+    if (r.success && r.results.length > 0) {
+      el.innerHTML = r.results.map(res => `
+        <div style="background:#f8f9fa;border-radius:10px;padding:12px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+            <div>
+              <div style="font-weight:800;font-size:14px;">${esc(res.examName)}</div>
+              <div style="font-size:12px;color:#888;">${esc(res.studentName)} • ${esc(res.className)}-${esc(res.section)}</div>
+              <div style="font-size:11px;color:#888;margin-top:2px;">${new Date(res.publishedAt).toLocaleDateString('hi-IN')}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:18px;font-weight:900;color:#ff6b6b;">${res.percentage}%</div>
+              <div style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;">${esc(res.grade)}</div>
+            </div>
+          </div>
+        </div>`).join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">No results yet. Click "Add Result" above!</div></div>';
+    }
+  } catch (e) { console.error(e); }
+}
+
+function openAddResult() {
+  fetch(API + '/api/school/' + currentSchool.id + '/students').then(r => r.json()).then(d => {
+    if (!d.success) return;
+    const opts = d.students.map(s => `<option value="${s.id}">${esc(s.name)} (${esc(s.className)}-${esc(s.section)} #${s.rollNo})</option>`).join('');
+    showModal('📊 Add Exam Result', `
+      <div class="form-group"><label class="form-label">Student *</label>
+        <select class="form-input" id="resStudent">${opts}</select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Exam Name *</label>
+          <input type="text" class="form-input" id="resExamName" placeholder="e.g., Midterm 2025"></div>
+        <div class="form-group"><label class="form-label">Type</label>
+          <select class="form-input" id="resExamType">
+            <option value="unit_test">Unit Test</option>
+            <option value="midterm">Midterm</option>
+            <option value="final">Final</option>
+            <option value="annual">Annual</option>
+          </select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Subjects (one per line: Subject, Marks, MaxMarks)</label>
+        <textarea class="form-input form-textarea" id="resSubjects" rows="6" placeholder="Hindi, 85, 100&#10;English, 78, 100&#10;Math, 92, 100&#10;EVS, 88, 100"></textarea></div>
+      <div class="form-group"><label class="form-label">Remarks</label>
+        <input type="text" class="form-input" id="resRemarks" placeholder="Excellent performance!"></div>
+      <button class="form-btn" onclick="saveResult()">📊 Publish Result</button>
+    `);
+  });
+}
+
+async function saveResult() {
+  const subjectsRaw = document.getElementById('resSubjects').value.trim();
+  const subjects = subjectsRaw.split('\n').filter(Boolean).map(line => {
+    const parts = line.split(',').map(s => s.trim());
+    return { name: parts[0] || 'Subject', marksObtained: parseInt(parts[1]) || 0, maxMarks: parseInt(parts[2]) || 100 };
+  });
+  if (!subjects.length) { toast('⚠️ Subjects डालें'); return; }
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/results', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ownerId: currentUser.id,
+        studentId: document.getElementById('resStudent').value,
+        examName: document.getElementById('resExamName').value.trim(),
+        examType: document.getElementById('resExamType').value,
+        subjects,
+        remarks: document.getElementById('resRemarks').value.trim(),
+      })
+    }).then(r => r.json());
+    if (r.success) { toast('✅ Result published! ' + r.result.percentage + '% ' + r.result.grade); closeModal(); loadResultsTab(); }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+// ============ TIMETABLE TAB ============
+async function loadTimetable() {
+  const cls = document.getElementById('ttClassSelect').value;
+  if (!cls) { document.getElementById('timetableView').innerHTML = ''; return; }
+  const [className, section] = cls.split('|');
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/timetable?className=' + className + '&section=' + section).then(r => r.json());
+    const el = document.getElementById('timetableView');
+    if (r.success && r.timetable.length > 0) {
+      const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      el.innerHTML = days.map(day => {
+        const tt = r.timetable.find(t => t.day === day);
+        return `<div style="background:#f8f9fa;border-radius:10px;padding:10px;margin-bottom:8px;">
+          <div style="font-weight:800;font-size:13px;margin-bottom:6px;color:#ff6b6b;">📅 ${day}</div>
+          ${tt && tt.periods && tt.periods.length > 0 ? tt.periods.map(p => `
+            <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid #eee;">
+              <span>${esc(p.startTime)} - ${esc(p.endTime)}</span>
+              <strong>${esc(p.subject)}</strong>
+              <span style="color:#888;">${esc(p.teacherName || '-')}</span>
+            </div>`).join('') : '<div style="color:#aaa;font-size:12px;text-align:center;padding:6px;">No periods</div>'}
+        </div>`;
+      }).join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No timetable yet. Click "Add/Edit" above!</div></div>';
+    }
+  } catch (e) { console.error(e); }
+}
+
+function openAddTimetable() {
+  const cls = document.getElementById('ttClassSelect').value;
+  if (!cls) { toast('⚠️ Class select करें पहले'); return; }
+  const [className, section] = cls.split('|');
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  showModal('📅 Add Timetable', `
+    <div class="form-group"><label class="form-label">Day *</label>
+      <select class="form-input" id="ttDay">${days.map(d => `<option>${d}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="form-label">Periods (one per line: StartTime, EndTime, Subject, Teacher)</label>
+      <textarea class="form-input form-textarea" id="ttPeriods" rows="8" placeholder="09:00, 09:40, Hindi, Mrs. Sharma&#10;09:40, 10:20, English, Mr. Verma&#10;10:30, 11:10, Math, Mr. Singh"></textarea></div>
+    <button class="form-btn" onclick="saveTimetable('${className}','${section}')">💾 Save Timetable</button>
+  `);
+}
+
+async function saveTimetable(className, section) {
+  const day = document.getElementById('ttDay').value;
+  const periodsRaw = document.getElementById('ttPeriods').value.trim();
+  const periods = periodsRaw.split('\n').filter(Boolean).map(line => {
+    const [startTime, endTime, subject, teacherName] = line.split(',').map(s => s.trim());
+    return { startTime: startTime || '09:00', endTime: endTime || '09:40', subject: subject || 'Subject', teacherName: teacherName || '' };
+  });
+  if (!periods.length) { toast('⚠️ Periods डालें'); return; }
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/timetable', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId: currentUser.id, className, section, day, periods })
+    }).then(r => r.json());
+    if (r.success) { toast('✅ Timetable saved!'); closeModal(); loadTimetable(); }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+// ============ EVENTS TAB ============
+async function loadEventsTab() {
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/events').then(r => r.json());
+    const el = document.getElementById('eventsList');
+    if (r.success && r.events.length > 0) {
+      el.innerHTML = r.events.map(ev => {
+        const typeEmoji = { annual_day: '🎊', sports_day: '⚽', trip: '🚌', competition: '🏆', meeting: '👥', function: '🎉', celebration: '🎂' }[ev.type] || '📅';
+        return `<div style="background:linear-gradient(135deg,#fff5e1,#ffe6f0);border-radius:10px;padding:12px;margin-bottom:8px;">
+          <div style="display:flex;align-items:start;gap:10px;">
+            <div style="font-size:32px;">${typeEmoji}</div>
+            <div style="flex:1;">
+              <div style="font-weight:800;font-size:14px;">${esc(ev.title)}</div>
+              <div style="font-size:12px;color:#888;">📅 ${esc(ev.date)} ${ev.venue ? ' • 📍 ' + esc(ev.venue) : ''}</div>
+              ${ev.description ? `<div style="font-size:12px;margin-top:4px;">${esc(ev.description)}</div>` : ''}
+              <div style="font-size:11px;color:#888;margin-top:4px;">RSVP: ${(ev.rsvps || []).length} parents</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">🎉</div><div class="empty-text">No events yet. Click "Create Event" above!</div></div>';
+    }
+  } catch (e) { console.error(e); }
+}
+
+function openAddEvent() {
+  showModal('🎉 Create Event', `
+    <div class="form-group"><label class="form-label">Event Title *</label>
+      <input type="text" class="form-input" id="evTitle" placeholder="e.g., Annual Day 2025"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Date *</label>
+        <input type="date" class="form-input" id="evDate"></div>
+      <div class="form-group"><label class="form-label">Type</label>
+        <select class="form-input" id="evType">
+          <option value="function">🎉 Function</option>
+          <option value="annual_day">🎊 Annual Day</option>
+          <option value="sports_day">⚽ Sports Day</option>
+          <option value="trip">🚌 Trip</option>
+          <option value="competition">🏆 Competition</option>
+          <option value="meeting">👥 Meeting</option>
+          <option value="celebration">🎂 Celebration</option>
+        </select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Venue</label>
+      <input type="text" class="form-input" id="evVenue" placeholder="School Hall / Ground"></div>
+    <div class="form-group"><label class="form-label">Description</label>
+      <textarea class="form-input form-textarea" id="evDesc" rows="3" placeholder="Event details, dress code, timings..."></textarea></div>
+    <div class="form-group"><label class="form-label"><input type="checkbox" id="evRsvp"> RSVP Required (parents will confirm attendance)</label></div>
+    <button class="form-btn" onclick="saveEvent()">📅 Create & Notify Parents</button>
+  `);
+}
+
+async function saveEvent() {
+  const title = document.getElementById('evTitle').value.trim();
+  if (!title) { toast('⚠️ Title required'); return; }
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/events', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ownerId: currentUser.id,
+        title,
+        date: document.getElementById('evDate').value,
+        type: document.getElementById('evType').value,
+        venue: document.getElementById('evVenue').value.trim(),
+        description: document.getElementById('evDesc').value.trim(),
+        rsvpRequired: document.getElementById('evRsvp').checked,
+      })
+    }).then(r => r.json());
+    if (r.success) { toast('✅ Event created! Parents notified.'); closeModal(); loadEventsTab(); }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+// ============ REPORTS TAB ============
+async function loadReportsTab() {
+  // Quick stats
+  try {
+    const [statsR, feesR] = await Promise.all([
+      fetch(API + '/api/school/' + currentSchool.id + '/stats').then(r => r.json()),
+      fetch(API + '/api/school/' + currentSchool.id + '/fees?limit=500').then(r => r.json())
+    ]);
+    const stats = statsR.stats || {};
+    const totalFees = feesR.total || 0;
+    document.getElementById('quickStats').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:linear-gradient(135deg,#ff9a9e,#fad0c4);padding:10px;border-radius:8px;color:#fff;text-align:center;">
+          <div style="font-size:20px;font-weight:900;">${stats.studentCount || 0}</div><div style="font-size:10px;">Students</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#a18cd1,#fbc2eb);padding:10px;border-radius:8px;color:#fff;text-align:center;">
+          <div style="font-size:20px;font-weight:900;">${stats.classCount || 0}</div><div style="font-size:10px;">Classes</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#84fab0,#8fd3f4);padding:10px;border-radius:8px;color:#fff;text-align:center;">
+          <div style="font-size:20px;font-weight:900;">${stats.photoCount || 0}</div><div style="font-size:10px;">Photos</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#43e97b,#38f9d7);padding:10px;border-radius:8px;color:#fff;text-align:center;">
+          <div style="font-size:20px;font-weight:900;">₹${totalFees}</div><div style="font-size:10px;">Fees Collected</div>
+        </div>
+      </div>`;
+  } catch (e) { console.error(e); }
+  // Enquiries
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/enquiries?ownerId=' + currentUser.id).then(r => r.json());
+    const el = document.getElementById('enquiryList');
+    if (r.success && r.enquiries.length > 0) {
+      el.innerHTML = r.enquiries.map(en => `
+        <div style="background:#f8f9fa;border-radius:10px;padding:10px;margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+            <div>
+              <div style="font-weight:800;font-size:13px;">${esc(en.parentName)} - ${esc(en.parentPhone)}</div>
+              <div style="font-size:12px;color:#888;">For: ${esc(en.childName || 'N/A')} (${esc(en.childAge || '?')} yrs)</div>
+              ${en.message ? `<div style="font-size:12px;margin-top:4px;">"${esc(en.message)}"</div>` : ''}
+              <div style="font-size:10px;color:#888;margin-top:4px;">${timeAgo(en.createdAt)}</div>
+            </div>
+            <span class="chip chip-${en.status === 'new' ? 'pending' : en.status === 'admitted' ? 'paid' : 'late'}">${esc(en.status)}</span>
+          </div>
+        </div>`).join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-text">No enquiries yet</div></div>';
+    }
+  } catch (e) { console.error(e); }
 }
 
 function loadFeedback() {
@@ -823,17 +1761,84 @@ async function showParentChildDetail() {
         <div>School Chat</div>
       </div>
     </div>
-    <div class="section-card">
-      <div class="section-title">📝 आज की Daily Diary</div>
-      <div id="todayDiaryView"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></div>
+    <div class="quick-actions">
+      <div class="action-btn" onclick="switchParentTab('diary')">
+        <div class="action-icon">📝</div><div class="action-label">Diary</div>
+      </div>
+      <div class="action-btn" onclick="switchParentTab('attendance')">
+        <div class="action-icon">✅</div><div class="action-label">Attendance</div>
+      </div>
+      <div class="action-btn" onclick="switchParentTab('fees')">
+        <div class="action-icon">💰</div><div class="action-label">Fees</div>
+      </div>
+      <div class="action-btn" onclick="switchParentTab('results')">
+        <div class="action-icon">📊</div><div class="action-label">Results</div>
+      </div>
+      <div class="action-btn" onclick="switchParentTab('timetable')">
+        <div class="action-icon">📅</div><div class="action-label">Timetable</div>
+      </div>
+      <div class="action-btn" onclick="switchParentTab('photos')">
+        <div class="action-icon">📸</div><div class="action-label">Photos</div>
+      </div>
+      <div class="action-btn" onclick="switchParentTab('events')">
+        <div class="action-icon">🎉</div><div class="action-label">Events</div>
+      </div>
+      <div class="action-btn" onclick="switchParentTab('notices')">
+        <div class="action-icon">📢</div><div class="action-label">Notices</div>
+      </div>
     </div>
-    <div class="section-card">
-      <div class="section-title">📅 Last 7 days</div>
-      <div id="weekDiaryView"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></div>
+
+    <div class="tab-bar">
+      <button class="tab-pill active" data-ptab="diary" onclick="switchParentTab('diary')">📝 Today</button>
+      <button class="tab-pill" data-ptab="attendance" onclick="switchParentTab('attendance')">✅ Attendance</button>
+      <button class="tab-pill" data-ptab="fees" onclick="switchParentTab('fees')">💰 Fees</button>
+      <button class="tab-pill" data-ptab="results" onclick="switchParentTab('results')">📊 Results</button>
+      <button class="tab-pill" data-ptab="timetable" onclick="switchParentTab('timetable')">📅 TT</button>
+      <button class="tab-pill" data-ptab="photos" onclick="switchParentTab('photos')">📸 Photos</button>
+      <button class="tab-pill" data-ptab="events" onclick="switchParentTab('events')">🎉 Events</button>
+      <button class="tab-pill" data-ptab="notices" onclick="switchParentTab('notices')">📢 Notices</button>
     </div>
-    <div class="section-card">
-      <div class="section-title">📸 Class Photos</div>
-      <div id="classPhotosView"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></div>
+
+    <div class="tab-content active" id="ptab-diary">
+      <div class="section-card"><div class="section-title">📝 आज की Daily Diary</div>
+        <div id="todayDiaryView"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></div></div>
+      <div class="section-card"><div class="section-title">📅 Last 7 days</div>
+        <div id="weekDiaryView"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></div></div>
+    </div>
+
+    <div class="tab-content" id="ptab-attendance">
+      <div class="section-card"><div class="section-title">✅ My Attendance</div>
+        <div id="parentAttendanceView"></div></div>
+    </div>
+
+    <div class="tab-content" id="ptab-fees">
+      <div class="section-card"><div class="section-title">💰 Fee History</div>
+        <div id="parentFeesView"></div></div>
+    </div>
+
+    <div class="tab-content" id="ptab-results">
+      <div class="section-card"><div class="section-title">📊 Exam Results</div>
+        <div id="parentResultsView"></div></div>
+    </div>
+
+    <div class="tab-content" id="ptab-timetable">
+      <div class="section-card"><div class="section-title">📅 Class Timetable</div>
+        <div id="parentTimetableView"></div></div>
+    </div>
+
+    <div class="tab-content" id="ptab-photos">
+      <div class="section-card"><div class="section-title">📸 Class Photos</div>
+        <div id="classPhotosView"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></div></div>
+    </div>
+
+    <div class="tab-content" id="ptab-events">
+      <div class="section-card"><div class="section-title">🎉 Upcoming Events</div>
+        <div id="parentEventsView"></div></div>
+    </div>
+
+    <div class="tab-content" id="ptab-notices">
+      <div class="section-card"><div class="section-title">📢 School Notices & Holidays</div>
+        <div id="parentNoticesView"></div></div>
     </div>
   `;
   const today = new Date().toISOString().split('T')[0];
@@ -861,6 +1866,206 @@ async function showParentChildDetail() {
       } else document.getElementById('classPhotosView').innerHTML = '<div class="empty"><div class="empty-text">No photos</div></div>';
     }
   } catch (e) {}
+}
+
+// ============ PARENT: ATTENDANCE VIEW ============
+async function loadParentAttendance() {
+  if (!currentParentChild) return;
+  const month = new Date().getMonth() + 1;
+  const year = new Date().getFullYear();
+  try {
+    const r = await fetch(API + '/api/school/' + currentParentChild.schoolId + '/attendance/stats?studentId=' + currentParentChild.id + '&month=' + month + '&year=' + year).then(r => r.json());
+    if (r.success) {
+      const pct = r.stats.percentage;
+      document.getElementById('parentAttendanceView').innerHTML = `
+        <div style="background:linear-gradient(135deg,#d4edda,#c3e6cb);padding:14px;border-radius:10px;text-align:center;margin-bottom:10px;">
+          <div style="font-size:11px;color:#155724;">This Month</div>
+          <div style="font-size:32px;font-weight:900;color:#155724;">${pct}%</div>
+          <div class="progress-bar green" style="margin-top:8px;"><div class="progress-fill" style="width:${pct}%;"></div></div>
+          <div style="font-size:11px;color:#155724;margin-top:4px;">${r.stats.present}/${r.stats.total} days present</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;">
+          <div><div style="font-size:16px;font-weight:900;color:#28a745;">${r.stats.present}</div><div style="font-size:10px;">Present</div></div>
+          <div><div style="font-size:16px;font-weight:900;color:#dc3545;">${r.stats.absent}</div><div style="font-size:10px;">Absent</div></div>
+          <div><div style="font-size:16px;font-weight:900;color:#ffc107;">${r.stats.late}</div><div style="font-size:10px;">Late</div></div>
+          <div><div style="font-size:16px;font-weight:900;color:#17a2b8;">${r.stats.halfDay}</div><div style="font-size:10px;">Half</div></div>
+        </div>
+        <div style="margin-top:12px;">
+          <h4 style="font-size:12px;margin-bottom:6px;color:#888;">Recent Records:</h4>
+          ${(r.records || []).slice(0, 10).map(rec => `<div style="display:flex;justify-content:space-between;padding:6px;background:#f8f9fa;border-radius:6px;margin-bottom:4px;font-size:12px;">
+            <span>${esc(rec.date)}</span>
+            <span class="chip chip-${rec.status === 'present' ? 'present' : rec.status === 'absent' ? 'absent' : 'late'}">${esc(rec.status)}</span>
+          </div>`).join('')}
+        </div>`;
+    } else {
+      document.getElementById('parentAttendanceView').innerHTML = '<div class="empty"><div class="empty-text">No attendance records yet</div></div>';
+    }
+  } catch (e) { console.error(e); }
+}
+
+// ============ PARENT: FEES VIEW ============
+async function loadParentFees() {
+  if (!currentParentChild) return;
+  try {
+    const r = await fetch(API + '/api/school/' + currentParentChild.schoolId + '/fees?studentId=' + currentParentChild.id).then(r => r.json());
+    const el = document.getElementById('parentFeesView');
+    if (r.success && r.fees.length > 0) {
+      const total = r.total;
+      el.innerHTML = `
+        <div style="background:linear-gradient(135deg,#84fab0,#8fd3f4);padding:14px;border-radius:10px;text-align:center;margin-bottom:10px;color:#fff;">
+          <div style="font-size:11px;opacity:0.9;">Total Paid</div>
+          <div style="font-size:24px;font-weight:900;">₹${total}</div>
+          <div style="font-size:11px;opacity:0.9;">${r.count} transactions</div>
+        </div>` + r.fees.map(f => `
+        <div style="background:#f8f9fa;border-radius:8px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:800;font-size:13px;">${esc(f.month)} ${f.year}</div>
+            <div style="font-size:11px;color:#888;">${esc(f.type)} • ${esc(f.paymentMethod)}</div>
+            <div style="font-size:10px;color:#888;">📋 ${esc(f.receiptNo)}</div>
+            <div style="font-size:10px;color:#888;">${new Date(f.collectedAt).toLocaleDateString('hi-IN')}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:14px;font-weight:900;color:#28a745;">₹${f.amount}</div>
+            <span class="chip chip-${f.status}">${esc(f.status)}</span>
+          </div>
+        </div>`).join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">💰</div><div class="empty-text">No fee records yet</div></div>';
+    }
+  } catch (e) { console.error(e); }
+}
+
+// ============ PARENT: RESULTS VIEW ============
+async function loadParentResults() {
+  if (!currentParentChild) return;
+  try {
+    const r = await fetch(API + '/api/school/' + currentParentChild.schoolId + '/results?studentId=' + currentParentChild.id).then(r => r.json());
+    const el = document.getElementById('parentResultsView');
+    if (r.success && r.results.length > 0) {
+      el.innerHTML = r.results.map(res => {
+        const subjectsHtml = (res.subjects || []).map(s => `<tr><td>${esc(s.name)}</td><td>${s.marksObtained}/${s.maxMarks}</td><td><strong>${Math.round((s.marksObtained/s.maxMarks)*100)}%</strong></td></tr>`).join('');
+        return `<div style="background:#fff;border:2px solid #ff6b6b;border-radius:10px;padding:12px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+            <div>
+              <div style="font-weight:800;font-size:14px;">${esc(res.examName)}</div>
+              <div style="font-size:11px;color:#888;">${new Date(res.publishedAt).toLocaleDateString('hi-IN')}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:24px;font-weight:900;color:#ff6b6b;">${res.percentage}%</div>
+              <div style="background:#ff6b6b;color:#fff;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:800;">Grade: ${esc(res.grade)}</div>
+            </div>
+          </div>
+          <table class="data-table">
+            <tr><th>Subject</th><th>Marks</th><th>%</th></tr>
+            ${subjectsHtml}
+          </table>
+          ${res.remarks ? `<div style="margin-top:8px;font-size:12px;color:#555;background:#f8f9fa;padding:6px;border-radius:6px;">💬 ${esc(res.remarks)}</div>` : ''}
+        </div>`;
+      }).join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">Results publish होने पर यहाँ दिखेंगे</div></div>';
+    }
+  } catch (e) { console.error(e); }
+}
+
+// ============ PARENT: TIMETABLE VIEW ============
+async function loadParentTimetable() {
+  if (!currentParentChild) return;
+  try {
+    const r = await fetch(API + '/api/school/' + currentParentChild.schoolId + '/timetable?className=' + currentParentChild.className + '&section=' + currentParentChild.section).then(r => r.json());
+    const el = document.getElementById('parentTimetableView');
+    if (r.success && r.timetable.length > 0) {
+      const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      el.innerHTML = days.map(day => {
+        const tt = r.timetable.find(t => t.day === day);
+        return `<div style="background:#f8f9fa;border-radius:10px;padding:10px;margin-bottom:8px;">
+          <div style="font-weight:800;font-size:13px;margin-bottom:6px;color:#ff6b6b;">📅 ${day}</div>
+          ${tt && tt.periods && tt.periods.length > 0 ? tt.periods.map(p => `
+            <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid #eee;">
+              <span style="color:#888;">${esc(p.startTime)} - ${esc(p.endTime)}</span>
+              <strong>${esc(p.subject)}</strong>
+            </div>`).join('') : '<div style="color:#aaa;font-size:12px;text-align:center;padding:6px;">No periods</div>'}
+        </div>`;
+      }).join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Timetable जल्द आएगा</div></div>';
+    }
+  } catch (e) { console.error(e); }
+}
+
+// ============ PARENT: EVENTS VIEW ============
+async function loadParentEvents() {
+  if (!currentParentChild) return;
+  try {
+    const r = await fetch(API + '/api/school/' + currentParentChild.schoolId + '/events').then(r => r.json());
+    const el = document.getElementById('parentEventsView');
+    if (r.success && r.events.length > 0) {
+      el.innerHTML = r.events.map(ev => {
+        const typeEmoji = { annual_day: '🎊', sports_day: '⚽', trip: '🚌', competition: '🏆', meeting: '👥', function: '🎉', celebration: '🎂' }[ev.type] || '📅';
+        return `<div style="background:linear-gradient(135deg,#fff5e1,#ffe6f0);border-radius:10px;padding:12px;margin-bottom:8px;">
+          <div style="display:flex;align-items:start;gap:10px;">
+            <div style="font-size:32px;">${typeEmoji}</div>
+            <div style="flex:1;">
+              <div style="font-weight:800;font-size:14px;">${esc(ev.title)}</div>
+              <div style="font-size:12px;color:#888;">📅 ${esc(ev.date)} ${ev.venue ? ' • 📍 ' + esc(ev.venue) : ''}</div>
+              ${ev.description ? `<div style="font-size:12px;margin-top:4px;">${esc(ev.description)}</div>` : ''}
+              ${ev.rsvpRequired ? `<button class="form-btn tiny" style="margin-top:6px;width:auto;" onclick="rsvpEvent('${ev.id}')">✅ RSVP</button>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-text">कोई upcoming events नहीं</div></div>';
+    }
+  } catch (e) { console.error(e); }
+}
+
+function rsvpEvent(eventId) {
+  showModal('✅ Event RSVP', `
+    <p style="font-size:13px;color:#888;margin-bottom:12px;">Confirm your attendance</p>
+    <div class="form-group"><label class="form-label">Number of Guests</label>
+      <input type="number" class="form-input" id="rsvpGuests" value="2" min="1" max="10"></div>
+    <button class="form-btn" onclick="submitRsvp('${eventId}')">✅ Confirm Attendance</button>
+  `);
+}
+
+async function submitRsvp(eventId) {
+  try {
+    const r = await fetch(API + '/api/school/event/' + eventId + '/rsvp', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        parentName: currentUser.name,
+        parentPhone: currentUser.phone,
+        studentId: currentParentChild.id,
+        guests: parseInt(document.getElementById('rsvpGuests').value) || 1
+      })
+    }).then(r => r.json());
+    if (r.success) { toast('✅ RSVP confirmed! See you there!'); closeModal(); loadParentEvents(); }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+// ============ PARENT: NOTICES (Holidays) VIEW ============
+async function loadParentNotices() {
+  if (!currentParentChild) return;
+  try {
+    const r = await fetch(API + '/api/school/' + currentParentChild.schoolId + '/holidays').then(r => r.json());
+    const el = document.getElementById('parentNoticesView');
+    if (r.success && r.holidays.length > 0) {
+      el.innerHTML = r.holidays.map(h => {
+        const typeEmoji = { holiday: '🏖️', event: '🎉', exam: '📝', ptm: '👥', function: '🎊' }[h.type] || '📅';
+        return `<div style="background:#f8f9fa;border-radius:8px;padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+          <div style="font-size:32px;">${typeEmoji}</div>
+          <div style="flex:1;">
+            <div style="font-weight:800;font-size:13px;">${esc(h.name)}</div>
+            <div style="font-size:11px;color:#888;">📅 ${esc(h.date)} • ${esc(h.type || 'holiday')}</div>
+            ${h.description ? `<div style="font-size:12px;margin-top:2px;">${esc(h.description)}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-text">कोई notices नहीं</div></div>';
+    }
+  } catch (e) { console.error(e); }
 }
 
 function getMoodEmoji(mood) { return ({ 'happy': '😊', 'sad': '😢', 'crying': '😭', 'sick': '🤒', 'neutral': '😐' }[mood] || '😊'); }
@@ -1188,8 +2393,8 @@ function showAllStudents() {
   });
 }
 
-function openAttendance() { toast('✅ Attendance - reuse /api/business/:id/attendance'); }
-function openFees() { toast('💰 Fee Management - existing /api/business/:id/fees/collect endpoint ready'); }
+function openAttendance() { switchPrincipalTab('attendance'); }
+function openFees() { switchPrincipalTab('fees'); }
 
 function openDiary() {
   showModal('📝 Daily Diary', '<div id="diaryListArea">Loading...</div>');
@@ -1306,8 +2511,102 @@ async function savePhotos() {
   } catch (e) { toast('❌ Network error'); }
 }
 
-function openPTM() { toast('📅 PTM - coming soon, see existing /api/school/:id/ptm endpoints'); }
-function openHoliday() { toast('🗓️ Holiday - coming soon, see existing /api/school/:id/holidays endpoints'); }
+function openPTM() {
+  showModal('📅 Parent-Teacher Meeting (PTM)', '<div id="ptmList">Loading...</div>');
+  fetch(API + '/api/school/' + currentSchool.id + '/ptm').then(r => r.json()).then(d => {
+    if (!d.success) return;
+    const el = document.getElementById('ptmList');
+    el.innerHTML = `
+      <div class="section-card">
+        <h4>Schedule New PTM</h4>
+        <div class="form-group"><label class="form-label">Class</label>
+          <select class="form-input" id="ptmClass">${['Nursery','LKG','UKG'].map(c => `<option>${c}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">Date</label>
+          <input type="date" class="form-input" id="ptmDate"></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Start Time</label>
+            <input type="time" class="form-input" id="ptmStart" value="10:00"></div>
+          <div class="form-group"><label class="form-label">End Time</label>
+            <input type="time" class="form-input" id="ptmEnd" value="13:00"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Max Parents</label>
+          <input type="number" class="form-input" id="ptmMax" value="15"></div>
+        <div class="form-group"><label class="form-label">Notes</label>
+          <input type="text" class="form-input" id="ptmNotes" placeholder="Bring report card"></div>
+        <button class="form-btn" onclick="savePTM()">📅 Schedule PTM</button>
+      </div>
+      <h4 style="margin-top:14px;">Scheduled PTMs (${d.meetings.length})</h4>
+      ${d.meetings.length > 0 ? d.meetings.map(m => `
+        <div style="background:#f8f9fa;padding:10px;border-radius:8px;margin-bottom:6px;">
+          <div style="font-weight:800;">${esc(m.className)} - ${esc(m.date)}</div>
+          <div style="font-size:11px;color:#888;">${esc(m.startTime)} to ${esc(m.endTime)} • ${m.bookings.length}/${m.maxParents} booked</div>
+        </div>`).join('') : '<div style="color:#888;font-size:12px;">No PTMs scheduled yet</div>'}`;
+  });
+}
+
+async function savePTM() {
+  const className = document.getElementById('ptmClass').value;
+  const date = document.getElementById('ptmDate').value;
+  const startTime = document.getElementById('ptmStart').value;
+  const endTime = document.getElementById('ptmEnd').value;
+  const classId = currentSchool.id + '_' + className + 'A';
+  if (!date) { toast('⚠️ Date required'); return; }
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/ptm', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId: currentUser.id, classId, date, startTime, endTime, maxParents: parseInt(document.getElementById('ptmMax').value) || 15, notes: document.getElementById('ptmNotes').value })
+    }).then(r => r.json());
+    if (r.success) { toast('✅ PTM scheduled!'); closeModal(); }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+function openHoliday() {
+  showModal('🗓️ Holiday Calendar', '<div id="holidayForm"></div>');
+  document.getElementById('holidayForm').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Date *</label>
+        <input type="date" class="form-input" id="holDate"></div>
+      <div class="form-group"><label class="form-label">Type</label>
+        <select class="form-input" id="holType">
+          <option value="holiday">🏖️ Holiday</option>
+          <option value="event">🎉 Event</option>
+          <option value="exam">📝 Exam</option>
+          <option value="ptm">👥 PTM</option>
+          <option value="function">🎊 Function</option>
+        </select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Name *</label>
+      <input type="text" class="form-input" id="holName" placeholder="e.g., Diwali Holiday"></div>
+    <div class="form-group"><label class="form-label">Description</label>
+      <input type="text" class="form-input" id="holDesc" placeholder="Optional"></div>
+    <button class="form-btn" onclick="saveHoliday()">🗓️ Add</button>
+    <div id="holidayList" style="margin-top:14px;"></div>`;
+  loadHolidayList();
+}
+
+function loadHolidayList() {
+  fetch(API + '/api/school/' + currentSchool.id + '/holidays').then(r => r.json()).then(d => {
+    if (!d.success) return;
+    document.getElementById('holidayList').innerHTML = d.holidays.length > 0 ? d.holidays.map(h => `
+      <div style="background:#f8f9fa;padding:8px;border-radius:6px;margin-bottom:4px;font-size:12px;display:flex;justify-content:space-between;">
+        <span><strong>${esc(h.date)}</strong> - ${esc(h.name)}</span>
+        <span style="color:#888;">${esc(h.type)}</span>
+      </div>`).join('') : '<div style="color:#888;font-size:12px;">No holidays yet</div>';
+  });
+}
+
+async function saveHoliday() {
+  const date = document.getElementById('holDate').value;
+  const name = document.getElementById('holName').value.trim();
+  if (!date || !name) { toast('⚠️ Date and Name required'); return; }
+  try {
+    const r = await fetch(API + '/api/school/' + currentSchool.id + '/holidays', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerId: currentUser.id, date, name, type: document.getElementById('holType').value, description: document.getElementById('holDesc').value.trim() })
+    }).then(r => r.json());
+    if (r.success) { toast('✅ Holiday added!'); loadHolidayList(); document.getElementById('holName').value = ''; document.getElementById('holDesc').value = ''; }
+  } catch (e) { toast('❌ Network error'); }
+}
 
 function openAlert() {
   showModal('🚨 Send Emergency Alert', `
