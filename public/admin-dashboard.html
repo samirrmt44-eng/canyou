@@ -344,6 +344,70 @@
       </div>
       <div id="sessionsList"><div class="empty">Loading...</div></div>
     </div>
+
+    <!-- NEWS MANAGEMENT (admin only - you) -->
+    <div class="section">
+      <div class="section-title">
+        <span>📰 News Management (आप ही add कर सकते हैं)</span>
+        <div style="display:flex;gap:8px;">
+          <button class="refresh-btn" onclick="loadAdminNews()">↻ Refresh</button>
+          <button class="refresh-btn" onclick="openNewsComposer()" style="background:rgba(46,213,115,0.15);color:#2ed573;border-color:#2ed573;">+ Add News</button>
+        </div>
+      </div>
+
+      <!-- Add/Edit News Form (hidden by default) -->
+      <div id="newsComposer" style="display:none;background:rgba(0,0,0,0.3);border:1px solid rgba(46,213,115,0.4);border-radius:12px;padding:18px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3 style="font-size:14px;color:#2ed573;">📝 <span id="newsFormTitle">नई News जोड़ें</span></h3>
+          <button onclick="closeNewsComposer()" style="background:rgba(255,59,48,0.2);color:#ff6b6b;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;">✕ Close</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#aaa;">शीर्षक (Title) *</label>
+          <input type="text" class="form-input" id="newsTitle" placeholder="जैसे: हजारीबाग में बड़ा हादसा...">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#aaa;">छोटा विवरण (Description - 1 line summary)</label>
+          <textarea class="form-input" id="newsDescription" rows="2" placeholder="1 line में समझाएं क्या हुआ..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#aaa;">पूरी खबर (Full Content - optional)</label>
+          <textarea class="form-input" id="newsContent" rows="6" placeholder="पूरी detail यहाँ लिखें (optional)..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#aaa;">तस्वीर URL (Image - optional)</label>
+          <input type="url" class="form-input" id="newsImage" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#aaa;">मूल लिंक (Source URL - optional)</label>
+          <input type="url" class="form-input" id="newsUrl" placeholder="https://dainikstate.com/... (optional)">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#aaa;">Category</label>
+          <select class="form-input form-select" id="newsCategory">
+            <option value="state">🏛️ State (Jharkhand)</option>
+            <option value="crime">🚨 Crime</option>
+            <option value="politics">🗳️ Politics</option>
+            <option value="sports">⚽ Sports</option>
+            <option value="business">💼 Business</option>
+            <option value="ranchi">🏙️ Ranchi</option>
+            <option value="ramgarh">🏘️ Ramgarh</option>
+            <option value="hazaribagh">⛰️ Hazaribagh</option>
+            <option value="bihar">🚂 Bihar</option>
+            <option value="announcement">📢 Announcement</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="newsFeatured" style="width:18px;height:18px;">
+          <label for="newsFeatured" style="color:#ffd700;font-weight:700;">⭐ Featured (टिकर में दिखेगी)</label>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="login-btn" style="flex:1;" onclick="saveNews()">✅ Publish News</button>
+          <button class="login-btn" style="flex:0;background:rgba(255,255,255,0.1);" onclick="closeNewsComposer()">Cancel</button>
+        </div>
+      </div>
+
+      <div id="adminNewsList"><div class="empty">Loading news...</div></div>
+    </div>
   </div>
 
   <div class="footer">
@@ -414,10 +478,156 @@ async function loadAll() {
     if (stats.success) renderStats(stats.stats);
     if (chart.success) renderChart(chart.days);
     if (sessions.success) renderSessions(sessions.sessions);
+    // Also load news
+    loadAdminNews();
     document.getElementById('lastUpdate').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
   } catch (e) {
     console.error('Load error:', e);
   }
+}
+
+// ==================== NEWS MANAGEMENT ====================
+let editingNewsId = null;
+async function loadAdminNews() {
+  try {
+    const r = await adminFetch('/api/news/admin/list');
+    if (r.success) renderAdminNews(r.articles);
+  } catch (e) {
+    document.getElementById('adminNewsList').innerHTML = '<div class="empty">❌ Failed to load news</div>';
+  }
+}
+
+function renderAdminNews(articles) {
+  const wrap = document.getElementById('adminNewsList');
+  if (!articles || articles.length === 0) {
+    wrap.innerHTML = '<div class="empty">📭 No news yet. Click "+ Add News" to add.</div>';
+    return;
+  }
+  // Show count
+  const scraped = articles.filter(a => a.source === 'dainikstate.com').length;
+  const manual = articles.filter(a => a.source === 'admin').length;
+  let html = `<div style="font-size:11px;color:#888;margin-bottom:8px;">📊 Total: ${articles.length} (${scraped} scraped + ${manual} manual) · नीचे सभी दिख रहे हैं</div>`;
+  html += articles.slice(0, 50).map(a => {
+    const isManual = a.source === 'admin';
+    const isFeatured = a.featured;
+    return `<div style="background:rgba(255,255,255,0.04);border:1px solid ${isManual ? 'rgba(46,213,115,0.3)' : 'rgba(255,255,255,0.08)'};border-radius:10px;padding:10px 12px;margin-bottom:6px;font-size:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:13px;color:#e8e8e8;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            ${isFeatured ? '<span style="color:#ffd700;">⭐</span>' : ''}
+            ${isManual ? '<span style="background:rgba(46,213,115,0.2);color:#2ed573;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:800;">MANUAL</span>' : '<span style="background:rgba(102,126,234,0.2);color:#a4b8ff;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:800;">SCRAPED</span>'}
+            <span>${esc(a.title || '?')}</span>
+          </div>
+          <div style="color:#888;font-size:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <span style="color:#ff6b35;">📂 ${a.category || 'state'}</span>
+            <span>👁 ${a.views || 0}</span>
+            <span>📅 ${new Date(a.publishedAt).toLocaleDateString('hi-IN')}</span>
+            ${a.url ? `<a href="${esc(a.url)}" target="_blank" style="color:#00d4ff;">🔗 source</a>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          ${isManual ? `<button onclick="editNews('${a.id || a.slug}')" style="background:rgba(102,126,234,0.2);color:#a4b8ff;border:none;padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer;">✏️ Edit</button>
+          <button onclick="deleteNews('${a.id || a.slug}', '${esc(a.title || '').slice(0,30)}')" style="background:rgba(255,59,48,0.2);color:#ff6b6b;border:none;padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer;">🗑️ Delete</button>` : `<span style="color:#666;font-size:10px;">auto</span>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  if (articles.length > 50) html += `<div style="text-align:center;color:#888;font-size:11px;margin-top:8px;">+ ${articles.length - 50} more (showing latest 50)</div>`;
+  wrap.innerHTML = html;
+}
+
+function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+function openNewsComposer(editData) {
+  document.getElementById('newsComposer').style.display = 'block';
+  if (editData) {
+    editingNewsId = editData.id || editData.slug;
+    document.getElementById('newsFormTitle').textContent = '✏️ News Edit करें';
+    document.getElementById('newsTitle').value = editData.title || '';
+    document.getElementById('newsDescription').value = editData.description || '';
+    document.getElementById('newsContent').value = editData.content || '';
+    document.getElementById('newsImage').value = editData.image || '';
+    document.getElementById('newsUrl').value = editData.url || '';
+    document.getElementById('newsCategory').value = editData.category || 'state';
+    document.getElementById('newsFeatured').checked = !!editData.featured;
+  } else {
+    editingNewsId = null;
+    document.getElementById('newsFormTitle').textContent = '📝 नई News जोड़ें';
+    document.getElementById('newsTitle').value = '';
+    document.getElementById('newsDescription').value = '';
+    document.getElementById('newsContent').value = '';
+    document.getElementById('newsImage').value = '';
+    document.getElementById('newsUrl').value = '';
+    document.getElementById('newsCategory').value = 'state';
+    document.getElementById('newsFeatured').checked = false;
+  }
+  document.getElementById('newsTitle').focus();
+}
+
+function closeNewsComposer() {
+  document.getElementById('newsComposer').style.display = 'none';
+  editingNewsId = null;
+}
+
+async function saveNews() {
+  const title = document.getElementById('newsTitle').value.trim();
+  if (!title) { alert('⚠️ Title ज़रूरी है!'); return; }
+  const payload = {
+    title,
+    description: document.getElementById('newsDescription').value.trim(),
+    content: document.getElementById('newsContent').value.trim(),
+    image: document.getElementById('newsImage').value.trim(),
+    url: document.getElementById('newsUrl').value.trim(),
+    category: document.getElementById('newsCategory').value,
+    featured: document.getElementById('newsFeatured').checked,
+  };
+  try {
+    let r;
+    if (editingNewsId) {
+      r = await adminFetch('/api/news/admin/' + editingNewsId, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      r = await adminFetch('/api/news/admin/add', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+    if (r.success) {
+      alert('✅ ' + (editingNewsId ? 'News updated!' : 'News published! अब homepage पर दिखेगी।'));
+      closeNewsComposer();
+      loadAdminNews();
+    } else {
+      alert('❌ ' + (r.error || 'Failed'));
+    }
+  } catch (e) {
+    alert('❌ Network error: ' + e.message);
+  }
+}
+
+async function editNews(id) {
+  try {
+    // Find in current list (or fetch)
+    const r = await adminFetch('/api/news/admin/list');
+    if (r.success) {
+      const article = r.articles.find(a => (a.id || a.slug) === id);
+      if (article) openNewsComposer(article);
+    }
+  } catch (e) { alert('❌ Failed to load: ' + e.message); }
+}
+
+async function deleteNews(id, title) {
+  if (!confirm('🗑️ "' + title + '" को delete करना है?\n\nयह action undo नहीं होगा!')) return;
+  try {
+    const r = await adminFetch('/api/news/admin/' + id, { method: 'DELETE' });
+    if (r.success) {
+      alert('✅ News deleted');
+      loadAdminNews();
+    } else {
+      alert('❌ ' + (r.error || 'Failed'));
+    }
+  } catch (e) { alert('❌ Network error'); }
 }
 
 // ==================== RENDER ====================
