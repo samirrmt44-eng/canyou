@@ -197,17 +197,14 @@ module.exports = function(app, db, usersCol) {
     });
   });
 
-  // API: Get single article
-  app.get('/api/news/:slug', async (req, res) => {
+  // API: Get breaking news (top 5) - MUST be before :slug route!
+  app.get('/api/news/breaking', async (req, res) => {
     if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
-    const article = await newsCol.findOne({ slug: req.params.slug });
-    if (!article) return res.status(404).json({ error: 'Article not found' });
-    newsCol.updateOne({ _id: article._id }, { $inc: { views: 1 } }).catch(()=>{});
-    const { _id, ...result } = article;
-    res.json({ success: true, article: result });
+    const articles = await newsCol.find({}).sort({ publishedAt: -1 }).limit(5).toArray();
+    res.json({ success: true, articles: articles.map(a => { const { _id, ...r } = a; return r; }) });
   });
 
-  // API: Get categories with counts
+  // API: Get categories list (MUST be before :slug route!)
   app.get('/api/news/categories/list', async (req, res) => {
     if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
     const categories = await newsCol.aggregate([
@@ -215,6 +212,20 @@ module.exports = function(app, db, usersCol) {
       { $sort: { count: -1 } }
     ]).toArray();
     res.json({ success: true, categories });
+  });
+
+  // API: Get single article (by slug or id) - MUST be LAST!
+  app.get('/api/news/:slug', async (req, res) => {
+    if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
+    const { slug } = req.params;
+    // First try by slug
+    let article = await newsCol.findOne({ slug });
+    // Then by id (for manual news)
+    if (!article) article = await newsCol.findOne({ _id: slug });
+    if (!article) return res.status(404).json({ error: 'Article not found' });
+    newsCol.updateOne({ _id: article._id }, { $inc: { views: 1 } }).catch(()=>{});
+    const { _id, ...result } = article;
+    res.json({ success: true, article: result });
   });
 
   // API: Manual scrape trigger (admin)
@@ -225,13 +236,6 @@ module.exports = function(app, db, usersCol) {
     }
     const result = await scrapeNews();
     res.json(result);
-  });
-
-  // API: Get breaking news (top 5)
-  app.get('/api/news/breaking', async (req, res) => {
-    if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
-    const articles = await newsCol.find({}).sort({ publishedAt: -1 }).limit(5).toArray();
-    res.json({ success: true, articles: articles.map(a => { const { _id, ...r } = a; return r; }) });
   });
 
   // ============================================================
