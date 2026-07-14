@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Child's Land School - Demo Tour</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #a18cd1 100%);
+    min-height: 100vh; color: #1a1a2e; overscroll-behavior: none;
+  }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #fff; box-shadow: 0 0 40px rgba(0,0,0,0.1); position: relative; }
+
+  /* HERO SECTION */
+  .hero {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 50%, #f7931e 100%);
+    color: #fff; padding: 32px 20px 60px; text-align: center; position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: -50%; right: -20%; width: 200px; height: 200px;
+    background: rgba(255,255,255,0.1); border-radius: 50%;
+  }
+  .hero::after {
+    content: ''; position: absolute; bottom: -30%; left: -10%; width: 150px; height: 150px;
+    background: rgba(255,255,255,0.08); border-radius: 50%;
+  }
+  .hero-content { position: relative; z-index: 1; }
+  .hero-icon { font-size: 70px; margin-bottom: 12px; animation: bounce 2s ease-in-out infinite; }
+  @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  .hero h1 { font-size: 28px; font-weight: 900; margin-bottom: 6px; }
+  .hero .subtitle { font-size: 14px; opacity: 0.95; font-weight: 600; }
+  .hero .badge-row { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+  .hero-badge {
+    background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.4);
+    padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    backdrop-filter: blur(10px);
+  }
+  .stats-strip {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    color: #fff; padding: 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    margin-top: -30px; margin-left: 16px; margin-right: 16px; border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(255,107,107,0.3); position: relative; z-index: 2;
+  }
+  .stat-item { text-align: center; }
+  .stat-num { font-size: 20px; font-weight: 900; line-height: 1; }
+  .stat-lbl { font-size: 10px; opacity: 0.9; margin-top: 4px; }
+
+  /* TABS */
+  .demo-tabs {
+    display: flex; gap: 4px; background: #f5f5f7; padding: 4px; margin: 16px;
+    border-radius: 12px;
+  }
+  .demo-tab {
+    flex: 1; padding: 8px; border: none; background: transparent; border-radius: 8px;
+    font-size: 11px; font-weight: 700; color: #888; cursor: pointer; transition: all 0.2s;
+  }
+  .demo-tab.active { background: #fff; color: #ff6b6b; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .demo-tab-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+
+  /* CONTENT */
+  .demo-content { padding: 0 16px 100px; }
+  .demo-section { display: none; }
+  .demo-section.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* SECTION TITLE */
+  .section-title { font-size: 16px; font-weight: 800; color: #1a1a2e; margin: 18px 0 10px; display: flex; align-items: center; gap: 6px; }
+  .section-subtitle { font-size: 12px; color: #888; margin-bottom: 14px; line-height: 1.5; }
+
+  /* FEATURE CARD */
+  .feature-card {
+    background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; gap: 12px; align-items: start;
+    border: 1px solid #f0f0f0;
+  }
+  .feature-icon {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .feature-icon.pink { background: linear-gradient(135deg, #ff9a9e, #fad0c4); }
+  .feature-icon.purple { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+  .feature-icon.blue { background: linear-gradient(135deg, #84fab0, #8fd3f4); }
+  .feature-icon.orange { background: linear-gradient(135deg, #fccb90, #d57eeb); }
+  .feature-icon.green { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+  .feature-icon.red { background: linear-gradient(135deg, #f093fb, #f5576c); }
+  .feature-icon.yellow { background: linear-gradient(135deg, #ffd700, #ffaa00); }
+  .feature-icon.cyan { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+  .feature-info { flex: 1; min-width: 0; }
+  .feature-title { font-size: 14px; font-weight: 800; color: #1a1a2e; margin-bottom: 3px; }
+  .feature-desc { font-size: 12px; color: #666; line-height: 1.4; }
+  .feature-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 9px;
+    font-weight: 800; margin-top: 4px;
+  }
+  .tag-free { background: #d4edda; color: #155724; }
+  .tag-new { background: #fff3cd; color: #856404; }
+  .tag-pop { background: #f8d7da; color: #721c24; }
+
+  /* STEP CARD */
+  .step-card {
+    background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #ff6b6b;
+  }
+  .step-num {
+    display: inline-block; width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: #fff;
+    font-weight: 900; font-size: 14px; line-height: 28px; text-align: center;
+    margin-right: 8px; vertical-align: middle;
+  }
+  .step-title { font-size: 14px; font-weight: 800; color: #1a1a2e; display: inline; vertical-align: middle; }
+  .step-desc { font-size: 12px; color: #666; margin-top: 8px; line-height: 1.5; }
+  .step-tips {
+    background: #f8f9fa; border-radius: 8px; padding: 8px 10px; margin-top: 8px;
+    font-size: 11px; color: #555; line-height: 1.5;
+  }
+  .step-tips::before { content: '💡 '; }
+
+  /* SCREENSHOT MOCK */
+  .mockup-card {
+    background: #fff; border-radius: 14px; padding: 10px; margin-bottom: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08); border: 1px solid #f0f0f0;
+  }
+  .mockup-title { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+  .mockup-body {
+    background: #f7f8fc; border-radius: 8px; padding: 10px; min-height: 100px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .mockup-bar {
+    background: #fff; border-radius: 6px; padding: 8px 10px; font-size: 11px;
+    color: #1a1a2e; display: flex; align-items: center; gap: 6px;
+  }
+  .mockup-bar.success { background: #d4edda; color: #155724; }
+  .mockup-bar.warn { background: #fff3cd; color: #856404; }
+  .mockup-bar strong { font-weight: 800; }
+
+  /* BOTTOM ACTION BAR */
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%;
+    max-width: 480px; background: #fff; padding: 14px 16px;
+    border-top: 1px solid #eee; display: flex; gap: 10px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 100;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+  }
+  .skip-btn {
+    flex: 0 0 auto; padding: 12px 18px; background: rgba(0,0,0,0.05); color: #333;
+    border: none; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .start-btn {
+    flex: 1; padding: 14px; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: #fff;
+    border: none; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255,107,107,0.3); display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+
+  /* DEMO INDICATOR */
+  .demo-indicator {
+    background: linear-gradient(135deg, #fff3cd, #ffe69c); color: #856404;
+    padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 700;
+    text-align: center; margin: 16px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+
+  /* HIGHLIGHT */
+  .highlight { background: linear-gradient(120deg, #fff5e1 0%, #ffe6f0 100%); border-radius: 12px; padding: 12px; margin: 12px 0; border-left: 4px solid #ff6b6b; }
+  .highlight-title { font-size: 13px; font-weight: 800; color: #ff6b6b; margin-bottom: 4px; }
+  .highlight-text { font-size: 12px; color: #555; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-content">
+    <div class="hero-icon">🎓</div>
+    <h1>Child's Land School</h1>
+    <div class="subtitle">Pre-School Management — Nursery, LKG, UKG</div>
+    <div class="badge-row">
+      <span class="hero-badge">✨ 100% FREE</span>
+      <span class="hero-badge">📲 APK Install</span>
+      <span class="hero-badge">🇮🇳 Hindi/English</span>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-strip">
+  <div class="stat-item"><div class="stat-num">9+</div><div class="stat-lbl">Features</div></div>
+  <div class="stat-item"><div class="stat-num">3</div><div class="stat-lbl">Roles</div></div>
+  <div class="stat-item"><div class="stat-num">∞</div><div class="stat-lbl">Schools</div></div>
+  <div class="stat-item"><div class="stat-num">0₹</div><div class="stat-lbl">Cost</div></div>
+</div>
+
+<!-- DEMO INDICATOR -->
+<div class="demo-indicator">
+  <span>👋</span>
+  <span>Welcome Tour - 2 min में सब समझ आ जाएगा!</span>
+</div>
+
+<!-- TABS -->
+<div class="demo-tabs">
+  <button class="demo-tab active" data-tab="features" onclick="setDemoTab('features')">
+    <span class="demo-tab-icon">✨</span>Features
+  </button>
+  <button class="demo-tab" data-tab="howto" onclick="setDemoTab('howto')">
+    <span class="demo-tab-icon">📖</span>Kaise Use
+  </button>
+  <button class="demo-tab" data-tab="roles" onclick="setDemoTab('roles')">
+    <span class="demo-tab-icon">👥</span>Roles
+  </button>
+</div>
+
+<!-- CONTENT -->
+<div class="demo-content">
+
+  <!-- FEATURES TAB -->
+  <div class="demo-section active" id="tab-features">
+    <div class="section-title">✨ इस App में क्या-क्या है</div>
+    <div class="section-subtitle">सब FREE, सब अभी से काम कर रहा है!</div>
+
+    <div class="feature-card">
+      <div class="feature-icon pink">👶</div>
+      <div class="feature-info">
+        <div class="feature-title">Student Management</div>
+        <div class="feature-desc">बच्चों का admission, roll number, parent link - automatic!</div>
+        <span class="feature-tag tag-free">FREE</span>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon purple">📝</div>
+      <div class="feature-info">
+        <div class="feature-title">Daily Diary</div>
+        <div class="feature-desc">मूड, खाना, nap, activities, photos - सब एक जगह</div>
+        <span class="feature-tag tag-pop">🔥 Popular</span>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon blue">📸</div>
+      <div class="feature-info">
+        <div class="feature-title">Photo Albums</div>
+        <div class="feature-desc">Class photos, events - parents तुरंत देख सकें</div>
+        <span class="feature-tag tag-free">FREE</span>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon green">🚌</div>
+      <div class="feature-info">
+        <div class="feature-title">Pickup OTP</div>
+        <div class="feature-desc">Safe pickup - daily 4-digit OTP system</div>
+        <span class="feature-tag tag-new">🔒 Safe</span>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon orange">💬</div>
+      <div class="feature-info">
+        <div class="feature-title">In-App Chat</div>
+        <div class="feature-desc">Principal ↔ Teachers ↔ Parents - सब chat करें</div>
+        <span class="feature-tag tag-pop">💬 Real-time</span>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon red">⭐</div>
+      <div class="feature-info">
+        <div class="feature-title">Feedback System</div>
+        <div class="feature-desc">कोई भी feedback भेज सकता है - 4 types, star rating</div>
+        <span class="feature-tag tag-new">⭐ 4 Types</span>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon yellow">🚨</div>
+      <div class="feature-info">
+        <div class="feature-title">Emergency Alerts</div>
+        <div class="feature-desc">School बंद, बारिश, function - सबको instant message</div>
+        <span class="feature-tag tag-pop">⚡ Instant</span>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon cyan">📲</div>
+      <div class="feature-info">
+        <div class="feature-title">App Install (APK)</div>
+        <div class="feature-desc">Phone में app install करो - offline भी चलेगा</div>
+        <span class="feature-tag tag-new">📱 PWA</span>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon green">📤</div>
+      <div class="feature-info">
+        <div class="feature-title">Share Link</div>
+        <div class="feature-desc">WhatsApp पर link भेजो - parents भी app install करें</div>
+        <span class="feature-tag tag-free">FREE</span>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <div class="highlight-title">💡 Coming Soon</div>
+      <div class="highlight-text">Attendance, Fees, PTM, Holiday Calendar, Health Records - backend ready है, UI जल्द आ रहा है!</div>
+    </div>
+  </div>
+
+  <!-- HOW TO USE TAB -->
+  <div class="demo-section" id="tab-howto">
+    <div class="section-title">📖 Kaise Use Karein</div>
+    <div class="section-subtitle">Principal और Parent दोनों के लिए step-by-step guide</div>
+
+    <div class="section-title" style="font-size:14px;color:#ff6b6b;margin-top:14px;">🏫 Principal के लिए</div>
+
+    <div class="step-card">
+      <span class="step-num">1</span>
+      <span class="step-title">School Register करें</span>
+      <div class="step-desc">"Principal" tab select करें, अपना नाम और phone डालें, फिर "शुरू करें" पर click करें। School का नाम, city, fee भरें।</div>
+      <div class="step-tips">पहले से register हैं? Same phone से login करें - school auto-load हो जाएगा!</div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-num">2</span>
+      <span class="step-title">Student जोड़ें</span>
+      <div class="step-desc">Dashboard पर "नया Student जोड़ें" button दबाएं। Child का नाम, parent phone, class (Nursery/LKG/UKG) भरें।</div>
+      <div class="step-tips">Roll number automatic बनेगा! Parent का phone डालने से वो login कर सकेंगे।</div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-num">3</span>
+      <span class="step-title">Daily Diary लिखें</span>
+      <div class="step-desc">हर रोज "Daily Diary" button से class select करें, सभी students का mood, meals, nap एक साथ भरें।</div>
+      <div class="step-tips">Parents को तुरंत दिखेगा! आप phone से 30 sec में सब भर सकते हैं।</div>
+    </div>
+
+    <div class="step-card">
+      <span class="step-num">4</span>
+      <span class="step-title">Photos & Alerts भेजें</span>
+      <div class="step-desc">Class activities की photos upload करें, ज़रूरत पर emergency alert भेजें - सब parents को instant।</div>
+      <div class="step-tips">"Share Link" button से WhatsApp पर school का link भेजें - parents भी app install कर सकेंगे!</div>
+    </div>
+
+    <div class="section-title" style="font-size:14px;color:#a18cd1;margin-top:18px;">👨‍👩‍👧 Parent के लिए</div>
+
+    <div class="step-card" style="border-left-color:#a18cd1;">
+      <span class="step-num" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb);">1</span>
+      <span class="step-title">Phone से Login करें</span>
+      <div class="step-desc">"Parent" tab select करें, अपना phone number डालें, "मेरे बच्चे खोजें" दबाएं।</div>
+      <div class="step-tips">OTP नहीं चाहिए! बस phone number डालो - school ने जो phone दिया है, same डालो।</div>
+    </div>
+
+    <div class="step-card" style="border-left-color:#a18cd1;">
+      <span class="step-num" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb);">2</span>
+      <span class="step-title">बच्चे का Diary देखें</span>
+      <div class="step-desc">बच्चे पर click करें - आज की diary, पिछले हफ्ते का summary, class photos सब दिखेगा।</div>
+      <div class="step-tips">हर रोज़ school से update मिलेगा - मूड, खाना, nap सब!</div>
+    </div>
+
+    <div class="step-card" style="border-left-color:#a18cd1;">
+      <span class="step-num" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb);">3</span>
+      <span class="step-title">Pickup OTP लें</span>
+      <div class="step-desc">जब बच्चे को pick-up करना हो, "Pickup OTP" button दबाएं - daily 4-digit OTP मिलेगा।</div>
+      <div class="step-tips">Driver/Teacher को OTP बताएं - safe pickup guaranteed!</div>
+    </div>
+
+    <div class="step-card" style="border-left-color:#a18cd1;">
+      <span class="step-num" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb);">4</span>
+      <span class="step-title">Chat & Feedback</span>
+      <div class="step-desc">"Chat" tab से school से directly बात करें, "Feedback" tab से rating/suggestion दें।</div>
+      <div class="step-tips">कोई भी problem हो - Principal को instant message भेजें!</div>
+    </div>
+
+    <div class="highlight">
+      <div class="highlight-title">💡 Install Tip</div>
+      <div class="highlight-text">पहली बार "Install" button दिखेगा - दबाकर phone में install कर लो। बाद में offline भी चलेगा!</div>
+    </div>
+  </div>
+
+  <!-- ROLES TAB -->
+  <div class="demo-section" id="tab-roles">
+    <div class="section-title">👥 तीन Roles</div>
+    <div class="section-subtitle">हर role के अपने features और access</div>
+
+    <div class="feature-card" style="border-left:4px solid #ff6b6b;">
+      <div class="feature-icon pink">🏫</div>
+      <div class="feature-info">
+        <div class="feature-title">Principal (School Admin)</div>
+        <div class="feature-desc">School register, students, diary, photos, alerts, chat - सब manage करें</div>
+        <span class="feature-tag tag-free">FULL ACCESS</span>
+      </div>
+    </div>
+
+    <div class="mockup-card">
+      <div class="mockup-title">Principal देख सकते हैं:</div>
+      <div class="mockup-body">
+        <div class="mockup-bar success"><strong>👶 Students:</strong> Add, edit, view by class</div>
+        <div class="mockup-bar success"><strong>📝 Daily Diary:</strong> Class-wise diary fill करें</div>
+        <div class="mockup-bar success"><strong>📸 Photos:</strong> Album upload करें</div>
+        <div class="mockup-bar success"><strong>🚨 Alerts:</strong> Emergency messages भेजें</div>
+        <div class="mockup-bar success"><strong>💬 Chat:</strong> Teachers/Parents से बात</div>
+        <div class="mockup-bar success"><strong>⭐ Feedback:</strong> Users का feedback देखें</div>
+        <div class="mockup-bar success"><strong>📤 Share Link:</strong> WhatsApp पर school link</div>
+      </div>
+    </div>
+
+    <div class="feature-card" style="border-left:4px solid #a18cd1;margin-top:14px;">
+      <div class="feature-icon purple">👨‍👩‍👧</div>
+      <div class="feature-info">
+        <div class="feature-title">Parent (बच्चे के माता-पिता)</div>
+        <div class="feature-desc">Phone से login, बच्चे की progress देखें, school से chat</div>
+        <span class="feature-tag tag-free">PHONE LOGIN</span>
+      </div>
+    </div>
+
+    <div class="mockup-card">
+      <div class="mockup-title">Parent देख सकते हैं:</div>
+      <div class="mockup-body">
+        <div class="mockup-bar success"><strong>📝 Daily Diary:</strong> बच्चे का आज का update</div>
+        <div class="mockup-bar success"><strong>📅 Week Summary:</strong> पिछले 7 दिन</div>
+        <div class="mockup-bar success"><strong>📸 Class Photos:</strong> Photo gallery</div>
+        <div class="mockup-bar success"><strong>🚌 Pickup OTP:</strong> Daily 4-digit code</div>
+        <div class="mockup-bar success"><strong>💬 School Chat:</strong> Principal से बात</div>
+        <div class="mockup-bar success"><strong>⭐ Feedback:</strong> Rating/complaint भेजें</div>
+      </div>
+    </div>
+
+    <div class="feature-card" style="border-left:4px solid #ffd700;margin-top:14px;">
+      <div class="feature-icon yellow">👩‍🏫</div>
+      <div class="feature-info">
+        <div class="feature-title">Teacher (शिक्षक)</div>
+        <div class="feature-desc">जल्द आ रहा है! Currently in development</div>
+        <span class="feature-tag tag-new">⏳ COMING SOON</span>
+      </div>
+    </div>
+
+    <div class="mockup-card">
+      <div class="mockup-title">Teacher features (जल्द):</div>
+      <div class="mockup-body">
+        <div class="mockup-bar warn"><strong>📝 Diary Fill:</strong> Class teacher daily diary</div>
+        <div class="mockup-bar warn"><strong>📸 Upload Photos:</strong> Class activities</div>
+        <div class="mockup-bar warn"><strong>💬 Parent Chat:</strong> Direct communication</div>
+        <div class="mockup-bar warn"><strong>📊 Reports:</strong> Class-wise analytics</div>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <div class="highlight-title">🔐 Multi-School Support</div>
+      <div class="highlight-text">एक ही phone से multiple schools को access किया जा सकता है। हर school का data अलग-अलग secure रहता है!</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM ACTION BAR -->
+<div class="bottom-bar">
+  <button class="skip-btn" onclick="skipDemo()">Skip</button>
+  <button class="start-btn" onclick="startUsing()">🚀 शुरू करें</button>
+</div>
+
+</div>
+
+<script>
+function setDemoTab(tab) {
+  document.querySelectorAll('.demo-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.demo-tab[data-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('.demo-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function startUsing() {
+  // Mark demo as seen and redirect to login
+  localStorage.setItem('ds_school_demo_seen', '1');
+  window.location.href = '/school-portal.html';
+}
+
+function skipDemo() {
+  startUsing();
+}
+
+// Show demo only first time
+window.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('ds_school_demo_seen')) {
+    // Already seen, redirect
+    window.location.href = '/school-portal.html';
+  }
+  // If URL has ?forceDemo, stay
+  if (window.location.search.includes('forceDemo')) {
+    localStorage.removeItem('ds_school_demo_seen');
+  }
+});
+</script>
+</body>
+</html>
