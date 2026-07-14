@@ -70,6 +70,15 @@ try {
   console.error('⚠️ School Management module file not found (will skip):', e.message);
 }
 
+// Initialize School Chat Module
+let schoolChatModule = null;
+try {
+  schoolChatModule = require('./school_chat.js');
+  console.log('💬 School Chat module file loaded');
+} catch (e) {
+  console.error('⚠️ School Chat module file not found (will skip):', e.message);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -2398,6 +2407,15 @@ connectDB().then(async () => {
       console.log('🎓 School Management initialized! Portal: /school-portal.html');
     } catch (e) {
       console.error('⚠️ School init error:', e.message);
+    }
+  }
+  // Initialize School Chat (needs DB)
+  if (schoolChatModule) {
+    try {
+      schoolChatModule(app, db, usersCol, notificationsCol);
+      console.log('💬 School Chat initialized!');
+    } catch (e) {
+      console.error('⚠️ School chat init error:', e.message);
     }
   }
   setInterval(async () => {
