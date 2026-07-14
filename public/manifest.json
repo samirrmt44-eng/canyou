@@ -1,0 +1,42 @@
+{
+  "name": "Child's Land School - DainikState",
+  "short_name": "Child's Land",
+  "description": "Pre-school management app (Nursery/LKG/UKG) - Free for all schools",
+  "start_url": "/school-portal.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ff9a9e",
+  "theme_color": "#ff6b6b",
+  "lang": "hi",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "lifestyle", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Principal Login",
+      "short_name": "Principal",
+      "url": "/school-portal.html?role=principal",
+      "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Parent Login",
+      "short_name": "Parent",
+      "url": "/school-portal.html?role=parent",
+      "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
