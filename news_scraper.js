@@ -234,6 +234,116 @@ module.exports = function(app, db, usersCol) {
     res.json({ success: true, articles: articles.map(a => { const { _id, ...r } = a; return r; }) });
   });
 
+  // ============================================================
+  // ADMIN-ONLY: Manual news add/edit/delete
+  // Only the site owner can add news (PIN-protected via /api/admin)
+  // ============================================================
+
+  // Admin auth check (reuses the same PIN as /api/admin/login)
+  const ADMIN_PIN = process.env.ADMIN_PIN || '1234';
+  function checkAdmin(req, res, next) {
+    const auth = req.headers['authorization'] || '';
+    const token = auth.replace('Bearer ', '');
+    // Verify admin token by checking against the global adminToken from analytics.js
+    // We use a simple shared secret: requires the request to have admin-token header
+    // that matches what /api/admin/login returned. Since both modules share process,
+    // we keep a static mapping.
+    if (!global.__dsAdminTokens) global.__dsAdminTokens = new Set();
+    if (!token || !global.__dsAdminTokens.has(token)) {
+      return res.status(401).json({ error: 'Unauthorized - admin login required' });
+    }
+    next();
+  }
+
+  // Admin: Add news manually (only the site owner can do this)
+  app.post('/api/news/admin/add', checkAdmin, async (req, res) => {
+    try {
+      if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
+      const { title, description, content, image, url, category, featured, tags } = req.body;
+      if (!title) return res.status(400).json({ error: 'Title required' });
+      // Auto-generate slug from title or use timestamp
+      const slug = 'manual_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+      const article = {
+        _id: slug,
+        id: slug,
+        slug,
+        title: String(title).trim(),
+        description: String(description || '').trim().slice(0, 500),
+        content: String(content || '').trim().slice(0, 10000),
+        image: image || '',
+        url: url || '',
+        category: category || 'state',
+        tags: Array.isArray(tags) ? tags : (tags ? String(tags).split(',').map(t => t.trim()).filter(Boolean) : []),
+        featured: featured === true || featured === 'true',
+        publishedAt: Date.now(),
+        scrapedAt: Date.now(),
+        source: 'admin',
+        addedBy: 'site-owner',
+        views: 0,
+      };
+      await newsCol.insertOne(article);
+      const { _id, ...result } = article;
+      res.json({ success: true, article: result });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Admin: Update existing news
+  app.put('/api/news/admin/:id', checkAdmin, async (req, res) => {
+    try {
+      if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
+      const { title, description, content, image, url, category, featured, tags } = req.body;
+      const updates = {};
+      if (title !== undefined) updates.title = String(title).trim();
+      if (description !== undefined) updates.description = String(description).trim().slice(0, 500);
+      if (content !== undefined) updates.content = String(content).trim().slice(0, 10000);
+      if (image !== undefined) updates.image = image;
+      if (url !== undefined) updates.url = url;
+      if (category !== undefined) updates.category = category;
+      if (featured !== undefined) updates.featured = featured === true || featured === 'true';
+      if (tags !== undefined) updates.tags = Array.isArray(tags) ? tags : (tags ? String(tags).split(',').map(t => t.trim()).filter(Boolean) : []);
+      updates.editedAt = Date.now();
+      const result = await newsCol.updateOne(
+        { $or: [{ _id: req.params.id }, { id: req.params.id }, { slug: req.params.id }] },
+        { $set: updates }
+      );
+      if (result.matchedCount === 0) return res.status(404).json({ error: 'News not found' });
+      res.json({ success: true, modified: result.modifiedCount });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Admin: Delete news
+  app.delete('/api/news/admin/:id', checkAdmin, async (req, res) => {
+    try {
+      if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
+      const result = await newsCol.deleteOne({
+        $or: [{ _id: req.params.id }, { id: req.params.id }, { slug: req.params.id }]
+      });
+      if (result.deletedCount === 0) return res.status(404).json({ error: 'News not found' });
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Admin: Get all news (with full data for editing)
+  app.get('/api/news/admin/list', checkAdmin, async (req, res) => {
+    try {
+      if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
+      const articles = await newsCol.find({}).sort({ publishedAt: -1 }).limit(200).toArray();
+      res.json({
+        success: true,
+        count: articles.length,
+        articles: articles.map(a => { const { _id, ...r } = a; return r; })
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Initialize
   connectDB_news().then(() => {
     // Auto-scrape on startup + every 30 minutes
