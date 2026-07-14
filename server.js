@@ -61,6 +61,15 @@ try {
   console.error('⚠️ Analytics module file not found (will skip):', e.message);
 }
 
+// Initialize School Management Module
+let schoolModule = null;
+try {
+  schoolModule = require('./school_management.js');
+  console.log('🎓 School Management module file loaded');
+} catch (e) {
+  console.error('⚠️ School Management module file not found (will skip):', e.message);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -2380,6 +2389,15 @@ connectDB().then(async () => {
       console.log('📊 Analytics initialized! Admin dashboard: /admin-dashboard.html');
     } catch (e) {
       console.error('⚠️ Analytics init error:', e.message);
+    }
+  }
+  // Initialize School Management (needs DB)
+  if (schoolModule) {
+    try {
+      schoolModule(app, db, usersCol, notificationsCol);
+      console.log('🎓 School Management initialized! Portal: /school-portal.html');
+    } catch (e) {
+      console.error('⚠️ School init error:', e.message);
     }
   }
   setInterval(async () => {
