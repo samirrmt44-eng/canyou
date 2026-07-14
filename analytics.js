@@ -138,6 +138,9 @@ module.exports = function(app, db, usersCol, notificationsCol) {
         return res.status(401).json({ error: 'Galat PIN!' });
       }
       adminToken = crypto.randomBytes(32).toString('hex');
+      // Share token globally so other modules (news_scraper.js) can verify
+      if (!global.__dsAdminTokens) global.__dsAdminTokens = new Set();
+      global.__dsAdminTokens.add(adminToken);
       res.json({ success: true, token: adminToken });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
