@@ -52,6 +52,15 @@ try {
   console.error('⚠️ Local Bazar module file not found (will skip):', e.message);
 }
 
+// Initialize Analytics Module
+let analyticsModule = null;
+try {
+  analyticsModule = require('./analytics.js');
+  console.log('📊 Analytics module file loaded');
+} catch (e) {
+  console.error('⚠️ Analytics module file not found (will skip):', e.message);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -2289,6 +2298,15 @@ connectDB().then(async () => {
       console.log('🛒 Local Bazar initialized!');
     } catch (e) {
       console.error('⚠️ Local Bazar init error:', e.message);
+    }
+  }
+  // Initialize Analytics (needs DB - tracks all visitors)
+  if (analyticsModule) {
+    try {
+      analyticsModule(app, db, usersCol, notificationsCol);
+      console.log('📊 Analytics initialized! Admin dashboard: /admin-dashboard.html');
+    } catch (e) {
+      console.error('⚠️ Analytics init error:', e.message);
     }
   }
   setInterval(async () => {
