@@ -16,6 +16,208 @@
   input, textarea, select { font-family: inherit; }
   img { max-width: 100%; }
 
+  /* === BREAKING NEWS TICKER === */
+  .news-ticker {
+    position: sticky; top: 0; z-index: 101;
+    background: linear-gradient(90deg, #c0392b 0%, #e74c3c 50%, #c0392b 100%);
+    color: #fff; overflow: hidden;
+    display: flex; align-items: center;
+    height: 36px;
+    box-shadow: 0 2px 10px rgba(231, 76, 60, 0.4);
+  }
+  .news-ticker .ticker-label {
+    background: #fff; color: #c0392b;
+    padding: 0 14px; height: 100%;
+    display: flex; align-items: center;
+    font-weight: 900; font-size: 12px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .news-ticker .ticker-label::after {
+    content: ''; position: absolute; right: -10px; top: 0;
+    border: 18px solid transparent; border-left-color: #fff;
+  }
+  .news-ticker .ticker-content {
+    flex: 1; overflow: hidden;
+    position: relative; height: 100%;
+    display: flex; align-items: center;
+  }
+  .news-ticker .ticker-track {
+    display: flex; gap: 40px;
+    white-space: nowrap;
+    animation: tickerScroll 60s linear infinite;
+    padding-left: 100%;
+  }
+  .news-ticker .ticker-item {
+    display: inline-block;
+    color: #fff; font-size: 13px; font-weight: 600;
+    text-decoration: none; cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .news-ticker .ticker-item:hover { opacity: 0.8; text-decoration: underline; }
+  .news-ticker .ticker-item::before {
+    content: '📰'; margin-right: 8px;
+  }
+  @keyframes tickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+  .news-ticker.paused .ticker-track { animation-play-state: paused; }
+
+  /* === NEWS SECTION === */
+  .news-section {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 14px;
+    margin-bottom: 16px;
+  }
+  .news-section-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .news-section-title {
+    font-size: 15px; font-weight: 800;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .news-section-title .news-source {
+    font-size: 9px; color: #ff6b35;
+    background: rgba(255,107,53,0.15);
+    padding: 2px 6px; border-radius: 6px;
+    font-weight: 700; text-transform: uppercase;
+  }
+  .news-categories {
+    display: flex; gap: 6px;
+    overflow-x: auto; scrollbar-width: none;
+    margin-bottom: 12px;
+  }
+  .news-categories::-webkit-scrollbar { display: none; }
+  .news-cat-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #aaa; padding: 6px 12px; border-radius: 18px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .news-cat-btn.active {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff; border-color: transparent;
+  }
+  .news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+  }
+  .news-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; overflow: hidden;
+    cursor: pointer; transition: transform 0.2s, border-color 0.2s;
+    display: flex; flex-direction: column;
+  }
+  .news-card:hover { transform: translateY(-2px); border-color: rgba(255,107,53,0.4); }
+  .news-card .news-img {
+    width: 100%; height: 140px;
+    object-fit: cover; background: #1a1f3a;
+  }
+  .news-card .news-img-placeholder {
+    width: 100%; height: 140px;
+    background: linear-gradient(135deg, #1a1f3a, #2a1f4a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 50px;
+  }
+  .news-card .news-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+  .news-card .news-cat-tag {
+    font-size: 10px; color: #ff6b35;
+    font-weight: 800; text-transform: uppercase;
+    margin-bottom: 4px; letter-spacing: 0.5px;
+  }
+  .news-card .news-title-text {
+    font-size: 14px; font-weight: 700;
+    line-height: 1.35; margin-bottom: 6px;
+    color: #e8e8e8;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .news-card .news-desc {
+    font-size: 12px; color: #888; line-height: 1.4;
+    margin-bottom: 8px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .news-card .news-meta {
+    display: flex; gap: 8px; align-items: center;
+    font-size: 10px; color: #666;
+    margin-top: auto; padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .news-card .news-meta .featured-tag {
+    background: #ffd700; color: #000;
+    padding: 1px 6px; border-radius: 4px; font-weight: 800;
+  }
+  .news-card .news-meta .manual-tag {
+    background: #2ed573; color: #000;
+    padding: 1px 6px; border-radius: 4px; font-weight: 800;
+  }
+  .news-detail-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .news-detail-overlay.show { display: flex; }
+  .news-detail {
+    background: #1a1f3a; border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 720px;
+    max-height: 92vh; overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+  .news-detail .news-detail-img {
+    width: 100%; max-height: 280px; object-fit: cover;
+  }
+  .news-detail .news-detail-body { padding: 18px; }
+  .news-detail .news-detail-cat {
+    font-size: 11px; color: #ff6b35;
+    font-weight: 800; text-transform: uppercase;
+    margin-bottom: 6px; letter-spacing: 0.5px;
+  }
+  .news-detail .news-detail-title {
+    font-size: 22px; font-weight: 800; line-height: 1.3;
+    margin-bottom: 10px;
+  }
+  .news-detail .news-detail-meta {
+    font-size: 11px; color: #888;
+    display: flex; gap: 10px; align-items: center;
+    margin-bottom: 16px; padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .news-detail .news-detail-desc {
+    font-size: 15px; color: #ccc; line-height: 1.5;
+    margin-bottom: 14px; font-weight: 600;
+  }
+  .news-detail .news-detail-content {
+    font-size: 14px; color: #aaa; line-height: 1.7;
+    white-space: pre-wrap; word-wrap: break-word;
+  }
+  .news-detail .news-source-link {
+    display: inline-block; margin-top: 16px;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff; padding: 10px 18px; border-radius: 8px;
+    text-decoration: none; font-weight: 700; font-size: 13px;
+  }
+  .news-detail-close {
+    position: absolute; top: 12px; right: 12px;
+    background: rgba(0,0,0,0.6); color: #fff;
+    width: 36px; height: 36px; border-radius: 50%;
+    border: none; font-size: 18px; cursor: pointer;
+    backdrop-filter: blur(4px);
+  }
+  @media (min-width: 768px) {
+    .news-detail-overlay { align-items: center; }
+    .news-detail { border-radius: 20px; max-height: 85vh; }
+  }
+
   /* === HEADER === */
   header.hero {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
@@ -851,6 +1053,16 @@
 </head>
 <body>
 
+<!-- BREAKING NEWS TICKER (top, scroll across) -->
+<div class="news-ticker paused" id="newsTicker" onclick="this.classList.toggle('paused')">
+  <div class="ticker-label">🔴 BREAKING</div>
+  <div class="ticker-content">
+    <div class="ticker-track" id="tickerTrack">
+      <a class="ticker-item" href="#">Loading news from dainikstate.com...</a>
+    </div>
+  </div>
+</div>
+
 <header class="hero">
   <div class="hero-top">
     <div class="logo-area" onclick="nav('home')">
@@ -889,6 +1101,30 @@
     <div id="odyseeLiveSection" class="hide"></div>
     <div id="odyseeManageBar" style="display:flex;gap:8px;margin-bottom:12px;">
       <button class="btn odysee-add-btn" style="width:auto;padding:8px 14px;font-size:12px;" onclick="openAddOdyseeChannel()">📺 Add Odysee Channel</button>
+    </div>
+
+    <!-- === NEWS SECTION (dainikstate.com + manual) === -->
+    <div class="news-section" id="newsSection">
+      <div class="news-section-header">
+        <div class="news-section-title">
+          📰 ताज़ा खबरें <span class="news-source">dainikstate.com</span>
+        </div>
+        <button class="refresh-btn" style="background:rgba(255,255,255,0.05);color:#a4b8ff;border-color:rgba(255,255,255,0.2);" onclick="loadNews('all')">↻</button>
+      </div>
+      <div class="news-categories" id="newsCategories">
+        <button class="news-cat-btn active" data-cat="all" onclick="setNewsCategory('all')">सभी</button>
+        <button class="news-cat-btn" data-cat="state" onclick="setNewsCategory('state')">🏛️ राज्य</button>
+        <button class="news-cat-btn" data-cat="crime" onclick="setNewsCategory('crime')">🚨 क्राइम</button>
+        <button class="news-cat-btn" data-cat="politics" onclick="setNewsCategory('politics')">🗳️ राजनीति</button>
+        <button class="news-cat-btn" data-cat="sports" onclick="setNewsCategory('sports')">⚽ खेल</button>
+        <button class="news-cat-btn" data-cat="hazaribagh" onclick="setNewsCategory('hazaribagh')">⛰️ हजारीबाग</button>
+        <button class="news-cat-btn" data-cat="ranchi" onclick="setNewsCategory('ranchi')">🏙️ रांची</button>
+        <button class="news-cat-btn" data-cat="ramgarh" onclick="setNewsCategory('ramgarh')">🏘️ रामगढ़</button>
+        <button class="news-cat-btn" data-cat="bihar" onclick="setNewsCategory('bihar')">🚂 बिहार</button>
+      </div>
+      <div class="news-grid" id="newsGrid">
+        <div class="empty" style="grid-column:1/-1;">Loading news...</div>
+      </div>
     </div>
 
     <div id="homeFeed"><div class="empty"><div class="emoji">📭</div><div class="text">Loading feed...</div></div></div>
@@ -998,6 +1234,13 @@
     <label>🏙️ City</label>
     <input type="text" id="authCity" placeholder="Your city" value="Ranchi" />
     <button onclick="registerUser()">Join DainikState 🚀</button>
+  </div>
+</div>
+
+<!-- News Detail Overlay -->
+<div class="news-detail-overlay" id="newsDetailOverlay" onclick="if(event.target===this)closeNewsDetail()">
+  <div class="news-detail" id="newsDetailContent">
+    <!-- Filled by JS -->
   </div>
 </div>
 
@@ -1149,6 +1392,139 @@ function playMediaInline(mediaId, videoId, type) {
 
 function expandImage(src) {
   showModal('Image', `<img src="${esc(src)}" style="width:100%;border-radius:8px;cursor:zoom-out;" onclick="closeModal()" />`);
+}
+
+// === NEWS (dainikstate.com + manual) ===
+let currentNewsCategory = 'all';
+let currentNewsArticles = [];
+let newsTickerData = [];
+
+function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+async function loadNews(cat) {
+  if (cat) currentNewsCategory = cat;
+  const grid = document.getElementById('newsGrid');
+  if (grid) grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">⏳ Loading...</div>';
+  try {
+    const url = '/api/news?category=' + encodeURIComponent(currentNewsCategory) + '&limit=20';
+    const r = await fetch(url).then(r => r.json());
+    if (r.success) {
+      currentNewsArticles = r.articles;
+      renderNews(r.articles);
+    } else {
+      if (grid) grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">❌ Failed to load news</div>';
+    }
+  } catch (e) {
+    if (grid) grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">❌ Network error</div>';
+    console.error('News load error:', e);
+  }
+}
+
+function setNewsCategory(cat) {
+  currentNewsCategory = cat;
+  document.querySelectorAll('.news-cat-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.news-cat-btn[data-cat="${cat}"]`)?.classList.add('active');
+  loadNews(cat);
+}
+
+function renderNews(articles) {
+  const grid = document.getElementById('newsGrid');
+  if (!articles || articles.length === 0) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">📭 इस category में कोई news नहीं</div>';
+    return;
+  }
+  grid.innerHTML = articles.map(a => {
+    const isFeatured = a.featured;
+    const isManual = a.source === 'admin';
+    const catIcon = { 'crime': '🚨', 'politics': '🗳️', 'sports': '⚽', 'business': '💼', 'ranchi': '🏙️', 'ramgarh': '🏘️', 'hazaribagh': '⛰️', 'bihar': '🚂', 'announcement': '📢' }[a.category] || '🏛️';
+    const timeAgoStr = a.publishedAt ? timeAgo(a.publishedAt) : '';
+    return `<div class="news-card" onclick="openNewsDetail('${esc(a.id || a.slug)}')">
+      ${a.image ? `<img src="${esc(a.image)}" class="news-img" loading="lazy" onerror="this.outerHTML='<div class=\\'news-img-placeholder\\'>${catIcon}</div>'">` : `<div class="news-img-placeholder">${catIcon}</div>`}
+      <div class="news-body">
+        <div class="news-cat-tag">${catIcon} ${esc(a.category || 'state')}</div>
+        <div class="news-title-text">${esc(a.title)}</div>
+        ${a.description ? `<div class="news-desc">${esc(a.description)}</div>` : ''}
+        <div class="news-meta">
+          ${isFeatured ? '<span class="featured-tag">⭐ FEATURED</span>' : ''}
+          ${isManual ? '<span class="manual-tag">✍️ MANUAL</span>' : ''}
+          <span>👁 ${a.views || 0}</span>
+          <span>🕐 ${timeAgoStr}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openNewsDetail(idOrSlug) {
+  const overlay = document.getElementById('newsDetailOverlay');
+  const content = document.getElementById('newsDetailContent');
+  overlay.classList.add('show');
+  content.innerHTML = '<div style="padding:60px;text-align:center;color:#888;">⏳ Loading...</div>';
+  try {
+    const r = await fetch('/api/news/' + encodeURIComponent(idOrSlug)).then(r => r.json());
+    if (r.success && r.article) {
+      renderNewsDetail(r.article);
+    } else {
+      content.innerHTML = '<div style="padding:60px;text-align:center;color:#ff6b6b;">❌ News not found</div>';
+    }
+  } catch (e) {
+    content.innerHTML = '<div style="padding:60px;text-align:center;color:#ff6b6b;">❌ Network error</div>';
+  }
+}
+
+function renderNewsDetail(a) {
+  const content = document.getElementById('newsDetailContent');
+  const catIcon = { 'crime': '🚨', 'politics': '🗳️', 'sports': '⚽', 'business': '💼', 'ranchi': '🏙️', 'ramgarh': '🏘️', 'hazaribagh': '⛰️', 'bihar': '🚂', 'announcement': '📢' }[a.category] || '🏛️';
+  const isManual = a.source === 'admin';
+  const timeStr = a.publishedAt ? new Date(a.publishedAt).toLocaleString('hi-IN', { dateStyle: 'long', timeStyle: 'short' }) : '';
+  let html = '';
+  if (a.image) html += `<img src="${esc(a.image)}" class="news-detail-img" onerror="this.style.display='none'">`;
+  html += `<button class="news-detail-close" onclick="closeNewsDetail()">✕</button>`;
+  html += `<div class="news-detail-body">`;
+  html += `<div class="news-detail-cat">${catIcon} ${esc(a.category || 'state')}${a.featured ? ' · ⭐ FEATURED' : ''}${isManual ? ' · ✍️ MANUAL' : ''}</div>`;
+  html += `<h1 class="news-detail-title">${esc(a.title)}</h1>`;
+  html += `<div class="news-detail-meta">
+    <span>📅 ${timeStr}</span>
+    <span>👁 ${a.views || 0} views</span>
+    <span>📰 ${a.source || 'dainikstate.com'}</span>
+  </div>`;
+  if (a.description) html += `<p class="news-detail-desc">${esc(a.description)}</p>`;
+  if (a.content) html += `<div class="news-detail-content">${esc(a.content)}</div>`;
+  if (a.url) html += `<a href="${esc(a.url)}" target="_blank" rel="noopener" class="news-source-link">📰 मूल खबर पढ़ें (${esc(a.source || 'source')}) ↗</a>`;
+  html += `</div>`;
+  content.innerHTML = html;
+}
+
+function closeNewsDetail() {
+  document.getElementById('newsDetailOverlay').classList.remove('show');
+}
+
+async function loadNewsTicker() {
+  try {
+    const r = await fetch('/api/news/breaking').then(r => r.json());
+    if (r.success && r.articles && r.articles.length > 0) {
+      newsTickerData = r.articles;
+      renderNewsTicker(r.articles);
+    } else {
+      // Try /api/news as fallback
+      const r2 = await fetch('/api/news?limit=10').then(r => r.json());
+      if (r2.success && r2.articles) {
+        newsTickerData = r2.articles;
+        renderNewsTicker(r2.articles);
+      }
+    }
+  } catch (e) { console.error('Ticker error:', e); }
+}
+
+function renderNewsTicker(articles) {
+  const track = document.getElementById('tickerTrack');
+  if (!track) return;
+  // Duplicate for seamless loop
+  const items = articles.concat(articles);
+  track.innerHTML = items.map(a => {
+    const id = a.id || a.slug;
+    return `<a class="ticker-item" onclick="openNewsDetail('${esc(id)}')">${esc(a.title)}</a>`;
+  }).join('');
 }
 
 // === NAVIGATION ===
@@ -1322,7 +1698,12 @@ async function loadHomeFeed() {
     allPosts = allPosts.concat(autoPosts);
     allPosts.sort((a, b) => b.createdAt - a.createdAt);
     // Only load stories on first load
-    if (isFirstLoad) loadStories();
+    if (isFirstLoad) {
+      loadStories();
+      // Load news ticker + news section (only on first visit)
+      loadNewsTicker();
+      loadNews('all');
+    }
     // Load active live streams from user's groups
     if (currentUser) loadLiveNowSection();
     // Load Odysee live streams (always, even for non-logged-in)
@@ -3329,6 +3710,14 @@ function smartRefresh() {
     // Only update if there are no active media (videos, iframes) playing
     const hasPlayingMedia = document.querySelector('video[autoplay], iframe[src*="youtube"]');
     if (!hasPlayingMedia) loadHomeFeed();
+  }
+  // News ticker - refresh every 5 minutes (5*60*1000 = 300000ms)
+  if (!lastRefreshTime.news || now - lastRefreshTime.news > 300000) {
+    lastRefreshTime.news = now;
+    loadNewsTicker();
+    if (currentPage === 'home' && currentNewsCategory) {
+      loadNews(currentNewsCategory);
+    }
   }
   // Notifications - every 30 sec
   if (currentPage === 'notifications' && (!lastRefreshTime.notif || now - lastRefreshTime.notif > 30000)) {
