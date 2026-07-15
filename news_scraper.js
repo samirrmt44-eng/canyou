@@ -228,6 +228,90 @@ module.exports = function(app, db, usersCol) {
     res.json({ success: true, article: result });
   });
 
+  // API: Track view (separate from detail view to count unique views)
+  app.post('/api/news/:id/view', async (req, res) => {
+    try {
+      if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
+      const { id } = req.params;
+      const { sessionId } = req.body;
+      // Track unique view per session (avoid double-counting)
+      if (sessionId) {
+        const viewsCol = db.collection('newsViews');
+        const existing = await viewsCol.findOne({ newsId: id, sessionId });
+        if (existing) {
+          return res.json({ success: true, unique: false });
+        }
+        await viewsCol.insertOne({ newsId: id, sessionId, viewedAt: Date.now() });
+      }
+      // Increment total view count
+      const result = await newsCol.updateOne(
+        { $or: [{ _id: id }, { id: id }, { slug: id }] },
+        { $inc: { views: 1 } }
+      );
+      res.json({ success: true, unique: true, updated: result.modifiedCount });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // API: React to news (like/love/etc)
+  app.post('/api/news/:id/react', async (req, res) => {
+    try {
+      if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
+      const { id } = req.params;
+      const { sessionId, reaction } = req.body;
+      if (!sessionId || !reaction) return res.status(400).json({ error: 'sessionId, reaction required' });
+      // Validate reaction type
+      const validReactions = ['like', 'love', 'wow', 'sad', 'angry', 'laugh'];
+      if (!validReactions.includes(reaction)) return res.status(400).json({ error: 'Invalid reaction type' });
+      // Store reaction (one per session per article per type)
+      const reactionsCol = db.collection('newsReactions');
+      const existing = await reactionsCol.findOne({ newsId: id, sessionId, reaction });
+      if (existing) {
+        // Toggle off
+        await reactionsCol.deleteOne({ _id: existing._id });
+        await newsCol.updateOne(
+          { $or: [{ _id: id }, { id: id }, { slug: id }] },
+          { $inc: { [`reactions.${reaction}`]: -1 } }
+        ).catch(()=>{});
+        return res.json({ success: true, action: 'removed' });
+      }
+      // Add new reaction
+      await reactionsCol.insertOne({ newsId: id, sessionId, reaction, createdAt: Date.now() });
+      // Increment count
+      await newsCol.updateOne(
+        { $or: [{ _id: id }, { id: id }, { slug: id }] },
+        { $inc: { [`reactions.${reaction}`]: 1 } }
+      ).catch(()=>{});
+      res.json({ success: true, action: 'added' });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // API: Get news with full stats
+  app.get('/api/news/stats/summary', async (req, res) => {
+    try {
+      if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
+      const total = await newsCol.countDocuments();
+      const last24h = await newsCol.countDocuments({ publishedAt: { $gte: Date.now() - 86400000 } });
+      const categoryCounts = await newsCol.aggregate([
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]).toArray();
+      const topViewed = await newsCol.find({}).sort({ views: -1 }).limit(5).toArray();
+      res.json({
+        success: true,
+        total,
+        last24h,
+        categoryCounts,
+        topViewed: topViewed.map(a => { const { _id, ...r } = a; return r; })
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // API: Manual scrape trigger (admin)
   app.post('/api/news/scrape', async (req, res) => {
     const { secret } = req.body;
