@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<title>Example 3: 3D Magazine Style</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', serif;
+    background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1e 100%);
+    min-height: 100vh; padding: 30px 16px; color: #fff;
+  }
+  .header { text-align: center; margin-bottom: 30px; }
+  .header h1 { font-size: 28px; background: linear-gradient(90deg, #ffd700, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: -apple-system, sans-serif; }
+  .header p { color: #888; font-size: 14px; margin-top: 6px; font-family: -apple-system, sans-serif; }
+  .container { max-width: 480px; margin: 0 auto; }
+
+  /* TICKER - Newspaper style */
+  .ticker-news {
+    background: linear-gradient(90deg, #8b0000 0%, #c0392b 50%, #8b0000 100%);
+    border: 3px double #ffd700;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow:
+      inset 0 0 20px rgba(0, 0, 0, 0.3),
+      0 8px 20px rgba(192, 57, 43, 0.4);
+    transform: perspective(1000px) rotateX(2deg);
+    position: relative;
+  }
+  .ticker-news::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, #ffd700, transparent);
+  }
+  .ticker-news::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, #ffd700, transparent);
+  }
+  .live-circle {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; box-shadow: 0 0 15px #fff;
+    animation: live-blink 1s infinite;
+  }
+  @keyframes live-blink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.9); }
+  }
+  .ticker-text-news {
+    flex: 1; font-weight: 800; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* 3D MAGAZINE CARD */
+  .news-mag {
+    position: relative;
+    background: linear-gradient(180deg, #fff5e1 0%, #ffe4b5 100%);
+    color: #1a1a2e;
+    margin-bottom: 28px;
+    border-radius: 4px;
+    overflow: hidden;
+    transform: perspective(1500px) rotateX(1deg);
+    transition: all 0.4s ease;
+    box-shadow:
+      0 20px 50px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 215, 0, 0.3);
+  }
+  .news-mag:hover {
+    transform: perspective(1500px) rotateX(0deg) translateY(-8px) scale(1.02);
+    box-shadow:
+      0 30px 70px rgba(0, 0, 0, 0.6),
+      0 0 0 2px rgba(255, 215, 0, 0.6),
+      0 0 50px rgba(255, 215, 0, 0.2);
+  }
+  .news-mag::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 8px;
+    background: linear-gradient(90deg, #8b0000, #c0392b, #8b0000);
+    z-index: 2;
+  }
+  .news-mag::after {
+    content: '';
+    position: absolute; top: 8px; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, #ffd700, transparent);
+    z-index: 2;
+  }
+  .mag-image {
+    position: relative;
+    height: 200px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 8px;
+  }
+  .mag-image::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(45deg, transparent 0, transparent 20px, rgba(255,255,255,0.03) 20px, rgba(255,255,255,0.03) 40px);
+  }
+  .mag-image-icon {
+    font-size: 100px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    z-index: 1;
+  }
+  .mag-headline-cat {
+    position: absolute;
+    top: 16px; left: 16px;
+    background: #1a1a2e;
+    color: #ffd700;
+    padding: 4px 12px;
+    font-family: -apple-system, sans-serif;
+    font-size: 10px; font-weight: 900;
+    letter-spacing: 1.5px;
+    z-index: 2;
+    border: 1px solid #ffd700;
+  }
+  .mag-headline {
+    padding: 16px 20px 12px;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1.2;
+    color: #1a1a2e;
+    text-align: center;
+    font-family: 'Georgia', serif;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    position: relative;
+  }
+  .mag-headline::before, .mag-headline::after {
+    content: '★';
+    color: #8b0000;
+    margin: 0 10px;
+    font-size: 14px;
+  }
+  .mag-divider {
+    width: 60px; height: 2px;
+    background: #8b0000;
+    margin: 0 auto 12px;
+  }
+  .mag-body {
+    padding: 0 20px 20px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #2a2a3e;
+    font-style: italic;
+  }
+  .mag-footer {
+    background: #1a1a2e;
+    color: #ffd700;
+    padding: 10px 20px;
+    display: flex; justify-content: space-between;
+    font-family: -apple-system, sans-serif;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .mag-source {
+    background: linear-gradient(135deg, #ffd700, #ffaa00);
+    color: #1a1a2e;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📰 Example 3: 3D Magazine Style</h1>
+  <p>Newspaper/Magazine aesthetic with sepia tones</p>
+</div>
+<div class="container">
+
+  <div class="ticker-news">
+    <div class="live-circle"></div>
+    <div class="ticker-text-news">🔥 BREAKING: रांची में बड़ा हादसा</div>
+  </div>
+
+  <div class="news-mag">
+    <div class="mag-image">
+      <div class="mag-headline-cat">🚨 CRIME NEWS</div>
+      <div class="mag-image-icon">📰</div>
+    </div>
+    <h2 class="mag-headline">हजारीबाग में बड़ा सड़क हादसा</h2>
+    <div class="mag-divider"></div>
+    <p class="mag-body">राष्ट्रीय राजमार्ग पर हुई दुर्घटना में 5 लोग घायल हो गए। स्थानीय पुलिस ने मामला दर्ज कर जांच शुरू की।</p>
+    <div class="mag-footer">
+      <span>👁 2,400 READS</span>
+      <span class="mag-source">DAINIKSTATE</span>
+      <span>5 MIN AGO</span>
+    </div>
+  </div>
+
+  <div class="news-mag">
+    <div class="mag-image" style="background:linear-gradient(135deg,#667eea,#764ba2);">
+      <div class="mag-headline-cat">🏛️ POLITICS</div>
+      <div class="mag-image-icon">🏛️</div>
+    </div>
+    <h2 class="mag-headline">मुख्यमंत्री ने किया उद्घाटन</h2>
+    <div class="mag-divider"></div>
+    <p class="mag-body">राज्य सरकार की नई योजना से 10,000 युवाओं को रोजगार मिलने की उम्मीद है। कौशल विकास प्रशिक्षण का शुभारंभ।</p>
+    <div class="mag-footer">
+      <span>👁 5,100 READS</span>
+      <span class="mag-source">DAINIKSTATE</span>
+      <span>1 HR AGO</span>
+    </div>
+  </div>
+
+  <div class="news-mag">
+    <div class="mag-image" style="background:linear-gradient(135deg,#43e97b,#38f9d7);">
+      <div class="mag-headline-cat">⚽ SPORTS</div>
+      <div class="mag-image-icon">⚽</div>
+    </div>
+    <h2 class="mag-headline">झारखंड ने जीता चैंपियनशिप</h2>
+    <div class="mag-divider"></div>
+    <p class="mag-body">फाइनल मैच में झारखंड ने बंगाल को 8 विकेट से हराया। कप्तान ने शानदार शतक जड़ा।</p>
+    <div class="mag-footer">
+      <span>👁 8,700 READS</span>
+      <span class="mag-source">DAINIKSTATE</span>
+      <span>2 HR AGO</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
