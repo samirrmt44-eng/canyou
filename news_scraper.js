@@ -383,10 +383,22 @@ module.exports = function(app, db, usersCol) {
       await ensureGroupChannelsCol();
       await ensureDainikStateChannel();
       const channels = await groupChannelsCol.find({}).sort({ isMaster: -1, newsCount: -1 }).toArray();
+      // Compute real-time newsCount for each channel (handles legacy articles with missing groupId)
+      const result = [];
+      for (const c of channels) {
+        const countQuery = c.isMaster
+          ? { $or: [{ groupId: c.groupId }, { groupId: { $exists: false } }, { groupId: null }] }
+          : { groupId: c.groupId };
+        const liveCount = await newsCol.countDocuments(countQuery);
+        const { _id, ...r } = c;
+        result.push({ ...r, newsCount: liveCount });
+      }
+      // Re-sort by live newsCount
+      result.sort((a, b) => (b.isMaster ? 1 : 0) - (a.isMaster ? 1 : 0) || b.newsCount - a.newsCount);
       res.json({
         success: true,
-        count: channels.length,
-        channels: channels.map(c => { const { _id, ...r } = c; return r; })
+        count: result.length,
+        channels: result
       });
     } catch (e) {
       res.status(500).json({ error: e.message });
@@ -408,9 +420,15 @@ module.exports = function(app, db, usersCol) {
           return res.status(404).json({ error: 'Channel not found' });
         }
       }
-      // Get news count
-      const newsCount = await newsCol.countDocuments({ groupId: channel.groupId });
-      const recentNews = await newsCol.find({ groupId: channel.groupId }).sort({ publishedAt: -1 }).limit(5).toArray();
+      // Get news count (backward compat: include articles with missing/null groupId for master DainikState channel)
+      const countQuery = channel.isMaster
+        ? { $or: [{ groupId: channel.groupId }, { groupId: { $exists: false } }, { groupId: null }] }
+        : { groupId: channel.groupId };
+      const recentQuery = channel.isMaster
+        ? { $or: [{ groupId: channel.groupId }, { groupId: { $exists: false } }, { groupId: null }] }
+        : { groupId: channel.groupId };
+      const newsCount = await newsCol.countDocuments(countQuery);
+      const recentNews = await newsCol.find(recentQuery).sort({ publishedAt: -1 }).limit(5).toArray();
       const { _id, ...result } = channel;
       res.json({
         success: true,
@@ -552,8 +570,11 @@ module.exports = function(app, db, usersCol) {
       // Get channel info
       await ensureGroupChannelsCol();
       const channel = await groupChannelsCol.findOne({ $or: [{ groupId: channelId }, { id: channelId }] });
-      // Get news
-      const query = { groupId: channelId };
+      // For master DainikState channel, also include old articles with missing groupId (backward compat)
+      const isMaster = channel && channel.isMaster;
+      const query = isMaster
+        ? { $or: [{ groupId: channelId }, { groupId: { $exists: false } }, { groupId: null }] }
+        : { groupId: channelId };
       if (category && category !== 'all') query.category = category;
       const lim = parseInt(limit) || 20;
       const sk = parseInt(skip) || 0;
