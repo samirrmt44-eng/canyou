@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<title>Example 7: 3D Snapchat-Style Stories + Cards</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, sans-serif;
+    background: #0a0e1a;
+    min-height: 100vh; color: #fff;
+    background-image: radial-gradient(circle at top, rgba(255, 107, 107, 0.15), transparent 50%);
+  }
+  .header { text-align: center; padding: 30px 16px 20px; }
+  .header h1 { font-size: 28px; background: linear-gradient(90deg, #ff6b6b, #f093fb, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header p { color: #888; font-size: 14px; margin-top: 6px; }
+  .container { max-width: 480px; margin: 0 auto; padding: 0 16px 30px; }
+
+  /* 3D TICKER */
+  .ticker-snap {
+    background: linear-gradient(135deg, #c0392b, #8b0000);
+    border-radius: 12px; padding: 12px 16px;
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 8px 20px rgba(192, 57, 43, 0.4);
+  }
+  .live-dot-snap { width: 10px; height: 10px; border-radius: 50%; background: #fff; box-shadow: 0 0 15px #fff; animation: snap-pulse 0.8s infinite; }
+  @keyframes snap-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.5); } }
+  .ticker-snap-text { flex: 1; font-size: 13px; font-weight: 700; }
+
+  /* 3D STORIES STRIP - Like Instagram/Snapchat */
+  .stories-3d {
+    display: flex; gap: 12px;
+    overflow-x: auto;
+    padding: 12px 4px; margin-bottom: 20px;
+    scrollbar-width: none;
+  }
+  .stories-3d::-webkit-scrollbar { display: none; }
+  .story-3d {
+    flex-shrink: 0; text-align: center; cursor: pointer;
+    transition: transform 0.3s;
+  }
+  .story-3d:hover { transform: translateY(-4px) scale(1.05); }
+  .story-circle-3d {
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b6b, #f093fb, #4facfe);
+    padding: 3px;
+    margin-bottom: 4px;
+    box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+    position: relative;
+  }
+  .story-circle-3d::before {
+    content: ''; position: absolute; inset: -3px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700, #ff6b6b, #4facfe, #43e97b);
+    z-index: -1;
+    filter: blur(8px);
+    opacity: 0.6;
+  }
+  .story-inner-3d {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 900;
+    color: #fff;
+    border: 2px solid #0a0e1a;
+  }
+  .story-name-3d { font-size: 10px; max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* 3D CATEGORY CHIPS */
+  .cats-3d {
+    display: flex; gap: 8px;
+    overflow-x: auto; padding: 4px 0 14px 0;
+    scrollbar-width: none;
+    margin-bottom: 12px;
+  }
+  .cats-3d::-webkit-scrollbar { display: none; }
+  .cat-chip-3d {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+    white-space: nowrap; cursor: pointer;
+    transition: all 0.3s;
+  }
+  .cat-chip-3d.active {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    border-color: transparent;
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    transform: translateY(-2px);
+  }
+
+  /* 3D CARD - Snapchat-style with image on top */
+  .snap-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    transform-style: preserve-3d;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  }
+  .snap-card:hover {
+    transform: translateY(-8px) scale(1.01);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .snap-card-image {
+    position: relative;
+    width: 100%; height: 240px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 90px;
+    overflow: hidden;
+  }
+  .snap-card-image::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.6) 100%);
+  }
+  .snap-card-image::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, #ff6b6b, #f093fb, #4facfe);
+  }
+  /* Floating badges on image */
+  .snap-badge {
+    position: absolute;
+    top: 12px; left: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #1a1a2e;
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 10px; font-weight: 900; letter-spacing: 1px;
+    backdrop-filter: blur(10px);
+    z-index: 2;
+  }
+  .snap-time {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 4px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 700;
+    backdrop-filter: blur(10px);
+    z-index: 2;
+  }
+  .snap-source-overlay {
+    position: absolute;
+    bottom: 12px; left: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 3px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700;
+    backdrop-filter: blur(10px);
+    z-index: 2;
+  }
+  .snap-card-content {
+    padding: 16px;
+    transform: translateZ(15px);
+  }
+  .snap-card-title {
+    font-size: 17px; font-weight: 800; line-height: 1.3;
+    margin-bottom: 6px;
+  }
+  .snap-card-desc {
+    font-size: 13px; color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5; margin-bottom: 12px;
+  }
+  .snap-card-stats {
+    display: flex; gap: 14px; align-items: center;
+    font-size: 12px; color: rgba(255, 255, 255, 0.5);
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .snap-card-stats .reactions { display: flex; gap: 6px; }
+  .react-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 4px 10px; border-radius: 12px;
+    font-size: 12px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .react-btn:hover { background: rgba(255, 107, 107, 0.2); }
+  .react-btn.active { background: linear-gradient(135deg, #ff6b6b, #ee5a6f); border-color: transparent; }
+  .share-snap {
+    margin-left: auto;
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: #fff;
+    padding: 4px 12px; border-radius: 12px;
+    font-size: 11px; font-weight: 700;
+    border: none; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📱 Example 7: 3D Stories + Snapchat Cards</h1>
+  <p>Top stories + horizontal categories + reaction buttons</p>
+</div>
+<div class="container">
+
+  <div class="ticker-snap">
+    <div class="live-dot-snap"></div>
+    <div class="ticker-snap-text">🔥 BREAKING: रांची में बड़ा हादसा, 5 लोग घायल</div>
+  </div>
+
+  <div class="stories-3d">
+    <div class="story-3d">
+      <div class="story-circle-3d"><div class="story-inner-3d" style="background:linear-gradient(135deg,#ff6b6b,#ee5a6f);">🏫</div></div>
+      <div class="story-name-3d">स्कूल</div>
+    </div>
+    <div class="story-3d">
+      <div class="story-circle-3d"><div class="story-inner-3d" style="background:linear-gradient(135deg,#43e97b,#38f9d7);">⚽</div></div>
+      <div class="story-name-3d">खेल</div>
+    </div>
+    <div class="story-3d">
+      <div class="story-circle-3d"><div class="story-inner-3d" style="background:linear-gradient(135deg,#667eea,#764ba2);">🏛️</div></div>
+      <div class="story-name-3d">राजनीति</div>
+    </div>
+    <div class="story-3d">
+      <div class="story-circle-3d"><div class="story-inner-3d" style="background:linear-gradient(135deg,#ffd700,#ffaa00);">⛰️</div></div>
+      <div class="story-name-3d">हजारीबाग</div>
+    </div>
+    <div class="story-3d">
+      <div class="story-circle-3d"><div class="story-inner-3d" style="background:linear-gradient(135deg,#f093fb,#f5576c);">💼</div></div>
+      <div class="story-name-3d">बिजनेस</div>
+    </div>
+    <div class="story-3d">
+      <div class="story-circle-3d"><div class="story-inner-3d" style="background:linear-gradient(135deg,#4facfe,#00f2fe);">🏙️</div></div>
+      <div class="story-name-3d">रांची</div>
+    </div>
+  </div>
+
+  <div class="cats-3d">
+    <div class="cat-chip-3d active">सभी</div>
+    <div class="cat-chip-3d">🚨 क्राइम</div>
+    <div class="cat-chip-3d">🏛️ पॉलिटिक्स</div>
+    <div class="cat-chip-3d">⚽ स्पोर्ट्स</div>
+    <div class="cat-chip-3d">💼 बिजनेस</div>
+    <div class="cat-chip-3d">⛰️ हजारीबाग</div>
+  </div>
+
+  <div class="snap-card">
+    <div class="snap-card-image" style="background:linear-gradient(135deg,#ff6b6b 0%,#c0392b 50%,#8b0000 100%);">
+      <div class="snap-badge" style="color:#c0392b;">🚨 CRIME</div>
+      <div class="snap-time">🕐 5 मिनट</div>
+      <div class="snap-source-overlay">📰 dainikstate.com</div>
+      🚨
+    </div>
+    <div class="snap-card-content">
+      <h2 class="snap-card-title">हजारीबाग में बड़ा सड़क हादसा, 3 गाड़ियों की जबरदस्त टक्कर</h2>
+      <p class="snap-card-desc">राष्ट्रीय राजमार्ग पर हुई दुर्घटना में 5 लोग घायल हो गए। स्थानीय पुलिस ने मामला दर्ज कर जांच शुरू की। राहत कार्य जारी है।</p>
+      <div class="snap-card-stats">
+        <div class="reactions">
+          <button class="react-btn">👍 42</button>
+          <button class="react-btn">❤️ 18</button>
+        </div>
+        <span>💬 12</span>
+        <button class="share-snap">📤 Share</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="snap-card">
+    <div class="snap-card-image" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 50%,#f093fb 100%);">
+      <div class="snap-badge" style="color:#764ba2;">🏛️ POLITICS</div>
+      <div class="snap-time">🕐 1 घंटा</div>
+      <div class="snap-source-overlay">📰 dainikstate.com</div>
+      🏛️
+    </div>
+    <div class="snap-card-content">
+      <h2 class="snap-card-title">मुख्यमंत्री ने किया नई योजना का उद्घाटन, 10,000 युवाओं को मिलेगा रोजगार</h2>
+      <p class="snap-card-desc">राज्य सरकार की नई योजना का शुभारंभ किया गया। युवाओं को कौशल विकास प्रशिक्षण दिया जाएगा।</p>
+      <div class="snap-card-stats">
+        <div class="reactions">
+          <button class="react-btn">👍 87</button>
+          <button class="react-btn">❤️ 32</button>
+        </div>
+        <span>💬 24</span>
+        <button class="share-snap">📤 Share</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="snap-card">
+    <div class="snap-card-image" style="background:linear-gradient(135deg,#43e97b 0%,#38f9d7 50%,#4facfe 100%);">
+      <div class="snap-badge" style="color:#28a745;">⚽ SPORTS</div>
+      <div class="snap-time">🕐 2 घंटे</div>
+      <div class="snap-source-overlay">✍️ MANUAL</div>
+      ⚽
+    </div>
+    <div class="snap-card-content">
+      <h2 class="snap-card-title">झारखंड की टीम ने जीता राष्ट्रीय क्रिकेट चैंपियनशिप का खिताब</h2>
+      <p class="snap-card-desc">फाइनल मैच में झारखंड ने बंगाल को 8 विकेट से हराया। कप्तान ने शानदार शतक जड़ा।</p>
+      <div class="snap-card-stats">
+        <div class="reactions">
+          <button class="react-btn active">👍 124</button>
+          <button class="react-btn">❤️ 56</button>
+        </div>
+        <span>💬 38</span>
+        <button class="share-snap">📤 Share</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="snap-card">
+    <div class="snap-card-image" style="background:linear-gradient(135deg,#ffd700 0%,#ffaa00 50%,#ff6b6b 100%);">
+      <div class="snap-badge" style="color:#d97706;">⛰️ HAZARIBAGH</div>
+      <div class="snap-time">🕐 3 घंटे</div>
+      <div class="snap-source-overlay">📰 dainikstate.com</div>
+      ⛰️
+    </div>
+    <div class="snap-card-content">
+      <h2 class="snap-card-title">हजारीबाग में नए सरकारी स्कूल का उद्घाटन, 500 बच्चों को मिलेगी शिक्षा</h2>
+      <p class="snap-card-desc">जिला प्रशासन ने आधुनिक सुविधाओं से लैस स्कूल भवन का उद्घाटन किया। स्मार्ट क्लास, लाइब्रेरी, कंप्यूटर लैब।</p>
+      <div class="snap-card-stats">
+        <div class="reactions">
+          <button class="react-btn">👍 56</button>
+          <button class="react-btn">❤️ 22</button>
+        </div>
+        <span>💬 14</span>
+        <button class="share-snap">📤 Share</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
