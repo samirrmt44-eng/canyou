@@ -128,6 +128,9 @@ module.exports = function(app, db, usersCol) {
         category,
         publishedAt,
         source: 'dainikstate.com',
+        // Mark as DainikState public group feed (visible to all groups)
+        groupId: 'dainikstate',
+        isPublic: true,
         scrapedAt: Date.now(),
         views: 0,
         featured: false,
@@ -141,7 +144,7 @@ module.exports = function(app, db, usersCol) {
   // Main scrape function - fetches homepage + details
   async function scrapeNews() {
     if (!newsCol) return { success: false, error: 'DB not ready' };
-    console.log('📰 Starting news scrape...');
+    console.log('📰 Starting news scrape (DainikState public feed)...');
     const articleList = await scrapeArticleList();
     console.log(`📰 Found ${articleList.length} article URLs`);
     let added = 0, updated = 0, failed = 0;
@@ -165,16 +168,28 @@ module.exports = function(app, db, usersCol) {
         failed++;
       }
     }
-    console.log(`📰 Scrape done: ${added} new, ${updated} updated, ${failed} failed`);
+    console.log(`📰 DainikState scrape done: ${added} new, ${updated} updated, ${failed} failed`);
     return { success: true, added, updated, failed, total: articleList.length };
   }
 
-  // API: Get news feed (with pagination)
+  // API: Get news feed (with pagination + group filter)
   app.get('/api/news', async (req, res) => {
     if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
-    const { category, search, limit, skip } = req.query;
+    const { category, search, limit, skip, groupId } = req.query;
     const query = {};
     if (category && category !== 'all') query.category = category;
+    if (groupId) {
+      // If groupId is 'dainikstate' or 'all', show all DainikState posts
+      if (groupId === 'dainikstate' || groupId === 'all') {
+        // Show all news (backward compat) - DainikState master feed
+      } else {
+        // Show only this group's news
+        query.groupId = groupId;
+      }
+    } else {
+      // No groupId: show DainikState public feed (all scraped news)
+      query.$or = [{ groupId: { $exists: false } }, { groupId: null }, { groupId: 'dainikstate' }];
+    }
     if (search) {
       const re = new RegExp(search, 'i');
       query.$or = [{ title: re }, { description: re }];
@@ -200,14 +215,23 @@ module.exports = function(app, db, usersCol) {
   // API: Get breaking news (top 5) - MUST be before :slug route!
   app.get('/api/news/breaking', async (req, res) => {
     if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
-    const articles = await newsCol.find({}).sort({ publishedAt: -1 }).limit(5).toArray();
+    const { groupId } = req.query;
+    const query = {};
+    if (groupId && groupId !== 'dainikstate' && groupId !== 'all') query.groupId = groupId;
+    else query.$or = [{ groupId: { $exists: false } }, { groupId: null }, { groupId: 'dainikstate' }];
+    const articles = await newsCol.find(query).sort({ publishedAt: -1 }).limit(5).toArray();
     res.json({ success: true, articles: articles.map(a => { const { _id, ...r } = a; return r; }) });
   });
 
   // API: Get categories list (MUST be before :slug route!)
   app.get('/api/news/categories/list', async (req, res) => {
     if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
+    const { groupId } = req.query;
+    const query = {};
+    if (groupId && groupId !== 'dainikstate' && groupId !== 'all') query.groupId = groupId;
+    else query.$or = [{ groupId: { $exists: false } }, { groupId: null }, { groupId: 'dainikstate' }];
     const categories = await newsCol.aggregate([
+      { $match: query },
       { $group: { _id: '$category', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]).toArray();
@@ -312,6 +336,242 @@ module.exports = function(app, db, usersCol) {
     }
   });
 
+  // ============================================================
+  // GROUP CHANNELS - Custom news channels with their own logo
+  // Each group (school) can have its own news channel
+  // ============================================================
+
+  let groupChannelsCol;
+  async function ensureGroupChannelsCol() {
+    if (!groupChannelsCol) groupChannelsCol = db.collection('groupChannels');
+    await groupChannelsCol.createIndex({ groupId: 1 }, { unique: true });
+    await groupChannelsCol.createIndex({ createdAt: -1 });
+  }
+
+  // Auto-create DainikState master channel (the main public feed)
+  async function ensureDainikStateChannel() {
+    await ensureGroupChannelsCol();
+    const existing = await groupChannelsCol.findOne({ groupId: 'dainikstate' });
+    if (!existing) {
+      await groupChannelsCol.insertOne({
+        _id: 'dainikstate_master',
+        id: 'dainikstate',
+        groupId: 'dainikstate',
+        name: 'DainikState',
+        slug: 'dainikstate',
+        tagline: '🏆 राज्य की आवाज़ - झारखंड की #1 Hindi News',
+        logo: '/images/logo.png',  // DainikState default logo
+        cover: '',
+        description: 'DainikState.com से ऑटो-स्क्रैप किया गया न्यूज़ फीड',
+        isMaster: true,
+        isPublic: true,
+        newsCount: 0,
+        subscribers: 0,
+        autoScrape: true,
+        scrapeUrl: 'https://dainikstate.com/',
+        ownerId: 'system',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      console.log('🏆 DainikState master channel created');
+    }
+  }
+
+  // API: Get all group channels (for discovery)
+  app.get('/api/news/groups/list', async (req, res) => {
+    try {
+      await ensureGroupChannelsCol();
+      await ensureDainikStateChannel();
+      const channels = await groupChannelsCol.find({}).sort({ isMaster: -1, newsCount: -1 }).toArray();
+      res.json({
+        success: true,
+        count: channels.length,
+        channels: channels.map(c => { const { _id, ...r } = c; return r; })
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // API: Get single group channel info
+  app.get('/api/news/groups/:channelId', async (req, res) => {
+    try {
+      await ensureGroupChannelsCol();
+      let channel = await groupChannelsCol.findOne({ groupId: req.params.channelId });
+      if (!channel) channel = await groupChannelsCol.findOne({ id: req.params.channelId });
+      if (!channel) {
+        // Auto-create DainikState if not exists
+        if (req.params.channelId === 'dainikstate') {
+          await ensureDainikStateChannel();
+          channel = await groupChannelsCol.findOne({ groupId: 'dainikstate' });
+        } else {
+          return res.status(404).json({ error: 'Channel not found' });
+        }
+      }
+      // Get news count
+      const newsCount = await newsCol.countDocuments({ groupId: channel.groupId });
+      const recentNews = await newsCol.find({ groupId: channel.groupId }).sort({ publishedAt: -1 }).limit(5).toArray();
+      const { _id, ...result } = channel;
+      res.json({
+        success: true,
+        channel: { ...result, newsCount, recentNews: recentNews.map(n => { const { _id2, ...n2 } = n; return n2; }) }
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // API: Create or update a group channel (principal/owner can do this)
+  app.post('/api/news/groups/update', async (req, res) => {
+    try {
+      await ensureGroupChannelsCol();
+      const { groupId, name, logo, tagline, description, cover, autoScrape, scrapeUrl, isPublic, ownerId } = req.body;
+      if (!groupId) return res.status(400).json({ error: 'groupId required' });
+      if (!name) return res.status(400).json({ error: 'name required' });
+
+      // Verify owner (must be the school owner or DainikState admin)
+      // For simplicity, we trust the groupId - if it matches an existing school, principal can update
+      const schoolsCol = db.collection('schools');
+      const school = await schoolsCol.findOne({ id: groupId });
+      // Allow if: school owner matches, or is DainikState master
+      if (school && ownerId && school.ownerId !== ownerId) {
+        return res.status(403).json({ error: 'Only the school owner can update this channel' });
+      }
+
+      // Generate slug from name
+      const slug = (name || 'channel').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50) || 'channel';
+
+      const updateData = {
+        groupId,
+        name: String(name).trim(),
+        slug,
+        tagline: tagline || '',
+        description: description || '',
+        cover: cover || '',
+        logo: logo || '',
+        isPublic: isPublic !== false,
+        autoScrape: autoScrape === true,
+        scrapeUrl: scrapeUrl || '',
+        ownerId: ownerId || '',
+        updatedAt: Date.now(),
+      };
+
+      const existing = await groupChannelsCol.findOne({ groupId });
+      if (existing) {
+        await groupChannelsCol.updateOne({ groupId }, { $set: updateData });
+        const updated = await groupChannelsCol.findOne({ groupId });
+        const { _id, ...result } = updated;
+        return res.json({ success: true, channel: result, updated: true });
+      } else {
+        const newChannel = {
+          _id: 'ch_' + groupId + '_' + Date.now(),
+          id: 'ch_' + groupId,
+          ...updateData,
+          isMaster: false,
+          newsCount: 0,
+          subscribers: 0,
+          createdAt: Date.now(),
+        };
+        await groupChannelsCol.insertOne(newChannel);
+        const { _id, ...result } = newChannel;
+        return res.json({ success: true, channel: result, created: true });
+      }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // API: Add news to a specific group channel (channel admin/owner)
+  app.post('/api/news/group-channel/add', async (req, res) => {
+    try {
+      if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
+      const { title, description, content, image, url, category, featured, tags, groupId, ownerId } = req.body;
+      if (!title) return res.status(400).json({ error: 'Title required' });
+      if (!groupId) return res.status(400).json({ error: 'groupId required' });
+      // Check if group channel exists (or create automatically)
+      await ensureGroupChannelsCol();
+      let channel = await groupChannelsCol.findOne({ groupId });
+      if (!channel && groupId !== 'dainikstate') {
+        // Auto-create channel for this group
+        const newChannel = {
+          _id: 'ch_' + groupId,
+          id: 'ch_' + groupId,
+          groupId,
+          name: groupId,
+          slug: groupId.toLowerCase(),
+          logo: '',
+          tagline: '',
+          isMaster: false,
+          isPublic: true,
+          autoScrape: false,
+          newsCount: 0,
+          ownerId: ownerId || '',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        await groupChannelsCol.insertOne(newChannel);
+      }
+      // Generate slug
+      const slug = (groupId || 'g') + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+      const article = {
+        _id: slug,
+        id: slug,
+        slug,
+        title: String(title).trim(),
+        description: String(description || '').trim().slice(0, 500),
+        content: String(content || '').trim().slice(0, 10000),
+        image: image || '',
+        url: url || '',
+        category: category || 'state',
+        tags: Array.isArray(tags) ? tags : (tags ? String(tags).split(',').map(t => t.trim()).filter(Boolean) : []),
+        featured: featured === true || featured === 'true',
+        publishedAt: Date.now(),
+        scrapedAt: Date.now(),
+        source: 'group-channel',
+        addedBy: ownerId || 'group-admin',
+        groupId,
+        isPublic: true,
+        views: 0,
+      };
+      await newsCol.insertOne(article);
+      // Increment news count on channel
+      await groupChannelsCol.updateOne({ groupId }, { $inc: { newsCount: 1 }, $set: { updatedAt: Date.now() } });
+      const { _id, ...result } = article;
+      res.json({ success: true, article: result });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // API: Get news filtered by group channel (with logo + channel info)
+  app.get('/api/news/channel/:channelId', async (req, res) => {
+    try {
+      if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
+      const { channelId } = req.params;
+      const { limit, skip, category } = req.query;
+      // Get channel info
+      await ensureGroupChannelsCol();
+      const channel = await groupChannelsCol.findOne({ $or: [{ groupId: channelId }, { id: channelId }] });
+      // Get news
+      const query = { groupId: channelId };
+      if (category && category !== 'all') query.category = category;
+      const lim = parseInt(limit) || 20;
+      const sk = parseInt(skip) || 0;
+      const articles = await newsCol.find(query).sort({ publishedAt: -1 }).skip(sk).limit(lim).toArray();
+      const total = await newsCol.countDocuments(query);
+      res.json({
+        success: true,
+        total,
+        count: articles.length,
+        hasMore: sk + articles.length < total,
+        channel: channel ? { const { _id, ...r } = channel; return r; } : null,
+        articles: articles.map(a => { const { _id, ...r } = a; return r; })
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // API: Manual scrape trigger (admin)
   app.post('/api/news/scrape', async (req, res) => {
     const { secret } = req.body;
@@ -347,7 +607,7 @@ module.exports = function(app, db, usersCol) {
   app.post('/api/news/admin/add', checkAdmin, async (req, res) => {
     try {
       if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
-      const { title, description, content, image, url, category, featured, tags } = req.body;
+      const { title, description, content, image, url, category, featured, tags, groupId, isPublic } = req.body;
       if (!title) return res.status(400).json({ error: 'Title required' });
       // Auto-generate slug from title or use timestamp
       const slug = 'manual_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
@@ -367,6 +627,10 @@ module.exports = function(app, db, usersCol) {
         scrapedAt: Date.now(),
         source: 'admin',
         addedBy: 'site-owner',
+        // Group ID - 'dainikstate' for public/manual, or specific group ID
+        groupId: groupId || 'dainikstate',
+        // Whether to show in DainikState public feed
+        isPublic: isPublic !== false,
         views: 0,
       };
       await newsCol.insertOne(article);
@@ -434,6 +698,8 @@ module.exports = function(app, db, usersCol) {
 
   // Initialize
   connectDB_news().then(() => {
+    // Ensure DainikState master channel + groupChannels collection exist
+    ensureDainikStateChannel().catch(e => console.error('DainikState channel init error:', e.message));
     // Auto-scrape on startup + every 30 minutes
     setTimeout(() => scrapeNews().catch(e => console.error('Initial scrape error:', e.message)), 5000);
     setInterval(() => scrapeNews().catch(e => console.error('Scheduled scrape error:', e.message)), 30 * 60 * 1000);
