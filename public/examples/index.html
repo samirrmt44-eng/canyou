@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>3D News Design Examples - DainikState</title>
+<title>3D News Design Examples - DainikState (8 Designs)</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -11,19 +11,23 @@
     background: linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 100%);
     min-height: 100vh; padding: 20px; color: #fff;
   }
-  .container { max-width: 1200px; margin: 0 auto; }
+  .container { max-width: 1400px; margin: 0 auto; }
   .header { text-align: center; margin-bottom: 30px; padding: 20px; }
-  .header h1 { font-size: 32px; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 14px; }
-  .back-home {
-    display: inline-block; margin-bottom: 14px;
-    color: #4facfe; text-decoration: none; font-size: 13px;
-  }
+  .header h1 { font-size: 36px; background: linear-gradient(90deg, #ff6b6b, #f093fb, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header p { color: #888; font-size: 14px; margin-top: 6px; }
+  .back-home { display: inline-block; margin-bottom: 14px; color: #4facfe; text-decoration: none; font-size: 13px; }
   .back-home:hover { text-decoration: underline; }
+  .version-tag {
+    display: inline-block; background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: #fff; padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 800; margin-top: 8px;
+  }
+
   .examples-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
+    margin-bottom: 30px;
   }
   .example-card {
     background: rgba(255, 255, 255, 0.05);
@@ -39,9 +43,7 @@
     position: relative;
   }
   .example-preview iframe {
-    width: 100%; height: 100%; border: 0;
-    transform: scale(0.5);
-    transform-origin: top left;
+    border: 0; transform: scale(0.5); transform-origin: top left;
     width: 200%; height: 480px;
   }
   .example-info { padding: 16px; }
@@ -49,44 +51,49 @@
   .example-desc { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.5; margin-bottom: 12px; }
   .example-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
   .tag {
-    background: rgba(79, 172, 254, 0.2);
-    color: #4facfe;
+    background: rgba(79, 172, 254, 0.2); color: #4facfe;
     padding: 3px 8px; border-radius: 6px;
     font-size: 10px; font-weight: 700;
   }
+  .tag.new { background: rgba(240, 147, 251, 0.2); color: #f093fb; }
   .example-actions { display: flex; gap: 8px; }
   .example-btn {
     flex: 1; padding: 8px; border: none; border-radius: 8px;
     font-size: 12px; font-weight: 700; cursor: pointer;
     text-align: center; text-decoration: none;
   }
-  .btn-view {
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-    color: #fff;
-  }
-  .btn-pick {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
-    color: #fff;
-  }
-  .features-grid {
+  .btn-view { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #fff; }
+  .btn-pick { background: linear-gradient(135deg, #f093fb, #f5576c); color: #fff; }
+
+  .comparison {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
-    padding: 20px;
+    padding: 24px;
     margin-top: 30px;
   }
-  .features-grid h2 { font-size: 18px; margin-bottom: 14px; }
-  .features-list {
+  .comparison h2 { font-size: 22px; margin-bottom: 16px; text-align: center; }
+  .compare-table {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 10px;
+    grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    gap: 6px; font-size: 12px;
+    overflow-x: auto;
   }
-  .feature-item {
+  .compare-cell {
     background: rgba(255, 255, 255, 0.05);
-    padding: 10px 12px; border-radius: 8px;
-    font-size: 13px; line-height: 1.5;
+    padding: 10px 8px;
+    border-radius: 8px;
+    text-align: center;
   }
-  .feature-item strong { color: #ffd700; }
+  .compare-cell.head {
+    background: linear-gradient(135deg, rgba(240, 147, 251, 0.2), rgba(245, 87, 108, 0.2));
+    font-weight: 800; color: #f093fb;
+  }
+  .compare-cell.row-head { text-align: left; font-weight: 700; color: rgba(255,255,255,0.7); }
+  .compare-cell.yes { color: #43e97b; }
+  .compare-cell.no { color: rgba(255,255,255,0.3); }
+  .compare-cell.partial { color: #ffd700; }
+
   .cta-banner {
     background: linear-gradient(135deg, rgba(240, 147, 251, 0.15), rgba(245, 87, 108, 0.15));
     border: 1px solid rgba(240, 147, 251, 0.3);
@@ -95,7 +102,7 @@
     margin-top: 30px;
     text-align: center;
   }
-  .cta-banner h2 { font-size: 22px; margin-bottom: 8px; }
+  .cta-banner h2 { font-size: 24px; margin-bottom: 8px; }
   .cta-banner p { color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 14px; }
   .cta-btn {
     display: inline-block;
@@ -104,6 +111,7 @@
     padding: 12px 24px; border-radius: 12px;
     text-decoration: none; font-weight: 800; font-size: 14px;
     box-shadow: 0 8px 24px rgba(240, 147, 251, 0.4);
+    border: none; cursor: pointer;
   }
 </style>
 </head>
@@ -112,128 +120,243 @@
   <a href="/" class="back-home">← Back to DainikState</a>
   <div class="header">
     <h1>✨ 3D News Design Examples</h1>
-    <p>Choose your favorite style - we will build the full app on top of it!</p>
+    <p>8 unique premium designs - choose your favorite!</p>
+    <div class="version-tag">🆕 UPDATED - 8 Designs Added</div>
   </div>
 
   <div class="examples-grid">
+
     <div class="example-card">
-      <div class="example-preview">
-        <iframe src="3d-example-1.html"></iframe>
-      </div>
+      <div class="example-preview"><iframe src="3d-example-1.html"></iframe></div>
       <div class="example-info">
         <div class="example-title">1️⃣ 3D Glassmorphism</div>
-        <div class="example-desc">iOS-style frosted glass cards with subtle depth shadows. Tilt on hover. Clean, premium look.</div>
-        <div class="example-tags">
-          <span class="tag">Frosted Glass</span>
-          <span class="tag">Tilt Effect</span>
-          <span class="tag">Premium</span>
-          <span class="tag">iOS Style</span>
-        </div>
+        <div class="example-desc">iOS-style frosted glass with subtle depth shadows. Clean, premium.</div>
+        <div class="example-tags"><span class="tag">Frosted Glass</span><span class="tag">iOS Style</span></div>
         <div class="example-actions">
-          <a href="3d-example-1.html" target="_blank" class="example-btn btn-view">👁 Full View</a>
-          <button onclick="pickDesign(1)" class="example-btn btn-pick">✅ Choose This</button>
+          <a href="3d-example-1.html" target="_blank" class="example-btn btn-view">👁 View</a>
+          <button onclick="pickDesign(1)" class="example-btn btn-pick">✅ Choose</button>
         </div>
       </div>
     </div>
 
     <div class="example-card">
-      <div class="example-preview">
-        <iframe src="3d-example-2.html"></iframe>
-      </div>
+      <div class="example-preview"><iframe src="3d-example-2.html"></iframe></div>
       <div class="example-info">
         <div class="example-title">2️⃣ 3D Tilted + Neon</div>
-        <div class="example-desc">Cyberpunk-style with 3D perspective tilt + neon scan line glow. Bold, modern, attention-grabbing.</div>
-        <div class="example-tags">
-          <span class="tag">Neon Glow</span>
-          <span class="tag">3D Tilt</span>
-          <span class="tag">Scan Line</span>
-          <span class="tag">Cyberpunk</span>
-        </div>
+        <div class="example-desc">Cyberpunk with neon scan line glow. Bold, futuristic.</div>
+        <div class="example-tags"><span class="tag">Neon</span><span class="tag">Cyberpunk</span></div>
         <div class="example-actions">
-          <a href="3d-example-2.html" target="_blank" class="example-btn btn-view">👁 Full View</a>
-          <button onclick="pickDesign(2)" class="example-btn btn-pick">✅ Choose This</button>
+          <a href="3d-example-2.html" target="_blank" class="example-btn btn-view">👁 View</a>
+          <button onclick="pickDesign(2)" class="example-btn btn-pick">✅ Choose</button>
         </div>
       </div>
     </div>
 
     <div class="example-card">
-      <div class="example-preview">
-        <iframe src="3d-example-3.html"></iframe>
-      </div>
+      <div class="example-preview"><iframe src="3d-example-3.html"></iframe></div>
       <div class="example-info">
-        <div class="example-title">3️⃣ 3D Magazine Style</div>
-        <div class="example-desc">Traditional newspaper aesthetic with sepia tones, classic typography, maroon borders.</div>
-        <div class="example-tags">
-          <span class="tag">Newspaper</span>
-          <span class="tag">Sepia</span>
-          <span class="tag">Classic</span>
-          <span class="tag">Trust</span>
-        </div>
+        <div class="example-title">3️⃣ 3D Magazine</div>
+        <div class="example-desc">Traditional newspaper aesthetic with sepia tones, classic typography.</div>
+        <div class="example-tags"><span class="tag">Newspaper</span><span class="tag">Classic</span></div>
         <div class="example-actions">
-          <a href="3d-example-3.html" target="_blank" class="example-btn btn-view">👁 Full View</a>
-          <button onclick="pickDesign(3)" class="example-btn btn-pick">✅ Choose This</button>
+          <a href="3d-example-3.html" target="_blank" class="example-btn btn-view">👁 View</a>
+          <button onclick="pickDesign(3)" class="example-btn btn-pick">✅ Choose</button>
         </div>
       </div>
     </div>
 
     <div class="example-card">
-      <div class="example-preview">
-        <iframe src="3d-example-4.html"></iframe>
-      </div>
+      <div class="example-preview"><iframe src="3d-example-4.html"></iframe></div>
       <div class="example-info">
-        <div class="example-title">4️⃣ 3D Holographic Floating</div>
-        <div class="example-desc">Futuristic floating cards with rainbow border on hover. Premium, eye-catching, app-store feel.</div>
-        <div class="example-tags">
-          <span class="tag">Holographic</span>
-          <span class="tag">Rainbow</span>
-          <span class="tag">Floating</span>
-          <span class="tag">Futuristic</span>
-        </div>
+        <div class="example-title">4️⃣ 3D Holographic</div>
+        <div class="example-desc">Floating cards with rainbow border on hover. App-store premium.</div>
+        <div class="example-tags"><span class="tag">Holographic</span><span class="tag">Rainbow</span></div>
         <div class="example-actions">
-          <a href="3d-example-4.html" target="_blank" class="example-btn btn-view">👁 Full View</a>
-          <button onclick="pickDesign(4)" class="example-btn btn-pick">✅ Choose This</button>
+          <a href="3d-example-4.html" target="_blank" class="example-btn btn-view">👁 View</a>
+          <button onclick="pickDesign(4)" class="example-btn btn-pick">✅ Choose</button>
         </div>
       </div>
     </div>
+
+    <div class="example-card">
+      <div class="example-preview"><iframe src="3d-example-5.html"></iframe></div>
+      <div class="example-info">
+        <div class="example-title">5️⃣ 3D Card Stack 🆕</div>
+        <div class="example-desc">Cards stack like physical papers. Premium hover with image zoom.</div>
+        <div class="example-tags"><span class="tag new">NEW</span><span class="tag">Stack</span><span class="tag">Categories</span></div>
+        <div class="example-actions">
+          <a href="3d-example-5.html" target="_blank" class="example-btn btn-view">👁 View</a>
+          <button onclick="pickDesign(5)" class="example-btn btn-pick">✅ Choose</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="example-card">
+      <div class="example-preview"><iframe src="3d-example-6.html"></iframe></div>
+      <div class="example-info">
+        <div class="example-title">6️⃣ 3D Parallax Hero 🆕</div>
+        <div class="example-desc">Big featured hero card + dense news list below. Image zoom on hover.</div>
+        <div class="example-tags"><span class="tag new">NEW</span><span class="tag">Hero</span><span class="tag">Compact</span></div>
+        <div class="example-actions">
+          <a href="3d-example-6.html" target="_blank" class="example-btn btn-view">👁 View</a>
+          <button onclick="pickDesign(6)" class="example-btn btn-pick">✅ Choose</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="example-card">
+      <div class="example-preview"><iframe src="3d-example-7.html"></iframe></div>
+      <div class="example-info">
+        <div class="example-title">7️⃣ 3D Snapchat Stories 🆕</div>
+        <div class="example-desc">Instagram-style top stories + horizontal categories + reactions.</div>
+        <div class="example-tags"><span class="tag new">NEW</span><span class="tag">Stories</span><span class="tag">Reactions</span></div>
+        <div class="example-actions">
+          <a href="3d-example-7.html" target="_blank" class="example-btn btn-view">👁 View</a>
+          <button onclick="pickDesign(7)" class="example-btn btn-pick">✅ Choose</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="example-card">
+      <div class="example-preview"><iframe src="3d-example-8.html"></iframe></div>
+      <div class="example-info">
+        <div class="example-title">8️⃣ 3D Cinematic Dark 🆕</div>
+        <div class="example-desc">Netflix-style spotlight + trending sidebar + featured badge.</div>
+        <div class="example-tags"><span class="tag new">NEW</span><span class="tag">Cinematic</span><span class="tag">Trending</span></div>
+        <div class="example-actions">
+          <a href="3d-example-8.html" target="_blank" class="example-btn btn-view">👁 View</a>
+          <button onclick="pickDesign(8)" class="example-btn btn-pick">✅ Choose</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <div class="features-grid">
-    <h2>🎯 Kya Kya Features Add Karenge Best Design Par</h2>
-    <div class="features-list">
-      <div class="feature-item"><strong>📰 News Section:</strong> DainikState.com auto-scraping + admin manual news</div>
-      <div class="feature-item"><strong>📂 Categories:</strong> State, Crime, Politics, Sports, Local (Hazaribagh, Ranchi, Ramgarh)</div>
-      <div class="feature-item"><strong>🔥 Breaking Ticker:</strong> Auto-scrolling top bar with pulse effect</div>
-      <div class="feature-item"><strong>⭐ Featured News:</strong> Manual add karne wala highlighted section</div>
-      <div class="feature-item"><strong>🔍 Search & Filter:</strong> Category wise filter + search</div>
-      <div class="feature-item"><strong>📱 Detail View:</strong> Full news reading experience with share</div>
-      <div class="feature-item"><strong>📤 Share to WhatsApp:</strong> 1-click share with branded image</div>
-      <div class="feature-item"><strong>❤️ Reactions:</strong> Like, Love, Surprised, Sad on each news</div>
-      <div class="feature-item"><strong>💬 Comments:</strong> Users can comment and discuss</div>
-      <div class="feature-item"><strong>📊 Trending:</strong> Most viewed / shared news</div>
-      <div class="feature-item"><strong>🔔 Notifications:</strong> Breaking news push notification</div>
-      <div class="feature-item"><strong>📅 Date Archive:</strong> Past news by date filter</div>
+  <div class="comparison">
+    <h2>📊 Quick Comparison</h2>
+    <div class="compare-table">
+      <div class="compare-cell head">Feature</div>
+      <div class="compare-cell head">#1</div>
+      <div class="compare-cell head">#2</div>
+      <div class="compare-cell head">#3</div>
+      <div class="compare-cell head">#4</div>
+      <div class="compare-cell head">#5</div>
+      <div class="compare-cell head">#6</div>
+      <div class="compare-cell head">#7</div>
+      <div class="compare-cell head">#8</div>
+
+      <div class="compare-cell row-head">📂 Category Pills</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell yes">✅</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell yes">✅</div>
+      <div class="compare-cell yes">✅</div>
+
+      <div class="compare-cell row-head">📱 Top Stories</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell yes">✅</div>
+      <div class="compare-cell no">❌</div>
+
+      <div class="compare-cell row-head">⭐ Featured Hero</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell yes">✅</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+
+      <div class="compare-cell row-head">📈 Trending Bar</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell yes">✅</div>
+
+      <div class="compare-cell row-head">📊 Stats Bar</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell yes">✅</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+
+      <div class="compare-cell row-head">❤️ Reactions</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell yes">✅</div>
+      <div class="compare-cell yes">✅</div>
+
+      <div class="compare-cell row-head">🎬 Cinematic</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell partial">🟡</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell yes">✅</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell yes">✅</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell yes">✅</div>
+
+      <div class="compare-cell row-head">📚 Newspaper Feel</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell yes">✅</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
+      <div class="compare-cell no">❌</div>
     </div>
   </div>
 
   <div class="cta-banner">
-    <h2>👍 Design Pasand Aaya?</h2>
-    <p>4 me se koi bhi design choose karo - hum poora DainikState News app us par build kar denge!</p>
-    <a href="#" onclick="alert('Apna pasandida design number batao (1, 2, 3, ya 4)'); return false;" class="cta-btn">💬 Apna Choice Batao</a>
+    <h2>🎯 Apna Pasandida Design Choose Karo</h2>
+    <p>Ya 2-3 designs ka mix batao (e.g., "5 ka stack + 7 ka stories + 8 ka cinematic") - hum best combination banayenge!</p>
+    <button onclick="chooseRandom()" class="cta-btn">🎲 Surprised Me - Best Pick Karo</button>
   </div>
 
 </div>
 <script>
+const names = {
+  1: '3D Glassmorphism (iOS-style)',
+  2: '3D Tilted + Neon (Cyberpunk)',
+  3: '3D Magazine (Newspaper)',
+  4: '3D Holographic Floating',
+  5: '3D Card Stack + Categories',
+  6: '3D Parallax Hero + List',
+  7: '3D Snapchat Stories + Reactions',
+  8: '3D Cinematic Dark + Trending'
+};
 function pickDesign(n) {
-  const names = {
-    1: '3D Glassmorphism (iOS-style)',
-    2: '3D Tilted + Neon (Cyberpunk)',
-    3: '3D Magazine Style (Newspaper)',
-    4: '3D Holographic Floating (Futuristic)'
-  };
-  if (confirm('Aapne "' + names[n] + '" design choose kiya! Kya hum is par kaam shuru karein?\n\nIs design me sab features add kiye jayenge:\n✅ News scraping from dainikstate.com\n✅ Category filter (state, crime, sports, etc.)\n✅ Breaking news ticker\n✅ Manual news add (admin)\n✅ Featured news highlight\n✅ Search + filter\n✅ Detail view + share\n✅ Reactions + comments\n✅ Trending section\n\nClick OK to confirm.')) {
+  if (confirm('Aapne "' + names[n] + '" design choose kiya! Confirm karein?')) {
     localStorage.setItem('ds_chosen_design', n);
-    alert('🎉 Bahut badhiya! Hum "' + names[n] + '" par kaam shuru kar rahe hain. Jald hi update aayega!');
+    alert('🎉 Badhai! "' + names[n] + '" par hum kaam shuru kar rahe hain!');
   }
+}
+function chooseRandom() {
+  const weights = {5: 5, 6: 4, 7: 5, 8: 5, 4: 3, 2: 2, 1: 1, 3: 1};
+  const choices = [];
+  for (let n in weights) for (let i = 0; i < weights[n]; i++) choices.push(n);
+  const pick = choices[Math.floor(Math.random() * choices.length)];
+  pickDesign(parseInt(pick));
 }
 </script>
 </body>
