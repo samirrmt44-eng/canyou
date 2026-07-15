@@ -564,7 +564,7 @@ module.exports = function(app, db, usersCol) {
         total,
         count: articles.length,
         hasMore: sk + articles.length < total,
-        channel: channel ? { const { _id, ...r } = channel; return r; } : null,
+        channel: channel ? (() => { const { _id, ...r } = channel; return r; })() : null,
         articles: articles.map(a => { const { _id, ...r } = a; return r; })
       });
     } catch (e) {
