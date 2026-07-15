@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<title>Example 2: 3D Tilted Cards with Neon</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, sans-serif;
+    background: #000;
+    min-height: 100vh; padding: 30px 16px; color: #fff;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(255, 107, 107, 0.15), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(102, 126, 234, 0.15), transparent 40%);
+  }
+  .header { text-align: center; margin-bottom: 30px; }
+  .header h1 { font-size: 28px; background: linear-gradient(90deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header p { color: #888; font-size: 14px; margin-top: 6px; }
+  .container { max-width: 480px; margin: 0 auto; }
+
+  /* 3D TILTED CARD with NEON GLOW */
+  .news-tilt {
+    position: relative;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 20px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    transform: perspective(1500px) rotateY(-8deg) rotateX(5deg);
+    transform-style: preserve-3d;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:
+      0 30px 60px rgba(0, 0, 0, 0.6),
+      0 0 40px rgba(102, 126, 234, 0.2);
+  }
+  .news-tilt:nth-child(odd) {
+    transform: perspective(1500px) rotateY(8deg) rotateX(5deg);
+  }
+  .news-tilt:hover {
+    transform: perspective(1500px) rotateY(0deg) rotateX(0deg) translateZ(20px);
+    box-shadow:
+      0 40px 80px rgba(0, 0, 0, 0.8),
+      0 0 80px rgba(102, 126, 234, 0.5);
+  }
+  .news-tilt::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent 30%, rgba(102, 126, 234, 0.1));
+    pointer-events: none;
+  }
+  .news-tilt::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #4facfe, transparent);
+    animation: neon-scan 3s infinite;
+  }
+  @keyframes neon-scan {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; box-shadow: 0 0 20px #4facfe; }
+  }
+
+  /* HEADER STRIP */
+  .news-header {
+    background: linear-gradient(135deg, rgba(0,0,0,0.4), transparent);
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .news-badge-3d {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    color: #fff; padding: 4px 10px; border-radius: 8px;
+    font-size: 10px; font-weight: 800; letter-spacing: 1px;
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+  }
+  .news-time-3d {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px; font-weight: 600;
+    margin-left: auto;
+  }
+
+  /* BODY */
+  .news-body-3d {
+    padding: 18px;
+  }
+  .news-h-3d {
+    font-size: 19px; font-weight: 800; line-height: 1.3;
+    margin-bottom: 8px;
+    color: #fff;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  }
+  .news-d-3d {
+    font-size: 13px; color: rgba(255, 255, 255, 0.6);
+    line-height: 1.5; margin-bottom: 12px;
+  }
+  .news-stats {
+    display: flex; gap: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 11px; color: rgba(255, 255, 255, 0.4);
+  }
+  .news-stats span { display: flex; align-items: center; gap: 4px; }
+
+  /* 3D IMAGE FLOATING */
+  .news-img-3d {
+    position: relative;
+    width: 100%; height: 180px;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 50%, #f7931e 100%);
+    overflow: hidden;
+    transform: translateZ(30px);
+  }
+  .news-img-3d::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,0.3), transparent 50%),
+      radial-gradient(circle at 70% 80%, rgba(0,0,0,0.2), transparent 50%);
+  }
+  .news-img-icon {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 80px;
+    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3));
+  }
+  .news-img-3d::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.4) 100%);
+  }
+
+  /* 3D TICKER - NEON STYLE */
+  .ticker-neon {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid rgba(255, 71, 87, 0.4);
+    border-radius: 14px; padding: 12px 16px;
+    margin-bottom: 20px;
+    box-shadow:
+      0 0 30px rgba(255, 71, 87, 0.3),
+      inset 0 0 20px rgba(255, 71, 87, 0.1);
+    display: flex; align-items: center; gap: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ticker-neon::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,71,87,0.2), transparent);
+    animation: ticker-shine 3s infinite;
+  }
+  @keyframes ticker-shine {
+    to { left: 100%; }
+  }
+  .pulse-red {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #ff4757;
+    box-shadow: 0 0 15px #ff4757;
+    animation: pulse-red 1s infinite;
+  }
+  @keyframes pulse-red {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 10px #ff4757; }
+    50% { transform: scale(1.4); box-shadow: 0 0 25px #ff4757; }
+  }
+  .ticker-label-neon {
+    background: linear-gradient(135deg, #ff4757, #ff6b6b);
+    color: #fff; padding: 4px 10px; border-radius: 6px;
+    font-size: 10px; font-weight: 900; letter-spacing: 1px;
+    box-shadow: 0 0 15px rgba(255, 71, 87, 0.5);
+  }
+  .ticker-text-neon {
+    flex: 1; font-size: 12px; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>⚡ Example 2: 3D Tilted + Neon Glow</h1>
+  <p>Cyberpunk-style with 3D perspective + scan line</p>
+</div>
+<div class="container">
+
+  <div class="ticker-neon">
+    <div class="pulse-red"></div>
+    <div class="ticker-label-neon">LIVE</div>
+    <div class="ticker-text-neon">🔥 BREAKING: रांची में बड़ा हादसा</div>
+  </div>
+
+  <div class="news-tilt">
+    <div class="news-img-3d" style="background:linear-gradient(135deg,#ff6b6b,#ee5a6f,#f7931e);">
+      <div class="news-img-icon">📰</div>
+    </div>
+    <div class="news-header">
+      <span class="news-badge-3d">🚨 CRIME</span>
+      <span class="news-time-3d">5 मिनट पहले</span>
+    </div>
+    <div class="news-body-3d">
+      <h2 class="news-h-3d">हजारीबाग में बड़ा सड़क हादसा, 3 गाड़ियों की जबरदस्त टक्कर</h2>
+      <p class="news-d-3d">राष्ट्रीय राजमार्ग पर हुई दुर्घटना में 5 लोग घायल हो गए। स्थानीय पुलिस ने मामला दर्ज कर जांच शुरू की।</p>
+      <div class="news-stats">
+        <span>👁 2.4K</span>
+        <span>💬 42</span>
+        <span>📤 89</span>
+        <span>⏱ 5m</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="news-tilt">
+    <div class="news-img-3d" style="background:linear-gradient(135deg,#667eea,#764ba2,#f093fb);">
+      <div class="news-img-icon">🏛️</div>
+    </div>
+    <div class="news-header">
+      <span class="news-badge-3d" style="background:linear-gradient(135deg,#667eea,#764ba2);">🏛️ POLITICS</span>
+      <span class="news-time-3d">1 घंटे पहले</span>
+    </div>
+    <div class="news-body-3d">
+      <h2 class="news-h-3d">मुख्यमंत्री ने किया नई योजना का उद्घाटन, 10,000 युवाओं को मिलेगा रोजगार</h2>
+      <p class="news-d-3d">राज्य सरकार की नई योजना का शुभारंभ किया गया। युवाओं को कौशल विकास प्रशिक्षण दिया जाएगा।</p>
+      <div class="news-stats">
+        <span>👁 5.1K</span>
+        <span>💬 87</span>
+        <span>📤 156</span>
+        <span>⏱ 1h</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="news-tilt">
+    <div class="news-img-3d" style="background:linear-gradient(135deg,#43e97b,#38f9d7);">
+      <div class="news-img-icon">⚽</div>
+    </div>
+    <div class="news-header">
+      <span class="news-badge-3d" style="background:linear-gradient(135deg,#43e97b,#38f9d7);">⚽ SPORTS</span>
+      <span class="news-time-3d">2 घंटे पहले</span>
+    </div>
+    <div class="news-body-3d">
+      <h2 class="news-h-3d">झारखंड की टीम ने जीता राष्ट्रीय क्रिकेट चैंपियनशिप का खिताब</h2>
+      <p class="news-d-3d">फाइनल मैच में झारखंड ने बंगाल को 8 विकेट से हराया। कप्तान ने शानदार शतक जड़ा।</p>
+      <div class="news-stats">
+        <span>👁 8.7K</span>
+        <span>💬 124</span>
+        <span>📤 342</span>
+        <span>⏱ 2h</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
