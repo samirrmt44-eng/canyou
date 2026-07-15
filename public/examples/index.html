@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>3D News Design Examples - DainikState</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 100%);
+    min-height: 100vh; padding: 20px; color: #fff;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .header { text-align: center; margin-bottom: 30px; padding: 20px; }
+  .header h1 { font-size: 32px; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 14px; }
+  .back-home {
+    display: inline-block; margin-bottom: 14px;
+    color: #4facfe; text-decoration: none; font-size: 13px;
+  }
+  .back-home:hover { text-decoration: underline; }
+  .examples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  .example-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform 0.3s;
+  }
+  .example-card:hover { transform: translateY(-4px); }
+  .example-preview {
+    width: 100%; height: 240px; overflow: hidden;
+    background: #000; border-bottom: 1px solid rgba(255,255,255,0.1);
+    position: relative;
+  }
+  .example-preview iframe {
+    width: 100%; height: 100%; border: 0;
+    transform: scale(0.5);
+    transform-origin: top left;
+    width: 200%; height: 480px;
+  }
+  .example-info { padding: 16px; }
+  .example-title { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  .example-desc { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.5; margin-bottom: 12px; }
+  .example-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tag {
+    background: rgba(79, 172, 254, 0.2);
+    color: #4facfe;
+    padding: 3px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 700;
+  }
+  .example-actions { display: flex; gap: 8px; }
+  .example-btn {
+    flex: 1; padding: 8px; border: none; border-radius: 8px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    text-align: center; text-decoration: none;
+  }
+  .btn-view {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: #fff;
+  }
+  .btn-pick {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: #fff;
+  }
+  .features-grid {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 30px;
+  }
+  .features-grid h2 { font-size: 18px; margin-bottom: 14px; }
+  .features-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+  }
+  .feature-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px 12px; border-radius: 8px;
+    font-size: 13px; line-height: 1.5;
+  }
+  .feature-item strong { color: #ffd700; }
+  .cta-banner {
+    background: linear-gradient(135deg, rgba(240, 147, 251, 0.15), rgba(245, 87, 108, 0.15));
+    border: 1px solid rgba(240, 147, 251, 0.3);
+    border-radius: 16px;
+    padding: 24px;
+    margin-top: 30px;
+    text-align: center;
+  }
+  .cta-banner h2 { font-size: 22px; margin-bottom: 8px; }
+  .cta-banner p { color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 14px; }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: #fff;
+    padding: 12px 24px; border-radius: 12px;
+    text-decoration: none; font-weight: 800; font-size: 14px;
+    box-shadow: 0 8px 24px rgba(240, 147, 251, 0.4);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="/" class="back-home">← Back to DainikState</a>
+  <div class="header">
+    <h1>✨ 3D News Design Examples</h1>
+    <p>Choose your favorite style - we will build the full app on top of it!</p>
+  </div>
+
+  <div class="examples-grid">
+    <div class="example-card">
+      <div class="example-preview">
+        <iframe src="3d-example-1.html"></iframe>
+      </div>
+      <div class="example-info">
+        <div class="example-title">1️⃣ 3D Glassmorphism</div>
+        <div class="example-desc">iOS-style frosted glass cards with subtle depth shadows. Tilt on hover. Clean, premium look.</div>
+        <div class="example-tags">
+          <span class="tag">Frosted Glass</span>
+          <span class="tag">Tilt Effect</span>
+          <span class="tag">Premium</span>
+          <span class="tag">iOS Style</span>
+        </div>
+        <div class="example-actions">
+          <a href="3d-example-1.html" target="_blank" class="example-btn btn-view">👁 Full View</a>
+          <button onclick="pickDesign(1)" class="example-btn btn-pick">✅ Choose This</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="example-card">
+      <div class="example-preview">
+        <iframe src="3d-example-2.html"></iframe>
+      </div>
+      <div class="example-info">
+        <div class="example-title">2️⃣ 3D Tilted + Neon</div>
+        <div class="example-desc">Cyberpunk-style with 3D perspective tilt + neon scan line glow. Bold, modern, attention-grabbing.</div>
+        <div class="example-tags">
+          <span class="tag">Neon Glow</span>
+          <span class="tag">3D Tilt</span>
+          <span class="tag">Scan Line</span>
+          <span class="tag">Cyberpunk</span>
+        </div>
+        <div class="example-actions">
+          <a href="3d-example-2.html" target="_blank" class="example-btn btn-view">👁 Full View</a>
+          <button onclick="pickDesign(2)" class="example-btn btn-pick">✅ Choose This</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="example-card">
+      <div class="example-preview">
+        <iframe src="3d-example-3.html"></iframe>
+      </div>
+      <div class="example-info">
+        <div class="example-title">3️⃣ 3D Magazine Style</div>
+        <div class="example-desc">Traditional newspaper aesthetic with sepia tones, classic typography, maroon borders.</div>
+        <div class="example-tags">
+          <span class="tag">Newspaper</span>
+          <span class="tag">Sepia</span>
+          <span class="tag">Classic</span>
+          <span class="tag">Trust</span>
+        </div>
+        <div class="example-actions">
+          <a href="3d-example-3.html" target="_blank" class="example-btn btn-view">👁 Full View</a>
+          <button onclick="pickDesign(3)" class="example-btn btn-pick">✅ Choose This</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="example-card">
+      <div class="example-preview">
+        <iframe src="3d-example-4.html"></iframe>
+      </div>
+      <div class="example-info">
+        <div class="example-title">4️⃣ 3D Holographic Floating</div>
+        <div class="example-desc">Futuristic floating cards with rainbow border on hover. Premium, eye-catching, app-store feel.</div>
+        <div class="example-tags">
+          <span class="tag">Holographic</span>
+          <span class="tag">Rainbow</span>
+          <span class="tag">Floating</span>
+          <span class="tag">Futuristic</span>
+        </div>
+        <div class="example-actions">
+          <a href="3d-example-4.html" target="_blank" class="example-btn btn-view">👁 Full View</a>
+          <button onclick="pickDesign(4)" class="example-btn btn-pick">✅ Choose This</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="features-grid">
+    <h2>🎯 Kya Kya Features Add Karenge Best Design Par</h2>
+    <div class="features-list">
+      <div class="feature-item"><strong>📰 News Section:</strong> DainikState.com auto-scraping + admin manual news</div>
+      <div class="feature-item"><strong>📂 Categories:</strong> State, Crime, Politics, Sports, Local (Hazaribagh, Ranchi, Ramgarh)</div>
+      <div class="feature-item"><strong>🔥 Breaking Ticker:</strong> Auto-scrolling top bar with pulse effect</div>
+      <div class="feature-item"><strong>⭐ Featured News:</strong> Manual add karne wala highlighted section</div>
+      <div class="feature-item"><strong>🔍 Search & Filter:</strong> Category wise filter + search</div>
+      <div class="feature-item"><strong>📱 Detail View:</strong> Full news reading experience with share</div>
+      <div class="feature-item"><strong>📤 Share to WhatsApp:</strong> 1-click share with branded image</div>
+      <div class="feature-item"><strong>❤️ Reactions:</strong> Like, Love, Surprised, Sad on each news</div>
+      <div class="feature-item"><strong>💬 Comments:</strong> Users can comment and discuss</div>
+      <div class="feature-item"><strong>📊 Trending:</strong> Most viewed / shared news</div>
+      <div class="feature-item"><strong>🔔 Notifications:</strong> Breaking news push notification</div>
+      <div class="feature-item"><strong>📅 Date Archive:</strong> Past news by date filter</div>
+    </div>
+  </div>
+
+  <div class="cta-banner">
+    <h2>👍 Design Pasand Aaya?</h2>
+    <p>4 me se koi bhi design choose karo - hum poora DainikState News app us par build kar denge!</p>
+    <a href="#" onclick="alert('Apna pasandida design number batao (1, 2, 3, ya 4)'); return false;" class="cta-btn">💬 Apna Choice Batao</a>
+  </div>
+
+</div>
+<script>
+function pickDesign(n) {
+  const names = {
+    1: '3D Glassmorphism (iOS-style)',
+    2: '3D Tilted + Neon (Cyberpunk)',
+    3: '3D Magazine Style (Newspaper)',
+    4: '3D Holographic Floating (Futuristic)'
+  };
+  if (confirm('Aapne "' + names[n] + '" design choose kiya! Kya hum is par kaam shuru karein?\n\nIs design me sab features add kiye jayenge:\n✅ News scraping from dainikstate.com\n✅ Category filter (state, crime, sports, etc.)\n✅ Breaking news ticker\n✅ Manual news add (admin)\n✅ Featured news highlight\n✅ Search + filter\n✅ Detail view + share\n✅ Reactions + comments\n✅ Trending section\n\nClick OK to confirm.')) {
+    localStorage.setItem('ds_chosen_design', n);
+    alert('🎉 Bahut badhiya! Hum "' + names[n] + '" par kaam shuru kar rahe hain. Jald hi update aayega!');
+  }
+}
+</script>
+</body>
+</html>
