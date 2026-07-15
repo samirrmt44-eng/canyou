@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<title>Example 6: 3D Parallax Hero with Floating Elements</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, sans-serif;
+    background: #000;
+    min-height: 100vh; color: #fff;
+    background: linear-gradient(180deg, #0a0e1a 0%, #1a1f3a 100%);
+    overflow-x: hidden;
+  }
+  .header { text-align: center; margin: 30px 16px; }
+  .header h1 { font-size: 28px; background: linear-gradient(90deg, #f093fb, #f5576c, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header p { color: #888; font-size: 14px; margin-top: 6px; }
+  .container { max-width: 480px; margin: 0 auto; padding: 0 16px 30px; }
+
+  /* 3D HERO TICKER */
+  .ticker-hero {
+    position: relative;
+    background: linear-gradient(135deg, #c0392b, #8b0000);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    box-shadow:
+      0 20px 50px rgba(192, 57, 43, 0.5),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    transform: perspective(1000px) rotateX(5deg);
+  }
+  .ticker-hero::before {
+    content: ''; position: absolute; top: -50%; right: -20%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.3), transparent 70%);
+    animation: rotate-glow 4s infinite linear;
+  }
+  @keyframes rotate-glow {
+    to { transform: rotate(360deg); }
+  }
+  .ticker-hero-content {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .live-circle-3d {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 25px #fff;
+    animation: live-pulse 0.7s infinite;
+  }
+  @keyframes live-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 20px #fff; }
+    50% { transform: scale(1.4); box-shadow: 0 0 35px #ff6b6b; }
+  }
+  .ticker-hero-text {
+    flex: 1; font-size: 14px; font-weight: 800;
+    line-height: 1.3;
+  }
+
+  /* 3D PARALLAX HERO CARD - Big featured */
+  .hero-3d {
+    position: relative;
+    height: 320px;
+    border-radius: 20px;
+    margin-bottom: 30px;
+    overflow: hidden;
+    transform-style: preserve-3d;
+    transition: transform 0.5s;
+    box-shadow:
+      0 30px 80px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  .hero-3d:hover { transform: scale(1.02); }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #1a1f3a, #2a1f4a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 160px;
+    transform: translateZ(0);
+    transition: transform 0.5s;
+  }
+  .hero-3d:hover .hero-bg { transform: scale(1.1) translateZ(20px); }
+  .hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 0%, transparent 30%, rgba(0,0,0,0.85) 100%);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 20px;
+    transform: translateZ(30px);
+  }
+  .hero-cat-3d {
+    display: inline-block;
+    background: linear-gradient(135deg, #ffd700, #ffaa00);
+    color: #1a1a2e;
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 10px; font-weight: 900; letter-spacing: 1.5px;
+    width: fit-content; margin-bottom: 8px;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+  }
+  .hero-title-3d {
+    font-size: 22px; font-weight: 900; line-height: 1.2;
+    margin-bottom: 6px;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+  }
+  .hero-meta-3d {
+    font-size: 12px; color: rgba(255, 255, 255, 0.8);
+    display: flex; gap: 10px;
+  }
+
+  /* 3D COMPACT NEWS LIST with depth */
+  .news-3d-list {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .news-3d-item {
+    display: flex; gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 12px;
+    transition: all 0.3s;
+    transform-style: preserve-3d;
+  }
+  .news-3d-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(8px);
+    border-color: rgba(255, 107, 107, 0.3);
+  }
+  .news-3d-thumb {
+    width: 90px; height: 90px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateZ(20px);
+  }
+  .news-3d-content { flex: 1; min-width: 0; }
+  .news-3d-cat {
+    display: inline-block;
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+    padding: 2px 6px; border-radius: 4px;
+    font-size: 9px; font-weight: 800; letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .news-3d-title {
+    font-size: 14px; font-weight: 800; line-height: 1.3;
+    color: #fff; margin-bottom: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .news-3d-time {
+    font-size: 10px; color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* 3D STATS BAR */
+  .stats-3d-bar {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px; margin-bottom: 24px;
+  }
+  .stat-3d {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    transform-style: preserve-3d;
+    transition: all 0.3s;
+  }
+  .stat-3d:hover {
+    transform: translateY(-4px) scale(1.05);
+    border-color: rgba(255, 107, 107, 0.4);
+  }
+  .stat-3d-num {
+    font-size: 20px; font-weight: 900;
+    background: linear-gradient(135deg, #ffd700, #ff6b6b);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .stat-3d-lbl { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🚀 Example 6: 3D Parallax Hero + Compact List</h1>
+  <p>Big featured hero card + dense news feed below</p>
+</div>
+<div class="container">
+
+  <div class="ticker-hero">
+    <div class="ticker-hero-content">
+      <div class="live-circle-3d"></div>
+      <div class="ticker-hero-text">🔥 BREAKING: रांची में बड़ा हादसा, 5 लोग घायल, राहत कार्य जारी</div>
+    </div>
+  </div>
+
+  <div class="stats-3d-bar">
+    <div class="stat-3d">
+      <div class="stat-3d-num">102</div>
+      <div class="stat-3d-lbl">📰 News</div>
+    </div>
+    <div class="stat-3d">
+      <div class="stat-3d-num">2.4K</div>
+      <div class="stat-3d-lbl">👁 Today</div>
+    </div>
+    <div class="stat-3d">
+      <div class="stat-3d-num">9</div>
+      <div class="stat-3d-lbl">🚨 Breaking</div>
+    </div>
+  </div>
+
+  <div class="hero-3d">
+    <div class="hero-bg" style="background:linear-gradient(135deg,#ff6b6b 0%,#c0392b 50%,#8b0000 100%);">🚨</div>
+    <div class="hero-overlay">
+      <span class="hero-cat-3d">⭐ FEATURED • 🚨 CRIME</span>
+      <h2 class="hero-title-3d">हजारीबाग में बड़ा सड़क हादसा, 3 गाड़ियों की जबरदस्त टक्कर</h2>
+      <div class="hero-meta-3d">
+        <span>📰 dainikstate.com</span>
+        <span>🕐 5 मिनट पहले</span>
+        <span>👁 2,847</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="news-3d-list">
+
+    <div class="news-3d-item">
+      <div class="news-3d-thumb" style="background:linear-gradient(135deg,#667eea,#764ba2);">🏛️</div>
+      <div class="news-3d-content">
+        <span class="news-3d-cat" style="background:rgba(102,126,234,0.2);color:#667eea;">POLITICS</span>
+        <h3 class="news-3d-title">मुख्यमंत्री ने किया नई योजना का उद्घाटन, 10,000 युवाओं को मिलेगा रोजगार</h3>
+        <div class="news-3d-time">📰 dainikstate.com • 1 घंटे पहले • 👁 5.1K</div>
+      </div>
+    </div>
+
+    <div class="news-3d-item">
+      <div class="news-3d-thumb" style="background:linear-gradient(135deg,#43e97b,#38f9d7);">⚽</div>
+      <div class="news-3d-content">
+        <span class="news-3d-cat" style="background:rgba(67,233,123,0.2);color:#43e97b;">SPORTS</span>
+        <h3 class="news-3d-title">झारखंड की टीम ने जीता राष्ट्रीय क्रिकेट चैंपियनशिप का खिताब</h3>
+        <div class="news-3d-time">✍️ Manual • 2 घंटे पहले • 👁 8.7K</div>
+      </div>
+    </div>
+
+    <div class="news-3d-item">
+      <div class="news-3d-thumb" style="background:linear-gradient(135deg,#ffd700,#ffaa00);">⛰️</div>
+      <div class="news-3d-content">
+        <span class="news-3d-cat" style="background:rgba(255,215,0,0.2);color:#d97706;">HAZARIBAGH</span>
+        <h3 class="news-3d-title">हजारीबाग में नए सरकारी स्कूल का उद्घाटन, 500 बच्चों को मिलेगी शिक्षा</h3>
+        <div class="news-3d-time">📰 dainikstate.com • 3 घंटे पहले • 👁 3.5K</div>
+      </div>
+    </div>
+
+    <div class="news-3d-item">
+      <div class="news-3d-thumb" style="background:linear-gradient(135deg,#4facfe,#00f2fe);">🏙️</div>
+      <div class="news-3d-content">
+        <span class="news-3d-cat" style="background:rgba(79,172,254,0.2);color:#4facfe;">RANCHI</span>
+        <h3 class="news-3d-title">रांची स्मार्ट सिटी प्रोजेक्ट का दूसरा चरण शुरू, 200 करोड़ का बजट</h3>
+        <div class="news-3d-time">📰 dainikstate.com • 4 घंटे पहले • 👁 4.2K</div>
+      </div>
+    </div>
+
+    <div class="news-3d-item">
+      <div class="news-3d-thumb" style="background:linear-gradient(135deg,#f093fb,#f5576c);">💼</div>
+      <div class="news-3d-content">
+        <span class="news-3d-cat" style="background:rgba(240,147,251,0.2);color:#f093fb;">BUSINESS</span>
+        <h3 class="news-3d-title">रांची में नया IT पार्क खुलेगा, 5000 युवाओं को मिलेगी नौकरी</h3>
+        <div class="news-3d-time">✍️ Manual • 5 घंटे पहले • 👁 2.1K</div>
+      </div>
+    </div>
+
+    <div class="news-3d-item">
+      <div class="news-3d-thumb" style="background:linear-gradient(135deg,#84fab0,#8fd3f4);">🌾</div>
+      <div class="news-3d-content">
+        <span class="news-3d-cat" style="background:rgba(132,250,176,0.2);color:#43e97b;">STATE</span>
+        <h3 class="news-3d-title">किसानों के लिए नई सब्सिडी योजना, ₹5000 प्रति एकड़ मिलेगा</h3>
+        <div class="news-3d-time">📰 dainikstate.com • 6 घंटे पहले • 👁 1.8K</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>
