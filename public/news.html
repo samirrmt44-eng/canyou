@@ -43,7 +43,7 @@
   }
   .logo .tag { font-size: 10px; color: rgba(255, 255, 255, 0.6); font-weight: 600; }
   .header-btns { display: flex; gap: 6px; }
-  .icon-btn {
+  .icon-btn, .ch-btn {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #fff; width: 36px; height: 36px; border-radius: 50%;
@@ -52,8 +52,8 @@
     position: relative;
     transition: all 0.2s;
   }
-  .icon-btn:hover { background: rgba(255, 107, 107, 0.2); border-color: rgba(255, 107, 107, 0.4); }
-  .icon-btn .badge {
+  .icon-btn:hover, .ch-btn:hover { background: rgba(255, 107, 107, 0.2); border-color: rgba(255, 107, 107, 0.4); }
+  .icon-btn .badge, .ch-btn .badge {
     position: absolute; top: -4px; right: -4px;
     background: #ff3b30; color: #fff;
     font-size: 9px; font-weight: 800; min-width: 16px; height: 16px;
@@ -61,6 +61,80 @@
     display: flex; align-items: center; justify-content: center;
     border: 2px solid #0a0e1a;
   }
+
+  /* CHANNEL HEADER (new - with logo at top position) */
+  .channel-header {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(102, 126, 234, 0.15));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .channel-logo {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b6b, #f7931e);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(255, 107, 107, 0.4);
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+  }
+  .channel-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .channel-info { flex: 1; min-width: 0; }
+  .channel-name {
+    font-size: 18px; font-weight: 900;
+    background: linear-gradient(90deg, #ff6b6b, #ffd700, #4facfe);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .channel-name .verified {
+    width: 16px; height: 16px;
+    background: #4facfe; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 9px; color: #fff; font-weight: 900;
+  }
+  .channel-tagline { font-size: 11px; color: rgba(255, 255, 255, 0.6); font-weight: 600; margin-top: 2px; }
+  .channel-stats { font-size: 10px; color: rgba(255, 255, 255, 0.4); margin-top: 2px; }
+
+  /* CHANNEL SWITCHER (horizontal scroll) */
+  .channel-switcher {
+    display: flex; gap: 10px;
+    overflow-x: auto; padding: 12px 16px;
+    background: rgba(10, 14, 26, 0.5);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    scrollbar-width: none;
+  }
+  .channel-switcher::-webkit-scrollbar { display: none; }
+  .ch-pill {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    cursor: pointer; transition: all 0.3s;
+    white-space: nowrap;
+  }
+  .ch-pill:hover { background: rgba(255, 255, 255, 0.08); }
+  .ch-pill.active {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    border-color: transparent;
+    box-shadow: 0 4px 16px rgba(255, 107, 107, 0.4);
+  }
+  .ch-pill-logo {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b6b, #f7931e);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .ch-pill-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .ch-pill-name { font-size: 12px; font-weight: 700; color: #fff; }
+  .ch-pill-count { font-size: 10px; color: rgba(255, 255, 255, 0.5); }
 
   /* SEARCH BAR */
   .search-bar {
@@ -387,21 +461,31 @@
 <div class="app">
 
 <!-- HEADER -->
-<div class="header">
-  <div class="logo">
-    <div class="logo-icon">🏆</div>
-    <div>
-      <h1>DainikState</h1>
-      <div class="tag">🏆 राज्य की आवाज़</div>
-    </div>
+<!-- CHANNEL HEADER (with logo - same position as before) -->
+<div class="channel-header" id="channelHeader">
+  <div class="channel-logo" id="channelLogo">
+    <img src="/images/logo.png" alt="DainikState" onerror="this.style.display='none'; this.parentElement.innerHTML='🏆';">
   </div>
-  <div class="header-btns">
-    <button class="icon-btn" onclick="toggleBookmarkView()" title="Saved">🔖</button>
-    <button class="icon-btn" onclick="openSearch()" title="Search">🔍</button>
-    <button class="icon-btn" onclick="window.location.href='/admin-dashboard.html'" title="Admin">
-      ⚙️
-      <span class="badge" id="adminBadge" style="display:none;">0</span>
-    </button>
+  <div class="channel-info">
+    <div class="channel-name" id="channelName">🏆 DainikState <span class="verified">✓</span></div>
+    <div class="channel-tagline" id="channelTagline">🏆 राज्य की आवाज़ - झारखंड की #1 Hindi News</div>
+    <div class="channel-stats" id="channelStats">📰 0 news • 0 followers</div>
+  </div>
+  <div class="channel-btns">
+    <button class="ch-btn" onclick="toggleBookmarkView()" title="Saved">🔖</button>
+    <button class="ch-btn" onclick="openSearch()" title="Search">🔍</button>
+    <button class="ch-btn" onclick="openChannelSettings()" title="Channel Settings">⚙️</button>
+  </div>
+</div>
+
+<!-- CHANNEL SWITCHER -->
+<div class="channel-switcher" id="channelSwitcher">
+  <div class="ch-pill active" data-channel="dainikstate" onclick="switchChannel('dainikstate')">
+    <div class="ch-pill-logo"><img src="/images/logo.png" onerror="this.style.display='none'; this.parentElement.innerHTML='🏆';"></div>
+    <div>
+      <div class="ch-pill-name">DainikState</div>
+      <div class="ch-pill-count">📰 0</div>
+    </div>
   </div>
 </div>
 
@@ -520,11 +604,13 @@
 <script>
 const API = 'https://canyou-uqkp.onrender.com';
 let currentUser = null;  // For reactions tracking
+let currentChannel = 'dainikstate';  // Default to DainikState public feed
 let currentCategory = 'all';
 let currentDateRange = 'all';
 let currentSearch = '';
 let bookmarks = JSON.parse(localStorage.getItem('ds_news_bookmarks') || '[]');
 let allNews = [];  // Cache
+let allChannels = [];  // Channels cache
 let sessionId = localStorage.getItem('ds_news_session') || ('sess_' + Math.random().toString(36).slice(2));
 
 function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
@@ -576,35 +662,213 @@ function getCategoryGradient(cat) {
   return map[cat] || 'linear-gradient(135deg,#ff6b6b,#ee5a6f)';
 }
 
-// ============ FETCH NEWS ============
+// ============ FETCH NEWS (with channel filter) ============
 async function loadNews() {
   const feed = document.getElementById('newsFeed');
   feed.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
   try {
-    const url = API + '/api/news?category=' + currentCategory + '&limit=30';
+    // Use channel-specific endpoint
+    const url = API + '/api/news/channel/' + encodeURIComponent(currentChannel) +
+                '?category=' + currentCategory + '&limit=30';
     const r = await fetch(url).then(r => r.json());
+    let news = [];
     if (r.success) {
-      // Client-side date filter
-      let news = r.articles || [];
-      if (currentDateRange !== 'all') {
-        const now = Date.now();
-        const limits = { today: 86400000, week: 7*86400000, month: 30*86400000 };
-        news = news.filter(n => (now - (n.publishedAt || 0)) <= limits[currentDateRange]);
+      news = r.articles || [];
+      // Update channel stats
+      if (r.channel) {
+        document.getElementById('channelStats').textContent = `📰 ${r.channel.newsCount || news.length} news • ${r.channel.subscribers || 0} followers`;
       }
-      if (currentSearch) {
-        const q = currentSearch.toLowerCase();
-        news = news.filter(n => (n.title || '').toLowerCase().includes(q) || (n.description || '').toLowerCase().includes(q));
-      }
-      allNews = news;
-      renderNews(news);
-      // Track view
-      trackView(news.length);
-    } else {
-      feed.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No news yet. Check back later!</div></div>';
     }
+    // Client-side date filter
+    if (currentDateRange !== 'all') {
+      const now = Date.now();
+      const limits = { today: 86400000, week: 7*86400000, month: 30*86400000 };
+      news = news.filter(n => (now - (n.publishedAt || 0)) <= limits[currentDateRange]);
+    }
+    if (currentSearch) {
+      const q = currentSearch.toLowerCase();
+      news = news.filter(n => (n.title || '').toLowerCase().includes(q) || (n.description || '').toLowerCase().includes(q));
+    }
+    allNews = news;
+    renderNews(news);
   } catch (e) {
     feed.innerHTML = '<div class="empty"><div class="empty-icon">❌</div><div class="empty-text">Network error. Please retry.</div></div>';
   }
+}
+
+// ============ LOAD CHANNELS (for switcher) ============
+async function loadChannels() {
+  try {
+    const r = await fetch(API + '/api/news/groups/list').then(r => r.json());
+    if (r.success) {
+      allChannels = r.channels || [];
+      renderChannelSwitcher();
+    }
+  } catch (e) { console.error('Channels load error:', e); }
+}
+
+function renderChannelSwitcher() {
+  const switcher = document.getElementById('channelSwitcher');
+  if (!switcher) return;
+  switcher.innerHTML = allChannels.map(c => {
+    const logoHtml = c.logo
+      ? `<img src="${esc(c.logo)}" onerror="this.style.display='none'; this.parentElement.innerHTML='${c.isMaster ? '🏆' : '📰'}';">`
+      : (c.isMaster ? '🏆' : '📰');
+    return `
+      <div class="ch-pill ${c.groupId === currentChannel ? 'active' : ''}" data-channel="${esc(c.groupId)}" onclick="switchChannel('${esc(c.groupId)}')">
+        <div class="ch-pill-logo">${logoHtml}</div>
+        <div>
+          <div class="ch-pill-name">${esc(c.name)}</div>
+          <div class="ch-pill-count">📰 ${c.newsCount || 0}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============ SWITCH CHANNEL ============
+async function switchChannel(channelId) {
+  currentChannel = channelId;
+  currentCategory = 'all'; currentDateRange = 'all';
+  document.querySelectorAll('.ch-pill').forEach(p => p.classList.toggle('active', p.dataset.channel === channelId));
+  document.querySelectorAll('.cat-chip-3d').forEach(c => c.classList.toggle('active', c.dataset.cat === 'all'));
+  document.querySelectorAll('.date-pill').forEach(p => p.classList.toggle('active', p.dataset.range === 'all'));
+  // Update header info
+  const channel = allChannels.find(c => c.groupId === channelId);
+  if (channel) {
+    const logoEl = document.getElementById('channelLogo');
+    if (channel.logo) {
+      logoEl.innerHTML = `<img src="${esc(channel.logo)}" alt="${esc(channel.name)}" onerror="this.style.display='none'; this.parentElement.innerHTML='${channel.isMaster ? '🏆' : '📰'}';">`;
+    } else {
+      logoEl.innerHTML = channel.isMaster ? '🏆' : '📰';
+    }
+    document.getElementById('channelName').innerHTML = `${esc(channel.name)} <span class="verified">✓</span>`;
+    document.getElementById('channelTagline').textContent = channel.tagline || '📰 News Channel';
+    document.getElementById('channelStats').textContent = `📰 ${channel.newsCount || 0} news • ${channel.subscribers || 0} followers`;
+  }
+  await loadNews();
+  await loadTicker();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============ CHANNEL SETTINGS (logo + info) ============
+function openChannelSettings() {
+  const channel = allChannels.find(c => c.groupId === currentChannel);
+  if (!channel) return;
+  showModal('⚙️ Channel Settings', `
+    <div style="text-align:center;">
+      <div class="logo-upload" id="logoUploadPreview" onclick="document.getElementById('logoFileInput').click()" style="position:relative;width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#ff6b6b,#f7931e);margin:0 auto 12px;cursor:pointer;overflow:hidden;border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:36px;">
+        ${channel.logo ? `<img src="${esc(channel.logo)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='${channel.isMaster ? '🏆' : '📰'}';">` : (channel.isMaster ? '🏆' : '📰')}
+        <div style="position:absolute;bottom:-2px;right:-2px;background:#4facfe;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;border:2px solid #1a1f3a;">✏️</div>
+      </div>
+      <input type="file" id="logoFileInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(event)">
+      <p style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:14px;">📸 Channel Logo (PNG/JPG)</p>
+      <div style="margin-bottom:12px;text-align:left;">
+        <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">Channel Name *</label>
+        <input type="text" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;" id="setChName" value="${esc(channel.name)}" placeholder="My News Channel">
+      </div>
+      <div style="margin-bottom:12px;text-align:left;">
+        <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">Tagline</label>
+        <input type="text" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;" id="setChTagline" value="${esc(channel.tagline || '')}" placeholder="झारखंड की #1 News">
+      </div>
+      <div style="margin-bottom:12px;text-align:left;">
+        <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">Description</label>
+        <textarea style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;min-height:60px;resize:vertical;" id="setChDesc" placeholder="Channel description">${esc(channel.description || '')}</textarea>
+      </div>
+      <div style="margin-bottom:12px;text-align:left;">
+        <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">Auto-Scrape URL (optional)</label>
+        <input type="url" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;" id="setChScrapeUrl" value="${esc(channel.scrapeUrl || '')}" placeholder="https://your-news-site.com/">
+        <p style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;">⚠️ Will pull articles every 30 min</p>
+      </div>
+      <button onclick="saveChannelSettings()" style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#ff6b6b,#ee5a6f);color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(255,107,107,0.3);">💾 Save Channel</button>
+      ${!channel.isMaster ? `<button onclick="addNewsToChannel()" style="width:100%;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;">📰 Add News to This Channel</button>` : ''}
+    </div>
+  `);
+}
+
+async function handleLogoUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    const dataUrl = event.target.result;
+    document.getElementById('logoUploadPreview').innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;"><div style="position:absolute;bottom:-2px;right:-2px;background:#4facfe;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;border:2px solid #1a1f3a;">✏️</div>`;
+    const channel = allChannels.find(c => c.groupId === currentChannel);
+    if (channel) {
+      try {
+        await fetch(API + '/api/news/groups/update', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ groupId: channel.groupId, name: channel.name, logo: dataUrl, tagline: channel.tagline, ownerId: currentUser?.id || '' })
+        });
+        channel.logo = dataUrl;
+        toast('✅ Logo updated!');
+        loadChannels();
+      } catch (e) { console.error(e); }
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveChannelSettings() {
+  const name = document.getElementById('setChName').value.trim();
+  const tagline = document.getElementById('setChTagline').value.trim();
+  const description = document.getElementById('setChDesc').value.trim();
+  const scrapeUrl = document.getElementById('setChScrapeUrl').value.trim();
+  if (!name) { toast('⚠️ Channel name required'); return; }
+  const channel = allChannels.find(c => c.groupId === currentChannel);
+  if (!channel) return;
+  try {
+    await fetch(API + '/api/news/groups/update', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupId: channel.groupId, name, tagline, description, scrapeUrl, ownerId: currentUser?.id || '' })
+    });
+    toast('✅ Channel saved!');
+    closeModal();
+    loadChannels();
+    switchChannel(channel.groupId);
+  } catch (e) { toast('❌ Network error'); }
+}
+
+function addNewsToChannel() {
+  showModal('📰 Add News to Channel', `
+    <div style="margin-bottom:12px;text-align:left;">
+      <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">Title *</label>
+      <input type="text" id="addNewsTitle" placeholder="News headline" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;">
+    </div>
+    <div style="margin-bottom:12px;text-align:left;">
+      <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">Description</label>
+      <textarea id="addNewsDesc" placeholder="Short description" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;min-height:60px;resize:vertical;"></textarea>
+    </div>
+    <div style="margin-bottom:12px;text-align:left;">
+      <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">Category</label>
+      <select id="addNewsCat" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;">
+        <option value="state">🏛️ State</option>
+        <option value="crime">🚨 Crime</option>
+        <option value="politics">🏛️ Politics</option>
+        <option value="sports">⚽ Sports</option>
+        <option value="business">💼 Business</option>
+      </select>
+    </div>
+    <button onclick="submitChannelNews()" style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#ff6b6b,#ee5a6f);color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(255,107,107,0.3);">📤 Publish to Channel</button>
+  `);
+}
+
+async function submitChannelNews() {
+  const title = document.getElementById('addNewsTitle').value.trim();
+  if (!title) { toast('⚠️ Title required'); return; }
+  const description = document.getElementById('addNewsDesc').value.trim();
+  const category = document.getElementById('addNewsCat').value;
+  try {
+    const r = await fetch(API + '/api/news/group-channel/add', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description, category, groupId: currentChannel, ownerId: currentUser?.id || '' })
+    }).then(r => r.json());
+    if (r.success) {
+      toast('✅ News published to channel!');
+      closeModal();
+      loadNews();
+    } else { toast('❌ ' + (r.error || 'Failed')); }
+  } catch (e) { toast('❌ Network error'); }
 }
 
 function trackView(count) {
@@ -700,22 +964,23 @@ async function openNewsDetail(idOrSlug) {
 // ============ TICKER (Breaking News) ============
 async function loadTicker() {
   try {
-    const r = await fetch(API + '/api/news/breaking').then(r => r.json());
+    const url = API + '/api/news/breaking?groupId=' + encodeURIComponent(currentChannel);
+    const r = await fetch(url).then(r => r.json());
     if (r.success && r.articles && r.articles.length > 0) {
       document.getElementById('tickerContainer').style.display = 'flex';
-      // Cycle through breaking news every 5 seconds
       let i = 0;
       const tickers = r.articles.slice(0, 5);
       const updateTicker = () => {
         const a = tickers[i];
-        const text = `🔥 BREAKING: ${a.title}`;
-        document.getElementById('tickerText').textContent = text;
+        document.getElementById('tickerText').textContent = `🔥 BREAKING: ${a.title}`;
         document.getElementById('tickerText').onclick = () => openNewsDetail(a.id || a.slug);
         document.getElementById('tickerText').style.cursor = 'pointer';
         i = (i + 1) % tickers.length;
       };
       updateTicker();
       setInterval(updateTicker, 5000);
+    } else {
+      document.getElementById('tickerContainer').style.display = 'none';
     }
   } catch (e) { console.error(e); }
 }
@@ -843,11 +1108,23 @@ function goToTab(tab) {
 
 // ============ ON LOAD ============
 window.addEventListener('DOMContentLoaded', () => {
+  loadChannels();
   loadNews();
   loadTicker();
+  // Check for channel param in URL
+  const params = new URLSearchParams(window.location.search);
+  const ch = params.get('channel');
+  if (ch) {
+    setTimeout(() => switchChannel(ch), 500);
+  }
   // Check for #anchor to open specific news
   if (location.hash) {
     setTimeout(() => openNewsDetail(location.hash.slice(1)), 500);
+  }
+  // Load user from school portal if available
+  const savedUser = localStorage.getItem('ds_school_user');
+  if (savedUser) {
+    try { currentUser = JSON.parse(savedUser); } catch (e) {}
   }
 });
 </script>
