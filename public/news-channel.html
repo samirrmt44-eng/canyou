@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>📺 DainikState LIVE - News Channel</title>
+<link rel="stylesheet" href="/design-system.css" />
+<style>
+  /* ============ TV CHANNEL MODE ============ */
+  body {
+    background: #000;
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+  }
+  .ds-app {
+    background: #000;
+    max-width: 100%;
+    height: 100vh;
+    position: relative;
+  }
+  .ds-content {
+    padding: 0;
+    height: 100vh;
+    position: relative;
+  }
+
+  /* TV Header */
+  .tv-header {
+    position: absolute; top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent);
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    pointer-events: none;
+  }
+  .tv-header > * { pointer-events: auto; }
+  .tv-channel-brand {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .tv-channel-logo {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #dc2626, #f59e0b);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 20px rgba(220,38,38,0.6);
+  }
+  .tv-channel-name {
+    font-size: 16px; font-weight: 900;
+    background: linear-gradient(90deg, #fbbf24, #dc2626);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: 1px;
+  }
+  .tv-channel-tag { font-size: 9px; color: #fbbf24; letter-spacing: 2px; }
+
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: #dc2626;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px; font-weight: 900;
+    letter-spacing: 1px;
+    box-shadow: 0 0 20px rgba(220,38,38,0.8);
+    animation: livePulse 1.5s infinite;
+  }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #fff;
+    animation: pulse 1.2s infinite;
+  }
+  @keyframes livePulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(220,38,38,0.8); }
+    50% { box-shadow: 0 0 30px rgba(220,38,38,1), 0 0 40px rgba(220,38,38,0.4); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .tv-clock {
+    font-size: 14px; font-weight: 700;
+    font-family: 'Courier New', monospace;
+    color: #fbbf24;
+    letter-spacing: 2px;
+  }
+  .tv-stats {
+    font-size: 10px; color: rgba(255,255,255,0.7);
+    text-align: right;
+  }
+  .tv-stats strong { color: #fbbf24; }
+
+  /* Back button */
+  .tv-back {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+  }
+  .tv-back:hover { background: rgba(255,255,255,0.25); }
+
+  /* ============ MAIN SCREEN ============ */
+  .tv-screen {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 120px;
+    overflow: hidden;
+    background: #000;
+  }
+  .tv-news-image {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out, transform 8s ease-in-out;
+    transform: scale(1);
+  }
+  .tv-news-image.active {
+    opacity: 1;
+    animation: kenBurns 15s linear forwards;
+  }
+  @keyframes kenBurns {
+    0% { transform: scale(1) translate(0, 0); }
+    100% { transform: scale(1.15) translate(-2%, -2%); }
+  }
+
+  .tv-news-image-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    font-size: 80px;
+    opacity: 0.3;
+  }
+
+  /* Gradient overlay on image */
+  .tv-screen::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.4) 0%,
+      transparent 30%,
+      transparent 60%,
+      rgba(0,0,0,0.85) 100%
+    );
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* News overlay (title + meta) */
+  .tv-news-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 3;
+    padding: 20px;
+    color: #fff;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.6s 0.3s;
+  }
+  .tv-news-overlay.active {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .tv-news-category {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 10px; font-weight: 900;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(220,38,38,0.6);
+  }
+  .tv-news-category.breaking {
+    background: linear-gradient(90deg, #dc2626, #f59e0b);
+    animation: livePulse 2s infinite;
+  }
+  .tv-news-title {
+    font-size: 22px; font-weight: 900;
+    line-height: 1.3;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+    max-height: 110px;
+    overflow: hidden;
+  }
+  .tv-news-desc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.5;
+    max-height: 60px;
+    overflow: hidden;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+  .tv-news-meta {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 10px;
+    font-size: 11px; color: rgba(255,255,255,0.6);
+  }
+  .tv-news-meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* Top corner (next up + close) */
+  .tv-corner-info {
+    position: absolute;
+    top: 70px; right: 12px;
+    z-index: 50;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 10px;
+    max-width: 150px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .tv-corner-info .label { color: #fbbf24; font-weight: 700; }
+  .tv-corner-info .next-title { margin-top: 2px; font-size: 11px; }
+
+  /* ============ BOTTOM CONTROLS ============ */
+  .tv-controls {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 100;
+    background: linear-gradient(to top, rgba(0,0,0,0.98), rgba(0,0,0,0.7));
+    padding: 12px 16px 16px;
+  }
+  .tv-progress {
+    width: 100%; height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+  .tv-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #dc2626, #f59e0b);
+    width: 0%;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 8px rgba(220,38,38,0.6);
+  }
+  .tv-progress-time {
+    position: absolute; top: -18px; right: 0;
+    font-size: 10px; color: rgba(255,255,255,0.7);
+    font-family: 'Courier New', monospace;
+  }
+
+  .tv-control-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .tv-control-left, .tv-control-right {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tv-ctrl {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+  }
+  .tv-ctrl:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+  .tv-ctrl.active { background: #dc2626; border-color: #f59e0b; }
+  .tv-ctrl.large {
+    width: 48px; height: 48px;
+    font-size: 18px;
+    background: linear-gradient(135deg, #dc2626, #f59e0b);
+    border: none;
+    box-shadow: 0 0 20px rgba(220,38,38,0.6);
+  }
+  .tv-now-playing {
+    flex: 1;
+    padding: 0 12px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.8);
+    min-width: 0;
+  }
+  .tv-now-title {
+    font-weight: 700; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tv-now-counter {
+    font-size: 10px; color: rgba(255,255,255,0.5);
+    font-family: 'Courier New', monospace;
+  }
+
+  /* ============ PLAYLIST PANEL ============ */
+  .tv-playlist-toggle {
+    position: absolute;
+    top: 70px; left: 12px;
+    z-index: 50;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .tv-playlist {
+    position: absolute;
+    top: 0; right: -100%;
+    width: 85%; max-width: 320px;
+    height: 100%;
+    background: linear-gradient(135deg, #0f172a, #000);
+    z-index: 200;
+    transition: right 0.3s ease;
+    border-left: 1px solid #1e293b;
+    overflow-y: auto;
+  }
+  .tv-playlist.show { right: 0; }
+  .tv-playlist-header {
+    position: sticky; top: 0;
+    background: rgba(0,0,0,0.95);
+    padding: 14px 16px;
+    border-bottom: 1px solid #1e293b;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .tv-playlist-header h3 { font-size: 14px; font-weight: 900; color: #fbbf24; }
+  .tv-playlist-close {
+    width: 30px; height: 30px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tv-playlist-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #1e293b;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .tv-playlist-item:hover { background: rgba(255,255,255,0.05); }
+  .tv-playlist-item.current {
+    background: linear-gradient(90deg, rgba(220,38,38,0.2), transparent);
+    border-left: 3px solid #dc2626;
+  }
+  .tv-playlist-item.watched { opacity: 0.5; }
+  .tv-playlist-num {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.6);
+    flex-shrink: 0;
+  }
+  .tv-playlist-item.current .tv-playlist-num {
+    background: #dc2626; color: #fff;
+  }
+  .tv-playlist-item.watched .tv-playlist-num::after {
+    content: '✓'; color: #10b981;
+  }
+  .tv-playlist-info { flex: 1; min-width: 0; }
+  .tv-playlist-title {
+    font-size: 12px; font-weight: 600;
+    color: #fff; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .tv-playlist-meta {
+    font-size: 10px; color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+  }
+
+  /* ============ BREAKING TICKER ============ */
+  .tv-ticker {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 99;
+    background: linear-gradient(90deg, #dc2626, #991b1b);
+    color: #fff;
+    padding: 6px 0;
+    overflow: hidden;
+    border-top: 1px solid #f59e0b;
+    display: none;  /* Hidden when player visible, shown when paused */
+  }
+  .tv-ticker.show { display: block; }
+  .tv-ticker-label {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: #fbbf24; color: #000;
+    padding: 0 12px;
+    display: flex; align-items: center;
+    font-size: 10px; font-weight: 900;
+    letter-spacing: 1px;
+    z-index: 2;
+  }
+  .tv-ticker-content {
+    padding-left: 90px;
+    white-space: nowrap;
+    animation: ticker 30s linear infinite;
+    font-size: 12px; font-weight: 600;
+  }
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+
+  /* ============ LOADING + END SCREENS ============ */
+  .tv-loading {
+    position: absolute; inset: 0;
+    background: #000;
+    z-index: 500;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px;
+  }
+  .tv-loading-spinner {
+    width: 50px; height: 50px;
+    border: 4px solid rgba(220,38,38,0.2);
+    border-top-color: #dc2626;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tv-loading-text {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 1px;
+  }
+
+  .tv-end-screen {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #0f172a, #000);
+    z-index: 400;
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 20px;
+  }
+  .tv-end-screen.show { display: flex; }
+  .tv-end-icon { font-size: 80px; margin-bottom: 16px; }
+  .tv-end-title { font-size: 24px; font-weight: 900; margin-bottom: 8px; }
+  .tv-end-sub { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 20px; }
+
+  /* Touch/click hint */
+  .tv-touch-hint {
+    position: absolute; bottom: 130px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    color: rgba(255,255,255,0.4);
+    font-size: 10px;
+    text-align: center;
+  }
+
+  /* Responsive */
+  @media (min-width: 768px) {
+    .tv-news-title { font-size: 32px; }
+    .tv-news-desc { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="ds-app">
+  <div class="ds-content">
+    <!-- TV Header -->
+    <div class="tv-header">
+      <div class="tv-channel-brand">
+        <div class="tv-channel-logo">📺</div>
+        <div>
+          <div class="tv-channel-name">DAINIKSTATE</div>
+          <div class="tv-channel-tag">LIVE • झारखंड</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+        <div class="tv-clock" id="tvClock">00:00:00</div>
+      </div>
+      <button class="tv-back" onclick="location.href='/news.html'">← Grid View</button>
+    </div>
+
+    <!-- Top-left: playlist toggle -->
+    <div class="tv-playlist-toggle" onclick="channel.togglePlaylist()">
+      📋 Playlist (<span id="playlistCount">0</span>)
+    </div>
+
+    <!-- Top-right: next up -->
+    <div class="tv-corner-info" id="nextUp" style="display:none;">
+      <div class="label">अगली खबर ⏭</div>
+      <div class="next-title" id="nextTitle">--</div>
+    </div>
+
+    <!-- Main Screen -->
+    <div class="tv-screen" id="tvScreen">
+      <div class="tv-news-image-placeholder">📺</div>
+    </div>
+
+    <!-- Loading -->
+    <div class="tv-loading" id="tvLoading">
+      <div class="tv-loading-spinner"></div>
+      <div class="tv-loading-text">LIVE FEED लोड हो रहा है...</div>
+    </div>
+
+    <!-- End Screen -->
+    <div class="tv-end-screen" id="tvEnd">
+      <div class="tv-end-icon">🎬</div>
+      <div class="tv-end-title">प्लेलिस्ट समाप्त!</div>
+      <div class="tv-end-sub">आपने top 10 खबरें देख लीं।</div>
+      <button class="ds-btn ds-btn-accent ds-btn-lg" onclick="channel.restart()">🔄 फिर से देखें</button>
+      <button class="ds-btn ds-btn-outline ds-btn-lg ds-mt-1" onclick="location.href='/news.html'" style="margin-top:10px;">📰 Grid View पर जाएं</button>
+    </div>
+
+    <!-- Playlist Panel -->
+    <div class="tv-playlist" id="tvPlaylist">
+      <div class="tv-playlist-header">
+        <h3>📋 Top 10 Playlist</h3>
+        <div class="tv-playlist-close" onclick="channel.togglePlaylist()">✕</div>
+      </div>
+      <div id="playlistItems">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="tv-controls">
+      <div class="tv-progress">
+        <div class="tv-progress-bar" id="progressBar"></div>
+        <div class="tv-progress-time" id="progressTime">0:00 / 0:15</div>
+      </div>
+      <div class="tv-control-row">
+        <div class="tv-control-left">
+          <div class="tv-ctrl" onclick="channel.prev()" title="Previous">⏮</div>
+          <div class="tv-ctrl large" onclick="channel.togglePlay()" id="playBtn" title="Play/Pause">⏸</div>
+          <div class="tv-ctrl" onclick="channel.next()" title="Next">⏭</div>
+        </div>
+        <div class="tv-now-playing">
+          <div class="tv-now-title" id="nowTitle">Loading...</div>
+          <div class="tv-now-counter"><span id="nowIndex">0</span> / <span id="nowTotal">0</span> • <span id="nowCategory">--</span></div>
+        </div>
+        <div class="tv-control-right">
+          <div class="tv-ctrl" onclick="channel.likeCurrent()" id="likeBtn" title="Like">🤍</div>
+          <div class="tv-ctrl" onclick="channel.shareCurrent()" title="Share">📤</div>
+          <div class="tv-ctrl" onclick="channel.openSettings()" title="Settings">⚙️</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tv-touch-hint">💡 Tap image = Play/Pause | Swipe = Change</div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="ds-modal-bg" onclick="if(event.target===this)channel.closeSettings()">
+  <div class="ds-modal">
+    <div class="ds-modal-handle"></div>
+    <h3>⚙️ Channel Settings</h3>
+    <div class="ds-form-group">
+      <label class="ds-form-label">⏱️ हर खबर का समय</label>
+      <select class="ds-form-select" id="timePerNews" onchange="channel.setTimePerNews(this.value)">
+        <option value="10000">10 सेकंड (तेज़)</option>
+        <option value="15000" selected>15 सेकंड (डिफ़ॉल्ट)</option>
+        <option value="30000">30 सेकंड (धीमा)</option>
+        <option value="60000">60 सेकंड (पूरा पढ़ने के लिए)</option>
+      </select>
+    </div>
+    <div class="ds-form-group">
+      <label class="ds-form-label">🔁 Auto-loop</label>
+      <label class="ds-flex ds-gap-1" style="margin-top:6px;">
+        <input type="checkbox" id="autoLoop" checked onchange="channel.setAutoLoop(this.checked)">
+        <span>Playlist खत्म होने पर फिर से शुरू करें</span>
+      </label>
+    </div>
+    <div class="ds-form-group">
+      <label class="ds-form-label">📂 Category Filter</label>
+      <select class="ds-form-select" id="categoryFilter" onchange="channel.setCategory(this.value)">
+        <option value="">सभी (All)</option>
+        <option value="state">राज्य (State)</option>
+        <option value="crime">क्राइम (Crime)</option>
+        <option value="politics">राजनीति (Politics)</option>
+        <option value="sports">खेल (Sports)</option>
+        <option value="ranchi">रांची</option>
+        <option value="ramgarh">रामगढ़</option>
+      </select>
+    </div>
+    <button class="ds-btn ds-btn-primary ds-btn-block ds-mt-2" onclick="channel.closeSettings()">✅ Save</button>
+  </div>
+</div>
+
+<script src="/nav.js"></script>
+<script>
+// ============================================================
+// DAINIKSTATE TV CHANNEL MODE
+// Auto-play top 10 news like a TV channel
+// ============================================================
+const channel = {
+  playlist: [],
+  current: 0,
+  isPlaying: false,
+  timePerNews: 15000,
+  autoLoop: true,
+  category: '',
+  timer: null,
+  startTime: 0,
+  watchStart: 0,
+  likedNews: JSON.parse(localStorage.getItem('dsLikedNews') || '[]'),
+  watchedNews: JSON.parse(localStorage.getItem('dsWatchedNews') || '[]'),
+  imageCache: {},
+
+  async init() {
+    this.startClock();
+    await this.loadPlaylist();
+    this.attachEvents();
+    this.play();
+  },
+
+  // ============ CLOCK ============
+  startClock() {
+    const update = () => {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      const el = document.getElementById('tvClock');
+      if (el) el.textContent = `${h}:${m}:${s}`;
+    };
+    update();
+    setInterval(update, 1000);
+  },
+
+  // ============ LOAD PLAYLIST ============
+  async loadPlaylist() {
+    try {
+      let url = '/api/news?limit=10';
+      if (this.category) url += `&category=${this.category}`;
+      const r = await fetch(url);
+      const d = await r.json();
+      if (d.success && d.articles && d.articles.length) {
+        this.playlist = d.articles;
+        document.getElementById('nowTotal').textContent = this.playlist.length;
+        document.getElementById('playlistCount').textContent = this.playlist.length;
+        this.renderPlaylist();
+        // Hide loading
+        document.getElementById('tvLoading').style.display = 'none';
+      } else {
+        this.showEnd('कोई खबर नहीं मिली', 'बाद में try करें');
+      }
+    } catch (e) {
+      console.error('Load error:', e);
+      this.showEnd('❌ Load failed', 'Check internet connection');
+    }
+  },
+
+  renderPlaylist() {
+    const container = document.getElementById('playlistItems');
+    container.innerHTML = this.playlist.map((n, i) => `
+      <div class="tv-playlist-item ${i === this.current ? 'current' : ''} ${this.watchedNews.includes(n.id || n.slug) ? 'watched' : ''}"
+           onclick="channel.jumpTo(${i})">
+        <div class="tv-playlist-num">${i + 1}</div>
+        <div class="tv-playlist-info">
+          <div class="tv-playlist-title">${this.escapeHtml(n.title)}</div>
+          <div class="tv-playlist-meta">${this.getCategoryLabel(n.category)} • ${this.timeAgo(n.publishedAt)}</div>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  // ============ PLAYBACK ============
+  play() {
+    if (!this.playlist.length) return;
+    this.isPlaying = true;
+    this.showCurrent();
+    document.getElementById('playBtn').textContent = '⏸';
+  },
+
+  pause() {
+    this.isPlaying = false;
+    clearTimeout(this.timer);
+    document.getElementById('playBtn').textContent = '▶';
+  },
+
+  togglePlay() {
+    if (this.isPlaying) this.pause();
+    else this.play();
+  },
+
+  showCurrent() {
+    if (this.current >= this.playlist.length) {
+      if (this.autoLoop) {
+        this.current = 0;
+        this.showCurrent();
+      } else {
+        this.showEnd();
+      }
+      return;
+    }
+
+    const news = this.playlist[this.current];
+    this.startTime = Date.now();
+    this.watchStart = Date.now();
+    const screen = document.getElementById('tvScreen');
+
+    // Fade out current
+    const oldImg = screen.querySelector('.tv-news-image');
+    const oldOverlay = screen.querySelector('.tv-news-overlay');
+    if (oldImg) oldImg.classList.remove('active');
+    if (oldOverlay) oldOverlay.classList.remove('active');
+
+    // After fade, replace content
+    setTimeout(() => {
+      // Image
+      const imgUrl = news.image || '';
+      const imgHtml = imgUrl
+        ? `<img class="tv-news-image" src="${this.escapeHtml(imgUrl)}" alt="" onerror="this.outerHTML='<div class=\\'tv-news-image-placeholder\\'>📰</div>'">`
+        : `<div class="tv-news-image-placeholder">📰</div>`;
+
+      const isBreaking = news.featured || (this.current < 3);
+
+      screen.innerHTML = `
+        ${imgHtml}
+        <div class="tv-news-overlay">
+          <span class="tv-news-category ${isBreaking ? 'breaking' : ''}">${isBreaking ? '🔴 BREAKING' : this.getCategoryLabel(news.category)}</span>
+          <h1 class="tv-news-title">${this.escapeHtml(news.title)}</h1>
+          <p class="tv-news-desc">${this.escapeHtml((news.description || news.content || '').slice(0, 200))}...</p>
+          <div class="tv-news-meta">
+            <span>👁 ${news.views || 0}</span>
+            <span>❤️ ${(news.reactions && news.reactions.like) || 0}</span>
+            <span>📅 ${this.timeAgo(news.publishedAt)}</span>
+            <span>📰 ${news.source || 'dainikstate.com'}</span>
+          </div>
+        </div>
+      `;
+      // Fade in
+      setTimeout(() => {
+        screen.querySelector('.tv-news-image')?.classList.add('active');
+        screen.querySelector('.tv-news-overlay')?.classList.add('active');
+      }, 50);
+
+      // Update UI
+      document.getElementById('nowTitle').textContent = news.title;
+      document.getElementById('nowIndex').textContent = this.current + 1;
+      document.getElementById('nowCategory').textContent = this.getCategoryLabel(news.category);
+      document.getElementById('progressTime').textContent = `0:00 / ${this.formatTime(this.timePerNews)}`;
+
+      // Like button state
+      const isLiked = this.likedNews.includes(news.id || news.slug);
+      document.getElementById('likeBtn').textContent = isLiked ? '❤️' : '🤍';
+
+      // Next up
+      this.showNextUp();
+
+      // Mark as watched
+      if (!this.watchedNews.includes(news.id || news.slug)) {
+        this.watchedNews.push(news.id || news.slug);
+        localStorage.setItem('dsWatchedNews', JSON.stringify(this.watchedNews));
+      }
+
+      // Track view (fire and forget)
+      fetch(`/api/news/${news.id || news.slug}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: this.getSessionId() })
+      }).catch(() => {});
+
+      this.renderPlaylist();
+    }, 400);
+
+    // Progress animation
+    this.animateProgress();
+
+    // Auto-advance
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      if (this.isPlaying) {
+        this.next();
+      }
+    }, this.timePerNews);
+  },
+
+  animateProgress() {
+    const start = Date.now();
+    const bar = document.getElementById('progressBar');
+    const timeEl = document.getElementById('progressTime');
+    const tick = () => {
+      if (!this.isPlaying) return;
+      const elapsed = Date.now() - start;
+      const pct = Math.min(100, (elapsed / this.timePerNews) * 100);
+      bar.style.width = pct + '%';
+      timeEl.textContent = `${this.formatTime(elapsed)} / ${this.formatTime(this.timePerNews)}`;
+      if (elapsed < this.timePerNews) {
+        requestAnimationFrame(tick);
+      }
+    };
+    tick();
+  },
+
+  next() {
+    if (this.current < this.playlist.length - 1) {
+      this.current++;
+      this.showCurrent();
+    } else {
+      this.showEnd();
+    }
+  },
+
+  prev() {
+    if (this.current > 0) {
+      this.current--;
+      this.showCurrent();
+    }
+  },
+
+  jumpTo(idx) {
+    this.current = idx;
+    this.togglePlaylist();  // Close playlist
+    this.showCurrent();
+  },
+
+  showEnd(title = 'प्लेलिस्ट समाप्त!', sub = 'आपने top 10 खबरें देख लीं।') {
+    this.pause();
+    document.getElementById('tvEnd').classList.add('show');
+    document.querySelector('.tv-end-title').textContent = title;
+    document.querySelector('.tv-end-sub').textContent = sub;
+  },
+
+  restart() {
+    document.getElementById('tvEnd').classList.remove('show');
+    this.current = 0;
+    this.play();
+  },
+
+  showNextUp() {
+    if (this.current < this.playlist.length - 1) {
+      const next = this.playlist[this.current + 1];
+      document.getElementById('nextUp').style.display = 'block';
+      document.getElementById('nextTitle').textContent = next.title.slice(0, 50) + '...';
+    } else {
+      document.getElementById('nextUp').style.display = 'none';
+    }
+  },
+
+  // ============ PLAYLIST UI ============
+  togglePlaylist() {
+    document.getElementById('tvPlaylist').classList.toggle('show');
+  },
+
+  // ============ ACTIONS ============
+  likeCurrent() {
+    const news = this.playlist[this.current];
+    if (!news) return;
+    const id = news.id || news.slug;
+    const idx = this.likedNews.indexOf(id);
+    if (idx > -1) {
+      this.likedNews.splice(idx, 1);
+      document.getElementById('likeBtn').textContent = '🤍';
+    } else {
+      this.likedNews.push(id);
+      document.getElementById('likeBtn').textContent = '❤️';
+    }
+    localStorage.setItem('dsLikedNews', JSON.stringify(this.likedNews));
+    // Server-side
+    fetch(`/api/news/${id}/react`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: this.getSessionId(), reaction: 'like' })
+    }).catch(() => {});
+    DS.toast(idx > -1 ? '💔 Unlike किया' : '❤️ Like किया', 'success');
+  },
+
+  shareCurrent() {
+    const news = this.playlist[this.current];
+    if (!news) return;
+    const url = news.url || `https://canyou-uqkp.onrender.com/news.html`;
+    const msg = `📺 *DainikState LIVE*\n\n${news.title}\n\n${(news.description || '').slice(0, 200)}\n\n📖 पढ़ें: ${url}\n\n_DainikState TV Channel पर देखें_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    DS.toast('📤 WhatsApp पर share हो रहा है...', 'success');
+  },
+
+  // ============ SETTINGS ============
+  openSettings() {
+    document.getElementById('settingsModal').classList.add('show');
+  },
+  closeSettings() {
+    document.getElementById('settingsModal').classList.remove('show');
+  },
+  setTimePerNews(ms) {
+    this.timePerNews = parseInt(ms);
+    DS.toast(`⏱️ ${this.timePerNews / 1000} सेकंड per news`, 'success');
+  },
+  setAutoLoop(v) { this.autoLoop = v; },
+  async setCategory(cat) {
+    this.category = cat;
+    this.pause();
+    this.current = 0;
+    document.getElementById('tvLoading').style.display = 'flex';
+    document.getElementById('tvEnd').classList.remove('show');
+    await this.loadPlaylist();
+    this.play();
+  },
+
+  // ============ EVENTS ============
+  attachEvents() {
+    // Tap screen to play/pause
+    document.getElementById('tvScreen').addEventListener('click', () => this.togglePlay());
+
+    // Keyboard
+    document.addEventListener('keydown', (e) => {
+      if (e.key === ' ') { e.preventDefault(); this.togglePlay(); }
+      else if (e.key === 'ArrowRight') this.next();
+      else if (e.key === 'ArrowLeft') this.prev();
+      else if (e.key === 'f' || e.key === 'F') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+    });
+
+    // Touch swipe
+    let touchStartX = 0;
+    document.getElementById('tvScreen').addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+    });
+    document.getElementById('tvScreen').addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 50) {
+        if (dx > 0) this.prev();
+        else this.next();
+      } else {
+        this.togglePlay();
+      }
+    });
+  },
+
+  // ============ UTILS ============
+  escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  },
+  getCategoryLabel(c) {
+    const map = {
+      state: 'राज्य', crime: 'क्राइम', politics: 'राजनीति', sports: 'खेल',
+      ranchi: 'रांची', ramgarh: 'रामगढ़', bihar: 'बिहार', business: 'बिजनेस',
+    };
+    return map[c] || c || 'News';
+  },
+  timeAgo(ts) {
+    if (!ts) return '';
+    const d = Date.now() - ts;
+    if (d < 3600000) return Math.floor(d / 60000) + ' मिनट पहले';
+    if (d < 86400000) return Math.floor(d / 3600000) + ' घंटे पहले';
+    return Math.floor(d / 86400000) + ' दिन पहले';
+  },
+  formatTime(ms) {
+    const s = Math.floor(ms / 1000);
+    return `0:${String(s).padStart(2, '0')}`;
+  },
+  getSessionId() {
+    let s = localStorage.getItem('dsSessionId');
+    if (!s) {
+      s = 'sess_' + Math.random().toString(36).substr(2, 12);
+      localStorage.setItem('dsSessionId', s);
+    }
+    return s;
+  }
+};
+
+// Boot
+channel.init();
+</script>
+</body>
+</html>
