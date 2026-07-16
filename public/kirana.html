@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>किराना - ग्रोसरी | DainikState</title>
+<link rel="stylesheet" href="/design-system.css" />
+<style>
+  .kirana-hero { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+  .shop-card {
+    background: var(--ds-bg-2); border: 1px solid var(--ds-border);
+    border-radius: 16px; padding: 16px; margin-bottom: 12px;
+    display: flex; gap: 14px;
+  }
+  .shop-icon {
+    width: 60px; height: 60px; border-radius: 12px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; flex-shrink: 0;
+  }
+  .item-card {
+    background: var(--ds-bg-2); border: 1px solid var(--ds-border);
+    border-radius: 12px; padding: 12px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .item-emoji { font-size: 36px; flex-shrink: 0; }
+  .item-price { color: var(--ds-green); font-weight: 800; font-size: 15px; }
+  .search-box {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--ds-bg-3); border: 1px solid var(--ds-border);
+    border-radius: 12px; padding: 10px 14px; margin-bottom: 16px;
+  }
+  .search-box input {
+    flex: 1; background: none; border: none; color: var(--ds-text);
+    font-size: 14px; outline: none;
+  }
+</style>
+</head>
+<body>
+<div class="ds-app">
+  <div id="navMount"></div>
+
+  <div class="ds-content">
+    <!-- Hero -->
+    <div class="ds-hero kirana-hero">
+      <div class="ds-hero-emoji">🛒</div>
+      <h2>किराना स्टोर - हाजारीबाग़</h2>
+      <p>अपने मोहल्ले की दुकान से ग्रोसरी मँगवाएं। WhatsApp पर ऑर्डर, फ्री होम डिलीवरी।</p>
+      <div class="ds-hero-actions">
+        <button class="ds-btn ds-btn-success ds-btn-lg" onclick="kirana.orderNow()">🛒 ऑर्डर करें</button>
+        <button class="ds-btn ds-btn-outline ds-btn-lg" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);" onclick="kirana.becomeSeller()">🏪 दुकान जोड़ें</button>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="सामान खोजें - चावल, आटा, तेल..." oninput="kirana.search(this.value)">
+    </div>
+
+    <!-- Quick categories -->
+    <div class="ds-section-title"><h3>🛒 कैटेगरी</h3></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:20px;">
+      <a class="quick-action" onclick="kirana.filterCat('अनाज')">
+        <div class="quick-action-icon">🌾</div>
+        <div class="quick-action-label">अनाज</div>
+      </a>
+      <a class="quick-action" onclick="kirana.filterCat('मसाला')">
+        <div class="quick-action-icon">🌶️</div>
+        <div class="quick-action-label">मसाला</div>
+      </a>
+      <a class="quick-action" onclick="kirana.filterCat('तेल')">
+        <div class="quick-action-icon">🫒</div>
+        <div class="quick-action-label">तेल</div>
+      </a>
+      <a class="quick-action" onclick="kirana.filterCat('स्नैक्स')">
+        <div class="quick-action-icon">🍪</div>
+        <div class="quick-action-label">स्नैक्स</div>
+      </a>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="ds-stats">
+      <div class="ds-stat">
+        <div class="ds-stat-value" id="kStores">0</div>
+        <div class="ds-stat-label">दुकानें</div>
+      </div>
+      <div class="ds-stat">
+        <div class="ds-stat-value" id="kItems">0</div>
+        <div class="ds-stat-label">सामान</div>
+      </div>
+      <div class="ds-stat">
+        <div class="ds-stat-value" id="kOrders">0</div>
+        <div class="ds-stat-label">ऑर्डर</div>
+      </div>
+    </div>
+
+    <!-- Local shops -->
+    <div class="ds-section-title">
+      <h3>🏪 मोहल्ले की दुकानें</h3>
+      <a onclick="kirana.allShops()">सभी →</a>
+    </div>
+    <div id="shopsList">
+      <div class="ds-empty">
+        <div class="ds-empty-icon">🛒</div>
+        <h4>दुकानें लोड हो रही हैं...</h4>
+      </div>
+    </div>
+
+    <!-- Popular items -->
+    <div class="ds-section-title">
+      <h3>🔥 पॉपुलर सामान</h3>
+    </div>
+    <div id="itemsList">
+      <div class="item-card">
+        <div class="item-emoji">🌾</div>
+        <div style="flex:1;">
+          <div class="ds-fw-bold">बासमती चावल</div>
+          <div class="ds-text-3 ds-text-sm">5 kg पैक</div>
+        </div>
+        <div class="item-price">₹450</div>
+        <button class="ds-btn ds-btn-success" onclick="kirana.addToCart('चावल')">+</button>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">🫓</div>
+        <div style="flex:1;">
+          <div class="ds-fw-bold">आटा (गेहूँ)</div>
+          <div class="ds-text-3 ds-text-sm">10 kg पैक</div>
+        </div>
+        <div class="item-price">₹320</div>
+        <button class="ds-btn ds-btn-success" onclick="kirana.addToCart('आटा')">+</button>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">🫒</div>
+        <div style="flex:1;">
+          <div class="ds-fw-bold">सरसों तेल</div>
+          <div class="ds-text-3 ds-text-sm">1 लीटर</div>
+        </div>
+        <div class="item-price">₹165</div>
+        <button class="ds-btn ds-btn-success" onclick="kirana.addToCart('तेल')">+</button>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">🍬</div>
+        <div style="flex:1;">
+          <div class="ds-fw-bold">चीनी</div>
+          <div class="ds-text-3 ds-text-sm">1 kg</div>
+        </div>
+        <div class="item-price">₹45</div>
+        <button class="ds-btn ds-btn-success" onclick="kirana.addToCart('चीनी')">+</button>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">🧂</div>
+        <div style="flex:1;">
+          <div class="ds-fw-bold">नमक</div>
+          <div class="ds-text-3 ds-text-sm">1 kg</div>
+        </div>
+        <div class="item-price">₹20</div>
+        <button class="ds-btn ds-btn-success" onclick="kirana.addToCart('नमक')">+</button>
+      </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="ds-section-title"><h3>📖 कैसे काम करता है?</h3></div>
+    <div class="ds-card">
+      <div style="display:flex;gap:12px;align-items:start;margin-bottom:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-green);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">1</div>
+        <div>
+          <div class="ds-fw-bold">सामान चुनें</div>
+          <div class="ds-text-3 ds-text-sm">कैटेगरी में देखें या सर्च करें</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:start;margin-bottom:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-green);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">2</div>
+        <div>
+          <div class="ds-fw-bold">WhatsApp पर भेजें</div>
+          <div class="ds-text-3 ds-text-sm">दुकानदार को सीधा ऑर्डर जाएगा</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:start;">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-green);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">3</div>
+        <div>
+          <div class="ds-fw-bold">घर पर डिलीवरी</div>
+          <div class="ds-text-3 ds-text-sm">30 मिनट में सामान आपके घर</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="ds-card ds-mb-3" style="background:linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.1));border-color:var(--ds-green);">
+      <h3 style="color:var(--ds-green);">💡 दुकानदार हैं?</h3>
+      <p class="ds-text-2 ds-mt-1">अपनी दुकान फ्री जोड़ें और पड़ोसियों को सामान बेचें। कोई commission नहीं!</p>
+      <button class="ds-btn ds-btn-success ds-mt-2" onclick="kirana.becomeSeller()">🏪 फ्री दुकान जोड़ें</button>
+    </div>
+
+    <button class="ds-fab" onclick="DS.openSOS()">🆘</button>
+  </div>
+</div>
+
+<script src="/nav.js"></script>
+<script>
+const kirana = {
+  cart: JSON.parse(localStorage.getItem('dsCart') || '[]'),
+
+  async init() {
+    await kirana.loadStats();
+    await kirana.loadShops();
+  },
+
+  async loadStats() {
+    try {
+      const r = await fetch('/api/kirana/stats');
+      const d = await r.json();
+      if (d.success) {
+        document.getElementById('kStores').textContent = d.stores || 0;
+        document.getElementById('kItems').textContent = d.items || 0;
+        document.getElementById('kOrders').textContent = d.orders || 0;
+      }
+    } catch(e) {}
+  },
+
+  async loadShops() {
+    const list = document.getElementById('shopsList');
+    try {
+      const r = await fetch('/api/kirana/stores');
+      const d = await r.json();
+      if (d.success && d.stores && d.stores.length) {
+        list.innerHTML = d.stores.map(s => `
+          <div class="shop-card">
+            <div class="shop-icon">🏪</div>
+            <div style="flex:1;min-width:0;">
+              <div class="ds-fw-bold">${s.name || 'किराना दुकान'}</div>
+              <div class="ds-text-3 ds-text-sm">📍 ${s.area || 'Hazaribagh'} • ${s.distance || '2 km'}</div>
+              <div class="ds-mt-1">
+                <span class="ds-badge success">✓ Verified</span>
+                <span class="ds-text-3 ds-text-sm"> ${s.items || 50}+ सामान</span>
+              </div>
+            </div>
+            <a href="https://wa.me/${(s.phone || '919876500001').replace(/[^0-9]/g,'')}?text=${encodeURIComponent('नमस्ते, मुझे किराना चाहिए')}" target="_blank" class="ds-btn ds-btn-success">📲</a>
+          </div>
+        `).join('');
+      } else {
+        list.innerHTML = `
+          <div class="ds-empty">
+            <div class="ds-empty-icon">🏪</div>
+            <h4>अभी कोई दुकान नहीं</h4>
+            <p>पहली दुकान जोड़ने वाले बनें!</p>
+            <button class="ds-btn ds-btn-success ds-mt-2" onclick="kirana.becomeSeller()">🏪 दुकान जोड़ें</button>
+          </div>
+        `;
+      }
+    } catch(e) {
+      list.innerHTML = `<div class="ds-empty"><div class="ds-empty-icon">⚠️</div><h4>लोड नहीं हो सका</h4></div>`;
+    }
+  },
+
+  addToCart(item) {
+    const user = DS.user();
+    if (!user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
+    kirana.cart.push({ item, qty: 1, addedAt: Date.now() });
+    localStorage.setItem('dsCart', JSON.stringify(kirana.cart));
+    DS.toast(`✅ ${item} कार्ट में जोड़ा (${kirana.cart.length})`, 'success');
+  },
+
+  search(q) {
+    if (!q) return;
+    DS.toast(`🔍 "${q}" खोज रहे हैं...`);
+    // Simple demo - in production would call API
+  },
+
+  filterCat(cat) {
+    DS.toast(`📂 ${cat} कैटेगरी दिखा रहे हैं`);
+  },
+
+  orderNow() {
+    if (!DS.user()) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
+    if (kirana.cart.length === 0) {
+      DS.toast('⚠️ पहले सामान चुनें', 'error');
+      return;
+    }
+    // Send to WhatsApp
+    const items = kirana.cart.map(c => `• ${c.item} (x${c.qty})`).join('\n');
+    const msg = `🛒 *DainikState किराना ऑर्डर*\n\n${items}\n\n📍 कृपया पता बताएं\n⏰ डिलीवरी: ASAP`;
+    window.open(`https://wa.me/919876500001?text=${encodeURIComponent(msg)}`, '_blank');
+    kirana.cart = [];
+    localStorage.setItem('dsCart', JSON.stringify(kirana.cart));
+    DS.toast('✅ WhatsApp पर ऑर्डर भेजा!', 'success');
+  },
+
+  becomeSeller() {
+    if (!DS.user()) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
+    location.href = '/kirana-add-shop.html';
+  },
+
+  allShops() {
+    location.href = '/kirana-shops.html';
+  }
+};
+
+kirana.init();
+</script>
+</body>
+</html>
