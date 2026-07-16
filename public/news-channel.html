@@ -1453,14 +1453,14 @@ const channel = {
 
     // Also check if description/content contains video URL
     const text = (news.description || '') + ' ' + (news.content || '') + ' ' + (news.url || '');
-    const ytMatch = text.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    const ytMatch = text.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     const vimeoMatch = text.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
     const odMatch = text.match(/odysee\.com\/(@[^\/]+\/[a-zA-Z0-9_-]+|[a-zA-Z0-9_-]+:[a-z0-9]+)/);
     const mp4Match = text.match(/(https?:\/\/[^\s"']+\.mp4(?:\?[^\s"']*)?)/i);
     const hlsMatch = text.match(/(https?:\/\/[^\s"']+\.m3u8(?:\?[^\s"']*)?)/i);
 
     if (candidates[0]) return this.parseVideoUrl(candidates[0]);
-    if (ytMatch) return { type: 'YouTube', id: ytMatch[1], embedUrl: this.getYouTubeEmbed(ytMatch[1]) };
+    if (ytMatch) return { type: 'YouTube', id: ytMatch[1], embedUrl: this.getYouTubeEmbed(ytMatch[1]), isLive: /live/.test(text) };
     if (vimeoMatch) return { type: 'Vimeo', id: vimeoMatch[1], embedUrl: this.getVimeoEmbed(vimeoMatch[1]) };
     if (odMatch) return { type: 'Odysee', id: odMatch[1], embedUrl: this.getOdyseeEmbed(odMatch[1]) };
     if (hlsMatch) return { type: 'HLS', url: hlsMatch[1], embedUrl: this.getHLSEmbed(hlsMatch[1]) };
@@ -1469,8 +1469,8 @@ const channel = {
   },
 
   parseVideoUrl(url) {
-    // YouTube
-    let m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    // YouTube (including /live/)
+    let m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if (m) return { type: 'YouTube', id: m[1], embedUrl: this.getYouTubeEmbed(m[1]) };
     // Vimeo
     m = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
