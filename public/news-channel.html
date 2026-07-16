@@ -443,6 +443,84 @@
   .tv-end-title { font-size: 24px; font-weight: 900; margin-bottom: 8px; }
   .tv-end-sub { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 20px; }
 
+  /* Sound control button */
+  .tv-sound-btn {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+  }
+  .tv-sound-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+  .tv-sound-btn.active { background: #10b981; border-color: #10b981; }
+  .tv-sound-btn.muted { background: #ef4444; border-color: #ef4444; }
+
+  /* Volume slider */
+  .tv-volume {
+    position: absolute;
+    bottom: 70px; right: 12px;
+    z-index: 100;
+    background: rgba(0,0,0,0.85);
+    padding: 8px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    display: none;
+    align-items: center; gap: 8px;
+  }
+  .tv-volume.show { display: flex; }
+  .tv-volume input[type=range] {
+    width: 80px; height: 4px;
+    -webkit-appearance: none;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    outline: none;
+  }
+  .tv-volume input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: #fbbf24;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(251,191,36,0.6);
+  }
+
+  /* Sound indicator (now playing music) */
+  .tv-music-indicator {
+    position: absolute;
+    top: 70px; right: 12px;
+    z-index: 50;
+    display: none;
+    align-items: center; gap: 4px;
+    background: rgba(16,185,129,0.2);
+    border: 1px solid #10b981;
+    color: #10b981;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 9px; font-weight: 700;
+  }
+  .tv-music-indicator.show { display: flex; }
+  .tv-music-bars {
+    display: flex; align-items: flex-end; gap: 1px; height: 10px;
+  }
+  .tv-music-bar {
+    width: 2px; background: #10b981; border-radius: 1px;
+    animation: musicBar 0.8s ease-in-out infinite alternate;
+  }
+  .tv-music-bar:nth-child(1) { animation-delay: 0s; }
+  .tv-music-bar:nth-child(2) { animation-delay: 0.2s; }
+  .tv-music-bar:nth-child(3) { animation-delay: 0.4s; }
+  .tv-music-bar:nth-child(4) { animation-delay: 0.1s; }
+  @keyframes musicBar {
+    0% { height: 3px; }
+    100% { height: 10px; }
+  }
+
   /* Touch/click hint */
   .tv-touch-hint {
     position: absolute; bottom: 130px; left: 50%;
@@ -488,6 +566,24 @@
     <div class="tv-corner-info" id="nextUp" style="display:none;">
       <div class="label">अगली खबर ⏭</div>
       <div class="next-title" id="nextTitle">--</div>
+    </div>
+
+    <!-- Music indicator -->
+    <div class="tv-music-indicator" id="musicIndicator">
+      <div class="tv-music-bars">
+        <div class="tv-music-bar"></div>
+        <div class="tv-music-bar"></div>
+        <div class="tv-music-bar"></div>
+        <div class="tv-music-bar"></div>
+      </div>
+      <span>🎵 BBC THEME</span>
+    </div>
+
+    <!-- Volume slider -->
+    <div class="tv-volume" id="volumeSlider">
+      <span style="font-size:12px;">🔊</span>
+      <input type="range" id="volumeRange" min="0" max="100" value="30" oninput="channel.setVolume(this.value)">
+      <span style="font-size:10px;color:rgba(255,255,255,0.6);min-width:30px;" id="volumeLabel">30%</span>
     </div>
 
     <!-- Main Screen -->
@@ -540,6 +636,7 @@
         <div class="tv-control-right">
           <div class="tv-ctrl" onclick="channel.likeCurrent()" id="likeBtn" title="Like">🤍</div>
           <div class="tv-ctrl" onclick="channel.shareCurrent()" title="Share">📤</div>
+          <div class="tv-ctrl" id="soundBtn" onclick="channel.toggleSound()" title="BBC Music: OFF">🔇</div>
           <div class="tv-ctrl" onclick="channel.openSettings()" title="Settings">⚙️</div>
         </div>
       </div>
@@ -582,6 +679,18 @@
         <option value="ramgarh">रामगढ़</option>
       </select>
     </div>
+    <div class="ds-form-group">
+      <label class="ds-form-label">🎵 Background Music (BBC News Theme)</label>
+      <label class="ds-flex ds-gap-1" style="margin-top:6px;">
+        <input type="checkbox" id="musicToggle" onchange="channel.toggleSound()">
+        <span>Professional news background music enable करें</span>
+      </label>
+      <div style="margin-top:10px;">
+        <label class="ds-form-label">🔊 Volume: <span id="volumeLabel2">30%</span></label>
+        <input type="range" min="0" max="100" value="30" style="width:100%;" oninput="channel.setVolume(this.value); document.getElementById('volumeLabel2').textContent=this.value+'%';">
+      </div>
+      <p class="ds-text-3 ds-text-sm ds-mt-1" style="font-size:11px;">🎼 Subtle synth pad with chord progression + soft pulse. Click 🔇 button in player to toggle anytime.</p>
+    </div>
     <button class="ds-btn ds-btn-primary ds-btn-block ds-mt-2" onclick="channel.closeSettings()">✅ Save</button>
   </div>
 </div>
@@ -589,9 +698,224 @@
 <script src="/nav.js"></script>
 <script>
 // ============================================================
-// DAINIKSTATE TV CHANNEL MODE
-// Auto-play top 10 news like a TV channel
+// BBC NEWS THEME - Web Audio API Synthesizer
+// Professional news background music, transitions & alerts
+// 100% synthesized in browser - no downloads, no copyright!
 // ============================================================
+const bbcSound = {
+  ctx: null,
+  masterGain: null,
+  musicGain: null,
+  sfxGain: null,
+  isPlaying: false,
+  currentNode: null,
+  volume: 0.3,
+  musicInterval: null,
+
+  init() {
+    if (this.ctx) return;
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.value = this.volume;
+      this.masterGain.connect(this.ctx.destination);
+
+      this.musicGain = this.ctx.createGain();
+      this.musicGain.gain.value = 0.7;  // Music is softer than SFX
+      this.musicGain.connect(this.masterGain);
+
+      this.sfxGain = this.ctx.createGain();
+      this.sfxGain.gain.value = 1.0;
+      this.sfxGain.connect(this.masterGain);
+
+      console.log('🎵 BBC Sound engine ready');
+    } catch (e) {
+      console.error('Audio init failed:', e);
+    }
+  },
+
+  resume() {
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  },
+
+  setVolume(v) {
+    this.volume = v / 100;
+    if (this.masterGain) this.masterGain.gain.value = this.volume;
+  },
+
+  // ============ BBC NEWS THEME (background music) ============
+  // Inspired by classic BBC World News / CNN theme
+  // A serious, corporate, slightly tense newsroom underscore
+  playTheme() {
+    if (!this.ctx || this.isPlaying) return;
+    this.isPlaying = true;
+
+    // Chord progression: Am - F - C - G (classic news theme feel)
+    // Played as soft synth pad with subtle pulse
+    const chords = [
+      [220.00, 261.63, 329.63],   // Am (A C E)
+      [174.61, 220.00, 261.63],   // F  (F A C)
+      [261.63, 329.63, 392.00],   // C  (C E G)
+      [196.00, 246.94, 293.66]    // G  (G B D)
+    ];
+    const chordDuration = 4; // 4 seconds per chord
+    let chordIdx = 0;
+
+    const playChord = () => {
+      if (!this.isPlaying) return;
+      const chord = chords[chordIdx % chords.length];
+      const now = this.ctx.currentTime;
+
+      chord.forEach((freq, i) => {
+        // Soft sine pad
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        // Slight detune for richness
+        osc.detune.value = (i - 1) * 5;
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.06, now + 0.5);   // fade in
+        gain.gain.setValueAtTime(0.06, now + chordDuration - 0.5);
+        gain.gain.linearRampToValueAtTime(0, now + chordDuration);  // fade out
+        osc.connect(gain);
+        gain.connect(this.musicGain);
+        osc.start(now);
+        osc.stop(now + chordDuration);
+      });
+
+      // Add subtle bass note (octave below root)
+      const bass = chord[0] / 2;
+      const bassOsc = this.ctx.createOscillator();
+      const bassGain = this.ctx.createGain();
+      bassOsc.type = 'sine';
+      bassOsc.frequency.value = bass;
+      bassGain.gain.setValueAtTime(0, now);
+      bassGain.gain.linearRampToValueAtTime(0.04, now + 0.3);
+      bassGain.gain.setValueAtTime(0.04, now + chordDuration - 0.3);
+      bassGain.gain.linearRampToValueAtTime(0, now + chordDuration);
+      bassOsc.connect(bassGain);
+      bassGain.connect(this.musicGain);
+      bassOsc.start(now);
+      bassOsc.stop(now + chordDuration);
+
+      // Add a subtle "tick" pulse (like a newsroom clock) every 1 sec
+      for (let t = 0; t < chordDuration; t += 1) {
+        const tickTime = now + t + 0.5;
+        const tickOsc = this.ctx.createOscillator();
+        const tickGain = this.ctx.createGain();
+        tickOsc.type = 'square';
+        tickOsc.frequency.value = 1000;
+        tickGain.gain.setValueAtTime(0, tickTime);
+        tickGain.gain.linearRampToValueAtTime(0.008, tickTime + 0.005);
+        tickGain.gain.exponentialRampToValueAtTime(0.001, tickTime + 0.05);
+        tickOsc.connect(tickGain);
+        tickGain.connect(this.musicGain);
+        tickOsc.start(tickTime);
+        tickOsc.stop(tickTime + 0.05);
+      }
+
+      chordIdx++;
+    };
+
+    playChord();
+    this.musicInterval = setInterval(playChord, chordDuration * 1000);
+  },
+
+  stopTheme() {
+    this.isPlaying = false;
+    if (this.musicInterval) {
+      clearInterval(this.musicInterval);
+      this.musicInterval = null;
+    }
+  },
+
+  // ============ TRANSITION SOUND (next/prev news) ============
+  // Classic "swoosh" - quick filter sweep
+  playSwoosh() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const duration = 0.3;
+
+    // White noise with quick filter sweep = "swoosh"
+    const bufferSize = this.ctx.sampleRate * duration;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.5;
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 1;
+    filter.frequency.setValueAtTime(200, now);
+    filter.frequency.exponentialRampToValueAtTime(3000, now + 0.15);
+    filter.frequency.exponentialRampToValueAtTime(200, now + duration);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+    noise.start(now);
+    noise.stop(now + duration);
+  },
+
+  // ============ BREAKING NEWS CHIME ============
+  // Classic 3-tone news alert (urgent)
+  playBreaking() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    // BEEP-BEEP-BOOP (urgent news alert)
+    const tones = [
+      { freq: 880, start: 0,    dur: 0.15 },  // A5
+      { freq: 880, start: 0.18, dur: 0.15 },  // A5
+      { freq: 1100, start: 0.36, dur: 0.4 }   // C#6
+    ];
+    tones.forEach(t => {
+      const startTime = now + t.start;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = t.freq;
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.25, startTime + 0.01);
+      gain.gain.setValueAtTime(0.25, startTime + t.dur - 0.02);
+      gain.gain.linearRampToValueAtTime(0, startTime + t.dur);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(startTime);
+      osc.stop(startTime + t.dur);
+    });
+  },
+
+  // ============ CLICK SOUND (button) ============
+  playClick() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.1, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.05);
+  }
+};
+
 const channel = {
   playlist: [],
   current: 0,
@@ -605,12 +929,60 @@ const channel = {
   likedNews: JSON.parse(localStorage.getItem('dsLikedNews') || '[]'),
   watchedNews: JSON.parse(localStorage.getItem('dsWatchedNews') || '[]'),
   imageCache: {},
+  soundOn: false,  // BBC theme state
+  musicEnabled: JSON.parse(localStorage.getItem('dsMusicEnabled') || 'false'),
 
   async init() {
     this.startClock();
+    // Init sound engine (but don't auto-start - browser blocks until user interaction)
+    bbcSound.init();
+    // Restore music preference
+    if (this.musicEnabled) {
+      // Will be started on first user interaction
+      this.updateSoundButton();
+    }
     await this.loadPlaylist();
     this.attachEvents();
     this.play();
+  },
+
+  // ============ SOUND CONTROL ============
+  toggleSound() {
+    bbcSound.init();  // Ensure context exists
+    bbcSound.resume();
+    if (this.soundOn) {
+      bbcSound.stopTheme();
+      this.soundOn = false;
+      this.musicEnabled = false;
+      document.getElementById('musicIndicator')?.classList.remove('show');
+    } else {
+      bbcSound.playTheme();
+      this.soundOn = true;
+      this.musicEnabled = true;
+      document.getElementById('musicIndicator')?.classList.add('show');
+    }
+    localStorage.setItem('dsMusicEnabled', JSON.stringify(this.musicEnabled));
+    this.updateSoundButton();
+  },
+
+  updateSoundButton() {
+    const btn = document.getElementById('soundBtn');
+    if (!btn) return;
+    if (this.soundOn) {
+      btn.textContent = '🎵';
+      btn.classList.add('active');
+      btn.title = 'BBC Music: ON';
+    } else {
+      btn.textContent = '🔇';
+      btn.classList.remove('active');
+      btn.classList.add('muted');
+      btn.title = 'BBC Music: OFF (click to play)';
+    }
+  },
+
+  setVolume(v) {
+    bbcSound.setVolume(v);
+    document.getElementById('volumeLabel').textContent = v + '%';
   },
 
   // ============ CLOCK ============
@@ -715,6 +1087,13 @@ const channel = {
 
       const isBreaking = news.featured || (this.current < 3);
 
+      // Play breaking news chime for top 3 news
+      if (isBreaking) {
+        setTimeout(() => bbcSound.playBreaking(), 600);
+      } else {
+        bbcSound.playSwoosh();
+      }
+
       screen.innerHTML = `
         ${imgHtml}
         <div class="tv-news-overlay">
@@ -794,6 +1173,7 @@ const channel = {
   },
 
   next() {
+    bbcSound.playSwoosh();
     if (this.current < this.playlist.length - 1) {
       this.current++;
       this.showCurrent();
@@ -803,6 +1183,7 @@ const channel = {
   },
 
   prev() {
+    bbcSound.playSwoosh();
     if (this.current > 0) {
       this.current--;
       this.showCurrent();
@@ -810,6 +1191,7 @@ const channel = {
   },
 
   jumpTo(idx) {
+    bbcSound.playSwoosh();
     this.current = idx;
     this.togglePlaylist();  // Close playlist
     this.showCurrent();
@@ -845,6 +1227,7 @@ const channel = {
 
   // ============ ACTIONS ============
   likeCurrent() {
+    bbcSound.playClick();
     const news = this.playlist[this.current];
     if (!news) return;
     const id = news.id || news.slug;
@@ -899,6 +1282,22 @@ const channel = {
 
   // ============ EVENTS ============
   attachEvents() {
+    // First user interaction - start music if enabled
+    const startMusicOnce = () => {
+      bbcSound.init();
+      bbcSound.resume();
+      if (this.musicEnabled && !this.soundOn) {
+        bbcSound.playTheme();
+        this.soundOn = true;
+        document.getElementById('musicIndicator')?.classList.add('show');
+        this.updateSoundButton();
+      }
+      document.removeEventListener('click', startMusicOnce);
+      document.removeEventListener('touchstart', startMusicOnce);
+    };
+    document.addEventListener('click', startMusicOnce);
+    document.addEventListener('touchstart', startMusicOnce);
+
     // Tap screen to play/pause
     document.getElementById('tvScreen').addEventListener('click', () => this.togglePlay());
 
