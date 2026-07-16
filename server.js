@@ -24,6 +24,17 @@ try {
 }
 
 // ============================================================
+// KIRANA + SABJI - Local marketplace
+// ============================================================
+let kiranaSabjiModule = null;
+try {
+  kiranaSabjiModule = require('./kirana_sabji.js');
+  console.log('🛒 Kirana+Sabji module file loaded');
+} catch (e) {
+  console.error('⚠️ Kirana+Sabji module file not found (will skip):', e.message);
+}
+
+// ============================================================
 // DAINIKSTATE NEWS SCRAPER
 // ============================================================
 let newsScraperModule = null;
@@ -2357,12 +2368,12 @@ connectDB().then(async () => {
   }
   // Initialize Erikso School Transport module (needs DB)
   if (eriksoModule) {
-    try {
-      eriksoModule(app, db, usersCol, notificationsCol);
-      console.log('🚐 Erikso School Transport initialized!');
-    } catch (e) {
-      console.error('⚠️ Erikso init error:', e.message);
-    }
+    eriksoModule(app, db, usersCol, notificationsCol);
+    console.log('🚐 Erikso School Transport ready!');
+  }
+  if (kiranaSabjiModule) {
+    kiranaSabjiModule(app, db, usersCol, notificationsCol);
+    console.log('🛒 Kirana + Sabji ready!');
   }
   // Initialize DainikState News Scraper (needs DB)
   if (newsScraperModule) {
