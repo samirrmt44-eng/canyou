@@ -926,7 +926,7 @@ async function saveChannelSettings() {
 }
 
 function addNewsToChannel() {
-  showModal('📰 Add News to Channel', `
+  showModal('📰 Add News to Channel (Image/Video)', `
     <div style="margin-bottom:12px;text-align:left;">
       <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">Title *</label>
       <input type="text" id="addNewsTitle" placeholder="News headline" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;">
@@ -934,6 +934,15 @@ function addNewsToChannel() {
     <div style="margin-bottom:12px;text-align:left;">
       <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">Description</label>
       <textarea id="addNewsDesc" placeholder="Short description" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;min-height:60px;resize:vertical;"></textarea>
+    </div>
+    <div style="margin-bottom:12px;text-align:left;">
+      <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">🖼️ Image URL (optional)</label>
+      <input type="url" id="addNewsImage" placeholder="https://example.com/image.jpg" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;">
+    </div>
+    <div style="margin-bottom:12px;text-align:left;">
+      <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">🎬 Video URL (YouTube/Odysee - optional)</label>
+      <input type="url" id="addNewsVideo" placeholder="https://youtu.be/xxxxx or https://odysee.com/@xxx/yyy" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;">
+      <p style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;">📺 Channel mode me video play hoga (YouTube embed / Odysee embed)</p>
     </div>
     <div style="margin-bottom:12px;text-align:left;">
       <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:4px;display:block;">Category</label>
@@ -953,14 +962,16 @@ async function submitChannelNews() {
   const title = document.getElementById('addNewsTitle').value.trim();
   if (!title) { toast('⚠️ Title required'); return; }
   const description = document.getElementById('addNewsDesc').value.trim();
+  const image = document.getElementById('addNewsImage')?.value.trim() || '';
+  const videoUrl = document.getElementById('addNewsVideo')?.value.trim() || '';
   const category = document.getElementById('addNewsCat').value;
   try {
     const r = await fetch(API + '/api/news/group-channel/add', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description, category, groupId: currentChannel, ownerId: currentUser?.id || '' })
+      body: JSON.stringify({ title, description, image, videoUrl, category, groupId: currentChannel, ownerId: currentUser?.id || '' })
     }).then(r => r.json());
     if (r.success) {
-      toast('✅ News published to channel!');
+      toast(r.article.videoUrl ? '✅ Video news published!' : '✅ News published!');
       closeModal();
       loadNews();
     } else { toast('❌ ' + (r.error || 'Failed')); }
