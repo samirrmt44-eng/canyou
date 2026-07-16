@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>सब्जी मंडी - ताज़ा सब्ज़ी | DainikState</title>
+<link rel="stylesheet" href="/design-system.css" />
+<style>
+  .sabji-hero { background: linear-gradient(135deg, #84cc16 0%, #16a34a 100%); }
+  .veg-card {
+    background: var(--ds-bg-2); border: 1px solid var(--ds-border);
+    border-radius: 16px; overflow: hidden; margin-bottom: 12px;
+  }
+  .veg-banner {
+    height: 80px;
+    background: linear-gradient(135deg, #84cc16, #16a34a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 60px;
+  }
+  .veg-body { padding: 12px 14px; }
+  .veg-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .veg-name { font-weight: 800; font-size: 15px; }
+  .veg-price { color: var(--ds-green); font-weight: 800; font-size: 16px; }
+  .veg-meta { font-size: 12px; color: var(--ds-text-3); }
+  .rate-up { color: var(--ds-red); }
+  .rate-down { color: var(--ds-green); }
+  .farmer-card {
+    background: var(--ds-bg-2); border: 1px solid var(--ds-border);
+    border-radius: 12px; padding: 12px; margin-bottom: 10px;
+    display: flex; gap: 12px; align-items: center;
+  }
+  .farmer-avatar {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(135deg, #84cc16, #16a34a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div class="ds-app">
+  <div id="navMount"></div>
+
+  <div class="ds-content">
+    <!-- Hero -->
+    <div class="ds-hero sabji-hero">
+      <div class="ds-hero-emoji">🥬</div>
+      <h2>सब्जी मंडी - ताज़ा सब्ज़ी</h2>
+      <p>किसान से सीधा आपके घर तक। आज ही ताज़ा सब्ज़ी ऑर्डर करें, WhatsApp पर।</p>
+      <div class="ds-hero-actions">
+        <button class="ds-btn ds-btn-success ds-btn-lg" onclick="sabji.orderNow()">🥬 ऑर्डर करें</button>
+        <button class="ds-btn ds-btn-outline ds-btn-lg" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);" onclick="sabji.becomeFarmer()">👨‍🌾 किसान बनें</button>
+      </div>
+    </div>
+
+    <!-- Today's rates -->
+    <div class="ds-section-title">
+      <h3>📊 आज के भाव</h3>
+      <span class="ds-text-3 ds-text-sm" id="todayDate"></span>
+    </div>
+    <div class="ds-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="veg-card">
+        <div class="veg-banner" style="background:linear-gradient(135deg, #16a34a, #15803d);">🥔</div>
+        <div class="veg-body">
+          <div class="veg-row">
+            <div class="veg-name">आलू</div>
+            <div class="veg-price">₹20/kg</div>
+          </div>
+          <div class="veg-meta">
+            <span class="rate-down">↓ ₹2</span> कल से • हाजारीबाग़ मंडी
+          </div>
+        </div>
+      </div>
+      <div class="veg-card">
+        <div class="veg-banner" style="background:linear-gradient(135deg, #f97316, #ea580c);">🧅</div>
+        <div class="veg-body">
+          <div class="veg-row">
+            <div class="veg-name">प्याज</div>
+            <div class="veg-price">₹30/kg</div>
+          </div>
+          <div class="veg-meta">
+            <span class="rate-up">↑ ₹5</span> कल से • नासिक
+          </div>
+        </div>
+      </div>
+      <div class="veg-card">
+        <div class="veg-banner" style="background:linear-gradient(135deg, #ef4444, #b91c1c);">🍅</div>
+        <div class="veg-body">
+          <div class="veg-row">
+            <div class="veg-name">टमाटर</div>
+            <div class="veg-price">₹40/kg</div>
+          </div>
+          <div class="veg-meta">
+            <span class="rate-down">↓ ₹10</span> कल से • कर्नाटक
+          </div>
+        </div>
+      </div>
+      <div class="veg-card">
+        <div class="veg-banner" style="background:linear-gradient(135deg, #84cc16, #4d7c0f);">🌶️</div>
+        <div class="veg-body">
+          <div class="veg-row">
+            <div class="veg-name">हरी मिर्च</div>
+            <div class="veg-price">₹60/kg</div>
+          </div>
+          <div class="veg-meta">
+            <span class="rate-up">↑ ₹10</span> कल से • लोकल
+          </div>
+        </div>
+      </div>
+      <div class="veg-card">
+        <div class="veg-banner" style="background:linear-gradient(135deg, #fbbf24, #d97706);">🎃</div>
+        <div class="veg-body">
+          <div class="veg-row">
+            <div class="veg-name">लौकी</div>
+            <div class="veg-price">₹25/पीस</div>
+          </div>
+          <div class="veg-meta">
+            <span>→ same</span> कल से • हाजारीबाग़
+          </div>
+        </div>
+      </div>
+      <div class="veg-card">
+        <div class="veg-banner" style="background:linear-gradient(135deg, #a855f7, #7e22ce);">🍆</div>
+        <div class="veg-body">
+          <div class="veg-row">
+            <div class="veg-name">बैंगन</div>
+            <div class="veg-price">₹30/kg</div>
+          </div>
+          <div class="veg-meta">
+            <span class="rate-down">↓ ₹5</span> कल से • हाजारीबाग़
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Local farmers -->
+    <div class="ds-section-title">
+      <h3>👨‍🌾 मोहल्ले के किसान</h3>
+      <a onclick="sabji.allFarmers()">सभी →</a>
+    </div>
+    <div id="farmersList">
+      <div class="ds-empty">
+        <div class="ds-empty-icon">👨‍🌾</div>
+        <h4>किसान लोड हो रहे हैं...</h4>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="ds-card ds-mb-3 ds-mt-3" style="background:linear-gradient(135deg, rgba(132,204,22,0.2), rgba(22,163,74,0.1));border-color:var(--ds-green);">
+      <h3 style="color:var(--ds-green);">💡 किसान हैं?</h3>
+      <p class="ds-text-2 ds-mt-1">अपनी ताज़ी सब्ज़ी सीधे शहर में बेचें। कोई बिचौलिया नहीं, ज़्यादा कमाई!</p>
+      <button class="ds-btn ds-btn-success ds-mt-2" onclick="sabji.becomeFarmer()">👨‍🌾 फ्री रजिस्ट्रेशन</button>
+    </div>
+
+    <button class="ds-fab" onclick="DS.openSOS()">🆘</button>
+  </div>
+</div>
+
+<script src="/nav.js"></script>
+<script>
+const sabji = {
+  async init() {
+    document.getElementById('todayDate').textContent = new Date().toLocaleDateString('hi-IN');
+    await sabji.loadFarmers();
+  },
+
+  async loadFarmers() {
+    const list = document.getElementById('farmersList');
+    try {
+      const r = await fetch('/api/sabji/farmers');
+      const d = await r.json();
+      if (d.success && d.farmers && d.farmers.length) {
+        list.innerHTML = d.farmers.slice(0, 5).map(f => `
+          <div class="farmer-card">
+            <div class="farmer-avatar">${(f.name || 'किसान').charAt(0)}</div>
+            <div style="flex:1;min-width:0;">
+              <div class="ds-fw-bold">${f.name || 'किसान'}</div>
+              <div class="ds-text-3 ds-text-sm">📍 ${f.area || 'हाजारीबाग़'} • ${f.items || 'सब्ज़ियां'}</div>
+            </div>
+            <a href="https://wa.me/${(f.phone || '919876500001').replace(/[^0-9]/g,'')}?text=${encodeURIComponent('नमस्ते, ताज़ी सब्ज़ी चाहिए')}" target="_blank" class="ds-btn ds-btn-success">📲</a>
+          </div>
+        `).join('');
+      } else {
+        list.innerHTML = `
+          <div class="ds-empty">
+            <div class="ds-empty-icon">👨‍🌾</div>
+            <h4>अभी कोई किसान नहीं</h4>
+            <p>पहले किसान बनें!</p>
+            <button class="ds-btn ds-btn-success ds-mt-2" onclick="sabji.becomeFarmer()">👨‍🌾 किसान बनें</button>
+          </div>
+        `;
+      }
+    } catch(e) {
+      list.innerHTML = `<div class="ds-empty"><div class="ds-empty-icon">⚠️</div><h4>लोड नहीं हो सका</h4></div>`;
+    }
+  },
+
+  orderNow() {
+    if (!DS.user()) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
+    location.href = '/sabji-order.html';
+  },
+
+  becomeFarmer() {
+    if (!DS.user()) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
+    location.href = '/sabji-farmer.html';
+  },
+
+  allFarmers() {
+    location.href = '/sabji-farmers.html';
+  }
+};
+
+sabji.init();
+</script>
+</body>
+</html>
