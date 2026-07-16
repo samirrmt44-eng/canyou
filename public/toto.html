@@ -3,12 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>TOTO - स्कूल ट्रांसपोर्ट | DainikState</title>
+<title>TOTO - सभी के लिए राइड | DainikState</title>
 <link rel="stylesheet" href="/design-system.css" />
 <style>
   .toto-hero { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
-  .toto-stop { background: rgba(255,255,255,0.05); border-left: 3px solid var(--ds-accent); }
-  .toto-stop.completed { opacity: 0.5; border-color: var(--ds-green); }
   .live-dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: var(--ds-green);
@@ -31,16 +29,14 @@
       linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
     background-size: 20px 20px;
   }
-  .toto-pin {
-    position: absolute; font-size: 32px;
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
-  }
+  .toto-pin { position: absolute; font-size: 32px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
   .toto-route-line {
     position: absolute; top: 50%; left: 10%; right: 10%; height: 3px;
     background: linear-gradient(90deg, var(--ds-accent) 0%, var(--ds-yellow) 50%, var(--ds-green) 100%);
     border-radius: 2px;
   }
-  .stat-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
   .quick-action {
     display: flex; flex-direction: column; align-items: center; gap: 6px;
     padding: 14px 8px; background: var(--ds-bg-2);
@@ -51,6 +47,31 @@
   .quick-action:hover { border-color: var(--ds-accent); transform: translateY(-2px); }
   .quick-action-icon { font-size: 28px; }
   .quick-action-label { font-size: 11px; font-weight: 700; text-align: center; }
+  .service-card {
+    background: var(--ds-bg-2); border: 1px solid var(--ds-border);
+    border-radius: 16px; padding: 16px; margin-bottom: 12px;
+    display: flex; gap: 14px; align-items: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .service-card:hover { border-color: var(--ds-accent); transform: translateX(2px); }
+  .service-icon {
+    width: 60px; height: 60px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; flex-shrink: 0;
+  }
+  .service-icon.auto { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+  .service-icon.bike { background: linear-gradient(135deg, #10b981, #059669); }
+  .service-icon.car { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+  .service-icon.parcel { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+  .service-icon.school { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+  .service-icon.hospital { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+  .service-icon.market { background: linear-gradient(135deg, #f97316, #ea580c); }
+  .service-icon.senior { background: linear-gradient(135deg, #a855f7, #7e22ce); }
+  .service-icon.event { background: linear-gradient(135deg, #ec4899, #be185d); }
+  .service-icon.night { background: linear-gradient(135deg, #1e293b, #0f172a); }
+  .service-icon.emergency { background: linear-gradient(135deg, #dc2626, #991b1b); }
+  .service-icon.outstation { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+
   .driver-card {
     background: var(--ds-bg-2); border: 1px solid var(--ds-border);
     border-radius: 16px; padding: 16px; margin-bottom: 12px;
@@ -68,6 +89,36 @@
     background: rgba(245,158,11,0.2); color: var(--ds-yellow);
     border-radius: 12px; font-size: 10px; font-weight: 700;
   }
+  .ride-cta {
+    background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(239,68,68,0.1));
+    border: 2px solid var(--ds-accent);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .ride-cta-title { font-size: 18px; font-weight: 900; margin-bottom: 8px; }
+  .ride-cta-sub { font-size: 13px; color: var(--ds-text-2); margin-bottom: 14px; }
+  .from-to-box {
+    background: var(--ds-bg-2); border-radius: 12px; padding: 12px;
+    margin-bottom: 12px;
+  }
+  .from-to-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0;
+  }
+  .from-to-row + .from-to-row { border-top: 1px dashed var(--ds-border); }
+  .from-to-dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+  }
+  .from-to-dot.from { background: var(--ds-green); }
+  .from-to-dot.to { background: var(--ds-red); }
+  .from-to-input {
+    flex: 1; background: none; border: none;
+    color: var(--ds-text); font-size: 14px;
+    font-family: inherit; outline: none;
+  }
+  .from-to-input::placeholder { color: var(--ds-text-3); }
 </style>
 </head>
 <body>
@@ -78,65 +129,235 @@
     <!-- Hero -->
     <div class="ds-hero toto-hero">
       <div class="ds-hero-emoji">🛺</div>
-      <h2>टोटो - स्कूल ट्रांसपोर्ट</h2>
-      <p>अपने बच्चे को स्कूल भेजें सुरक्षित और सस्ते में। 100% भरोसेमंद ड्राइवर।</p>
+      <h2>TOTO - सबके लिए राइड</h2>
+      <p>ऑटो, बाइक, कार, पार्सल, स्कूल, इमरजेंसी — कुछ भी, कभी भी, कहीं भी। <strong>100% मुफ्त प्लेटफॉर्म!</strong></p>
       <div class="ds-hero-actions">
-        <button class="ds-btn ds-btn-accent ds-btn-lg" onclick="toto.bookNow()">📲 अभी बुक करें</button>
+        <button class="ds-btn ds-btn-accent ds-btn-lg" onclick="toto.bookNow()">📲 अभी राइड बुक करें</button>
         <button class="ds-btn ds-btn-outline ds-btn-lg" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);" onclick="toto.becomeDriver()">🛺 ड्राइवर बनें</button>
       </div>
     </div>
 
+    <!-- Quick Ride Booking -->
+    <div class="ride-cta">
+      <div class="ride-cta-title">⚡ तुरंत राइड बुक करें</div>
+      <div class="ride-cta-sub">कहाँ से कहाँ? बस बताइए</div>
+      <div class="from-to-box">
+        <div class="from-to-row">
+          <div class="from-to-dot from"></div>
+          <input type="text" class="from-to-input" id="fromInput" placeholder="📍 कहाँ से? (From)">
+        </div>
+        <div class="from-to-row">
+          <div class="from-to-dot to"></div>
+          <input type="text" class="from-to-input" id="toInput" placeholder="🏁 कहाँ तक? (To)">
+        </div>
+      </div>
+      <div class="stat-grid-3 ds-mb-2">
+        <div class="quick-action" onclick="toto.selectVehicle('auto')">
+          <div class="quick-action-icon">🛺</div>
+          <div class="quick-action-label">ऑटो</div>
+        </div>
+        <div class="quick-action" onclick="toto.selectVehicle('bike')">
+          <div class="quick-action-icon">🏍️</div>
+          <div class="quick-action-label">बाइक</div>
+        </div>
+        <div class="quick-action" onclick="toto.selectVehicle('car')">
+          <div class="quick-action-icon">🚗</div>
+          <div class="quick-action-label">कार</div>
+        </div>
+      </div>
+      <button class="ds-btn ds-btn-accent ds-btn-lg ds-btn-block" onclick="toto.bookRide()">
+        🚀 राइड बुक करें
+      </button>
+    </div>
+
+    <!-- All Services -->
+    <div class="ds-section-title"><h3>🚖 कौन सी सेवा चाहिए?</h3></div>
+    <div class="service-card" onclick="toto.openService('auto')">
+      <div class="service-icon auto">🛺</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">🛺 ऑटो-रिक्शा</div>
+        <div class="ds-text-3 ds-text-sm">शहर में कहीं भी, सस्ते में</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge">₹30 से शुरू</span>
+          <span class="ds-text-3 ds-text-sm"> • 3-व्हीलर</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('bike')">
+      <div class="service-icon bike">🏍️</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">🏍️ बाइक टैक्सी</div>
+        <div class="ds-text-3 ds-text-sm">जल्दी पहुँचो, भीड़ से बचो</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge">₹20 से शुरू</span>
+          <span class="ds-text-3 ds-text-sm"> • सिंगल राइडर</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('car')">
+      <div class="service-icon car">🚗</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">🚗 कार / कैब</div>
+        <div class="ds-text-3 ds-text-sm">AC कार, आरामदायक सफर</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge">₹100 से शुरू</span>
+          <span class="ds-text-3 ds-text-sm"> • 4-सीटर</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('parcel')">
+      <div class="service-icon parcel">📦</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">📦 पार्सल / डिलीवरी</div>
+        <div class="ds-text-3 ds-text-sm">छोटा-बड़ा सामान, कहीं भी भेजो</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge">₹40 से शुरू</span>
+          <span class="ds-text-3 ds-text-sm"> • 1 घंटे में</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('school')">
+      <div class="service-icon school">🏫</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">🏫 स्कूल वैन / बस</div>
+        <div class="ds-text-3 ds-text-sm">बच्चों की सुरक्षित पिक-ड्रॉप</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge">₹800/माह</span>
+          <span class="ds-text-3 ds-text-sm"> • लाइव ट्रैकिंग</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('market')">
+      <div class="service-icon market">🛒</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">🛒 बाज़ार / खरीदारी</div>
+        <div class="ds-text-3 ds-text-sm">सामान लाना है? टोटो बुलाओ</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge">₹50 + सामान</span>
+          <span class="ds-text-3 ds-text-sm"> • ड्राइवर खरीदेगा</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('hospital')">
+      <div class="service-icon hospital">🏥</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">🏥 अस्पताल / डॉक्टर</div>
+        <div class="ds-text-3 ds-text-sm">इमरजेंसी या रूटीन चेकअप</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge">⚡ 10 मिनट</span>
+          <span class="ds-text-3 ds-text-sm"> • प्राथमिकता</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('senior')">
+      <div class="service-icon senior">👴</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">👴 बुज़ुर्ग / दिव्यांग</div>
+        <div class="ds-text-3 ds-text-sm">सहायता के साथ सुरक्षित सफर</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge">सहायक</span>
+          <span class="ds-text-3 ds-text-sm"> • धीमी रफ़्तार</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('outstation')">
+      <div class="service-icon outstation">🌄</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">🌄 बाहर का सफर</div>
+        <div class="ds-text-3 ds-text-sm">रांची, धनबाद, बोकारो — एक दिन</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge">₹8/km</span>
+          <span class="ds-text-3 ds-text-sm"> • AC कार</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('event')">
+      <div class="service-icon event">🎉</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">🎉 शादी / पार्टी / इवेंट</div>
+        <div class="ds-text-3 ds-text-sm">गाड़ी किराये पर, पूरे दिन</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge">₹2000/दिन</span>
+          <span class="ds-text-3 ds-text-sm"> • डेकोरेशन विकल्प</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('night')">
+      <div class="service-icon night">🌙</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">🌙 रात की राइड (Safe)</div>
+        <div class="ds-text-3 ds-text-sm">महिला सुरक्षा, SOS बटन</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge">🛡️ Verified</span>
+          <span class="ds-text-3 ds-text-sm"> • GPS शेयर</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('emergency')">
+      <div class="service-icon emergency">🆘</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">🆘 आपातकालीन (SOS)</div>
+        <div class="ds-text-3 ds-text-sm">एक टैप में मदद</div>
+        <div style="margin-top:4px;">
+          <span class="vehicle-badge" style="background:rgba(239,68,68,0.3);color:#fff;">⚡ 5 मिनट</span>
+          <span class="ds-text-3 ds-text-sm"> • 24/7</span>
+        </div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
     <!-- Quick stats -->
-    <div class="ds-stats">
+    <div class="ds-stats ds-mt-3">
       <div class="ds-stat">
         <div class="ds-stat-value" id="totoDrivers">0</div>
         <div class="ds-stat-label">चालक</div>
       </div>
       <div class="ds-stat">
         <div class="ds-stat-value" id="totoActive">0</div>
-        <div class="ds-stat-label">सक्रिय</div>
+        <div class="ds-stat-label">ऑनलाइन</div>
       </div>
       <div class="ds-stat">
-        <div class="ds-stat-value" id="totoBookings">0</div>
-        <div class="ds-stat-label">बुकिंग</div>
+        <div class="ds-stat-value" id="totoRides">0</div>
+        <div class="ds-stat-label">राइड</div>
       </div>
     </div>
 
-    <!-- Quick actions -->
-    <div class="ds-section-title"><h3>🚀 क्या करना है?</h3></div>
-    <div class="stat-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
-      <a class="quick-action" onclick="toto.bookNow()">
-        <div class="quick-action-icon">📲</div>
-        <div class="quick-action-label">बुकिंग करें</div>
-      </a>
-      <a class="quick-action" onclick="toto.trackLive()">
-        <div class="quick-action-icon">📍</div>
-        <div class="quick-action-label">लाइव ट्रैकिंग</div>
-      </a>
-      <a class="quick-action" onclick="toto.findDrivers()">
-        <div class="quick-action-icon">🔍</div>
-        <div class="quick-action-label">चालक खोजें</div>
-      </a>
-      <a class="quick-action" onclick="toto.myBookings()">
-        <div class="quick-action-icon">📋</div>
-        <div class="quick-action-label">मेरी बुकिंग</div>
-      </a>
-    </div>
-
-    <!-- Live tracking demo -->
+    <!-- Live tracking -->
     <div class="ds-section-title">
       <h3>📍 <span class="live-dot"></span>लाइव ट्रैकिंग</h3>
       <a onclick="toto.trackLive()">विस्तार →</a>
     </div>
     <div class="toto-map">
-      <div class="toto-pin" style="left:8%;top:60%;">🏠</div>
+      <div class="toto-pin" style="left:8%;top:60%;">📍</div>
       <div class="toto-route-line"></div>
       <div class="toto-pin" style="left:50%;top:30%;animation:pulse 2s infinite;">🛺</div>
-      <div class="toto-pin" style="right:8%;top:60%;">🏫</div>
+      <div class="toto-pin" style="right:8%;top:60%;">🏁</div>
       <div style="position:absolute;bottom:10px;left:10px;right:10px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.7);">
-        <span>📍 पिकअप: होम</span>
-        <span>🛺 टोटो चल रहा</span>
-        <span>🏫 ड्रॉप: स्कूल</span>
+        <span id="liveFrom">पिकअप: होम</span>
+        <span>🛺 चल रहे</span>
+        <span id="liveTo">ड्रॉप: ऑफिस</span>
       </div>
     </div>
 
@@ -158,65 +379,54 @@
       <div style="display:flex;gap:12px;align-items:start;margin-bottom:12px;">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-accent);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">1</div>
         <div>
-          <div class="ds-fw-bold">अभिभावक बुकिंग करें</div>
-          <div class="ds-text-3 ds-text-sm">फ़ोन नंबर, पता, स्कूल का नाम भरें</div>
+          <div class="ds-fw-bold">अपनी सेवा चुनें</div>
+          <div class="ds-text-3 ds-text-sm">12+ सेवाएं — ऑटो, बाइक, कार, पार्सल, इमरजेंसी</div>
         </div>
       </div>
       <div style="display:flex;gap:12px;align-items:start;margin-bottom:12px;">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-accent);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">2</div>
         <div>
-          <div class="ds-fw-bold">चालक accept करे</div>
-          <div class="ds-text-3 ds-text-sm">WhatsApp पर notification मिलेगा</div>
+          <div class="ds-fw-bold">किराया देखें (कोई सरप्राइज़ नहीं)</div>
+          <div class="ds-text-3 ds-text-sm">WhatsApp पर कन्फर्मेशन + ड्राइवर details</div>
         </div>
       </div>
       <div style="display:flex;gap:12px;align-items:start;margin-bottom:12px;">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-accent);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">3</div>
         <div>
           <div class="ds-fw-bold">लाइव ट्रैकिंग</div>
-          <div class="ds-text-3 ds-text-sm">बच्चे कहाँ है हर वक़्त देखें</div>
+          <div class="ds-text-3 ds-text-sm">हर वक़्त पता रहे कहाँ है ड्राइवर</div>
         </div>
       </div>
       <div style="display:flex;gap:12px;align-items:start;">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-green);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">✓</div>
         <div>
-          <div class="ds-fw-bold">सुरक्षित ड्रॉप</div>
-          <div class="ds-text-3 ds-text-sm">स्कूल पहुँचने पर notification + auto attendance</div>
+          <div class="ds-fw-bold">कैश या UPI (जो चाहे)</div>
+          <div class="ds-text-3 ds-text-sm">कोई commission नहीं — पूरा पैसा ड्राइवर को</div>
         </div>
       </div>
     </div>
 
-    <!-- Pricing -->
-    <div class="ds-section-title"><h3>💰 किराया (Hazaribagh)</h3></div>
-    <div class="ds-card">
-      <div class="ds-card-row">
-        <span>🛺 टोटो (1-3 km)</span>
-        <span class="ds-card-value">₹800/माह</span>
-      </div>
-      <div class="ds-card-row">
-        <span>🚐 वैन (3-7 km)</span>
-        <span class="ds-card-value">₹1200/माह</span>
-      </div>
-      <div class="ds-card-row">
-        <span>🚌 बस (7+ km)</span>
-        <span class="ds-card-value">₹1500/माह</span>
-      </div>
-      <div class="ds-card-row">
-        <span>⚡ सिंगल राइड (1-दिन)</span>
-        <span class="ds-card-value">₹50</span>
-      </div>
-      <p class="ds-text-3 ds-text-sm ds-mt-2">💡 100% मुफ्त प्लेटफॉर्म - कोई commission नहीं</p>
+    <!-- Become driver CTA -->
+    <div class="ds-card ds-mb-3" style="background:linear-gradient(135deg, rgba(245,158,11,0.2), rgba(239,68,68,0.1));border-color:var(--ds-accent);">
+      <h3 style="color:var(--ds-accent);">🛺 ड्राइवर हैं?</h3>
+      <p class="ds-text-2 ds-mt-1">अपनी गाड़ी (ऑटो/बाइक/कार/वैन) जोड़ें और कमाई शुरू करें। <strong>100% कमाई आपकी</strong> — कोई commission नहीं!</p>
+      <button class="ds-btn ds-btn-accent ds-mt-2" onclick="toto.becomeDriver()">💰 फ्री रजिस्ट्रेशन</button>
     </div>
 
-    <button class="ds-fab" onclick="DS.openSOS()">🆘</button>
+    <button class="ds-fab" onclick="DS.openSOS()" style="background:linear-gradient(135deg, #ef4444, #b91c1c);">🆘</button>
   </div>
 </div>
 
 <script src="/nav.js"></script>
 <script>
 const toto = {
+  selectedVehicle: 'auto',
+  user: null,
+
   async init() {
-    await toto.loadStats();
-    await toto.loadDrivers();
+    this.user = DS.user();
+    await this.loadStats();
+    await this.loadDrivers();
   },
 
   async loadStats() {
@@ -226,9 +436,9 @@ const toto = {
       if (d.success) {
         document.getElementById('totoDrivers').textContent = d.drivers || 0;
         document.getElementById('totoActive').textContent = d.active || 0;
-        document.getElementById('totoBookings').textContent = d.bookings || 0;
+        document.getElementById('totoRides').textContent = d.bookings || 0;
       }
-    } catch(e) { console.error(e); }
+    } catch(e) {}
   },
 
   async loadDrivers() {
@@ -237,28 +447,34 @@ const toto = {
       const r = await fetch('/api/erikso/drivers?online=true');
       const d = await r.json();
       if (d.success && d.drivers && d.drivers.length) {
-        list.innerHTML = d.drivers.slice(0, 5).map(dr => `
-          <div class="driver-card">
-            <div class="driver-avatar">${dr.vehicleType === 'bus' ? '🚌' : dr.vehicleType === 'van' ? '🚐' : '🛺'}</div>
-            <div style="flex:1;min-width:0;">
-              <div class="ds-fw-bold">${dr.name || 'चालक'}</div>
-              <div class="ds-text-3 ds-text-sm">${dr.route || 'Hazaribagh'}</div>
-              <div style="margin-top:4px;">
-                <span class="vehicle-badge">${dr.vehicleNumber || 'N/A'}</span>
-                <span class="rating">★ ${(dr.rating || 5).toFixed(1)}</span>
-                <span class="ds-text-3 ds-text-sm"> • ${dr.totalRides || 0} सवारी</span>
+        list.innerHTML = d.drivers.slice(0, 5).map(dr => {
+          const icon = dr.vehicleType === 'bike' ? '🏍️' :
+                       dr.vehicleType === 'car' ? '🚗' :
+                       dr.vehicleType === 'bus' ? '🚌' :
+                       dr.vehicleType === 'van' ? '🚐' : '🛺';
+          return `
+            <div class="driver-card">
+              <div class="driver-avatar">${icon}</div>
+              <div style="flex:1;min-width:0;">
+                <div class="ds-fw-bold">${dr.name || 'चालक'}</div>
+                <div class="ds-text-3 ds-text-sm">${dr.route || 'Hazaribagh'}</div>
+                <div style="margin-top:4px;">
+                  <span class="vehicle-badge">${dr.vehicleNumber || 'N/A'}</span>
+                  <span class="rating">★ ${(dr.rating || 5).toFixed(1)}</span>
+                  <span class="ds-text-3 ds-text-sm"> • ${dr.totalRides || 0} राइड</span>
+                </div>
               </div>
+              <button class="ds-btn ds-btn-accent" onclick="toto.bookDriver('${dr.id}')">📲</button>
             </div>
-            <button class="ds-btn ds-btn-primary" onclick="toto.bookDriver('${dr.id}')">बुक</button>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       } else {
         list.innerHTML = `
           <div class="ds-empty">
             <div class="ds-empty-icon">🛺</div>
             <h4>अभी कोई ऑनलाइन चालक नहीं</h4>
             <p>पहले चालक बनें या बाद में try करें</p>
-            <button class="ds-btn ds-btn-primary ds-mt-2" onclick="toto.becomeDriver()">🛺 ड्राइवर बनें</button>
+            <button class="ds-btn ds-btn-accent ds-mt-2" onclick="toto.becomeDriver()">🛺 चालक बनें</button>
           </div>
         `;
       }
@@ -267,34 +483,136 @@ const toto = {
     }
   },
 
+  // ============ QUICK RIDE ============
+  selectVehicle(type) {
+    this.selectedVehicle = type;
+    DS.toast(`✅ ${this.getVehicleName(type)} चुना गया`, 'success');
+  },
+
+  getVehicleName(type) {
+    const map = {
+      auto: '🛺 ऑटो-रिक्शा',
+      bike: '🏍️ बाइक',
+      car: '🚗 कार',
+      van: '🚐 वैन',
+      bus: '🚌 बस',
+      parcel: '📦 पार्सल',
+      school: '🏫 स्कूल वैन'
+    };
+    return map[type] || '🛺 ऑटो';
+  },
+
+  getFareEstimate(type) {
+    const map = {
+      auto: 30, bike: 20, car: 100, van: 150, bus: 200,
+      parcel: 40, school: 800, market: 50, hospital: 80,
+      senior: 60, outstation: 800, event: 2000, night: 100, emergency: 0
+    };
+    return map[type] || 30;
+  },
+
+  bookRide() {
+    if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
+    const from = document.getElementById('fromInput').value.trim();
+    const to = document.getElementById('toInput').value.trim();
+    if (!from) { DS.toast('⚠️ पिकअप पता डालें', 'error'); return; }
+    if (!to) { DS.toast('⚠️ ड्रॉप पता डालें', 'error'); return; }
+
+    const fare = this.getFareEstimate(this.selectedVehicle);
+    const vehicleName = this.getVehicleName(this.selectedVehicle);
+
+    const msg = `🛺 *DainikState TOTO बुकिंग*\n\n` +
+      `🚗 सेवा: ${vehicleName}\n` +
+      `📍 से: ${from}\n` +
+      `🏁 तक: ${to}\n` +
+      `💰 अनुमानित किराया: ₹${fare}\n` +
+      `📱 मेरा नंबर: ${this.user.phone}\n` +
+      `👤 नाम: ${this.user.name || 'User'}\n\n` +
+      `कृपया ड्राइवर assign करें। धन्यवाद! 🙏`;
+
+    window.open(`https://wa.me/919876500001?text=${encodeURIComponent(msg)}`, '_blank');
+    DS.toast('✅ WhatsApp पर भेजा! जल्दी ड्राइवर आएगा', 'success');
+
+    // Update live tracking mock
+    document.getElementById('liveFrom').textContent = `पिकअप: ${from.slice(0, 15)}`;
+    document.getElementById('liveTo').textContent = `ड्रॉप: ${to.slice(0, 15)}`;
+  },
+
   bookNow() {
-    if (!DS.user()) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
-    location.href = '/toto-book.html';
+    if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
+    document.getElementById('fromInput').focus();
+    window.scrollTo({ top: 200, behavior: 'smooth' });
+  },
+
+  bookDriver(driverId) {
+    if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
+    this.openService(this.selectedVehicle, driverId);
+  },
+
+  // ============ SERVICE ROUTING ============
+  openService(type, driverId) {
+    if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
+
+    // Emergency = direct call
+    if (type === 'emergency') {
+      DS.openSOS();
+      return;
+    }
+
+    // All other services → WhatsApp
+    const names = {
+      auto: '🛺 ऑटो-रिक्शा',
+      bike: '🏍️ बाइक टैक्सी',
+      car: '🚗 कार / कैब',
+      parcel: '📦 पार्सल डिलीवरी',
+      school: '🏫 स्कूल वैन / बस',
+      market: '🛒 बाज़ार / खरीदारी',
+      hospital: '🏥 अस्पताल / डॉक्टर',
+      senior: '👴 बुज़ुर्ग / दिव्यांग',
+      outstation: '🌄 बाहर का सफर',
+      event: '🎉 शादी / पार्टी',
+      night: '🌙 रात की राइड (Safe)',
+    };
+
+    const details = {
+      auto: 'शहर में कहीं भी (3 km तक)',
+      bike: 'सिंगल राइडर, जल्दी पहुँचो',
+      car: '4-सीटर AC कार',
+      parcel: 'क्या भेजना है? (वज़न, साइज़)',
+      school: 'बच्चे का नाम, स्कूल, कक्षा',
+      market: 'क्या खरीदना है? लिस्ट भेजें',
+      hospital: 'कौन सा अस्पताल? कब पहुँचना है?',
+      senior: 'क्या सहायता चाहिए? (walker/wheelchair)',
+      outstation: 'कहाँ? कब? कितने लोग?',
+      event: 'कब? कितनी देर? कितने लोग?',
+      night: 'महिला सुरक्षा ड्राइवर चाहिए',
+    };
+
+    const fare = this.getFareEstimate(type);
+
+    const msg = `🛺 *DainikState TOTO - ${names[type] || type}*\n\n` +
+      `💰 अनुमानित किराया: ₹${fare}${type === 'school' ? '/माह' : type === 'event' || type === 'outstation' ? '' : ''}\n` +
+      `📝 ${details[type] || 'विवरण'}\n` +
+      `📱 मेरा नंबर: ${this.user.phone}\n` +
+      `👤 नाम: ${this.user.name || 'User'}\n\n` +
+      `कृपया कन्फर्म करें। धन्यवाद! 🙏`;
+
+    window.open(`https://wa.me/919876500001?text=${encodeURIComponent(msg)}`, '_blank');
+    DS.toast(`✅ ${names[type]} WhatsApp पर भेजा!`, 'success');
   },
 
   trackLive() {
-    if (!DS.user()) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
+    if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
     location.href = '/toto-track.html';
   },
 
   findDrivers() {
-    if (!DS.user()) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
     location.href = '/toto-drivers.html';
   },
 
-  myBookings() {
-    if (!DS.user()) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
-    location.href = '/toto-mybookings.html';
-  },
-
   becomeDriver() {
-    if (!DS.user()) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
+    if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
     location.href = '/toto-driver.html';
-  },
-
-  bookDriver(driverId) {
-    if (!DS.user()) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
-    location.href = '/toto-book.html?driver=' + driverId;
   }
 };
 
