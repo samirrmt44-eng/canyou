@@ -263,6 +263,21 @@ module.exports = function(app, db, usersCol, notificationsCol) {
     res.json({ success: true, newRating });
   });
 
+  // API: Get stats summary (for TOTO page)
+  app.get('/api/erikso/stats', async (req, res) => {
+    try {
+      if (!eriksoDriversCol) await connectDB_erikso();
+      const drivers = await eriksoDriversCol.countDocuments({});
+      const active = await eriksoDriversCol.countDocuments({ online: true });
+      const bookings = await eriksoBookingsCol.countDocuments({});
+      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+      const todayBookings = await eriksoBookingsCol.countDocuments({ createdAt: { $gte: todayStart.getTime() } });
+      res.json({ success: true, drivers, active, bookings, todayBookings });
+    } catch (e) {
+      res.json({ success: true, drivers: 0, active: 0, bookings: 0, todayBookings: 0 });
+    }
+  });
+
   // SOS Alert
   app.post('/api/erikso/sos', async (req, res) => {
     const { userId, driverId, tripId, lat, lng, message } = req.body;
