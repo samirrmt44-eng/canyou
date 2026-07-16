@@ -503,7 +503,7 @@ module.exports = function(app, db, usersCol) {
   app.post('/api/news/group-channel/add', async (req, res) => {
     try {
       if (!newsCol) return res.status(503).json({ error: 'DB not ready' });
-      const { title, description, content, image, url, category, featured, tags, groupId, ownerId } = req.body;
+      const { title, description, content, image, url, videoUrl, video, category, featured, tags, groupId, ownerId } = req.body;
       if (!title) return res.status(400).json({ error: 'Title required' });
       if (!groupId) return res.status(400).json({ error: 'groupId required' });
       // Check if group channel exists (or create automatically)
@@ -540,6 +540,9 @@ module.exports = function(app, db, usersCol) {
         content: String(content || '').trim().slice(0, 10000),
         image: image || '',
         url: url || '',
+        videoUrl: videoUrl || video || '',
+        youtubeUrl: (videoUrl && /youtu/.test(videoUrl)) ? videoUrl : '',
+        odyseeUrl: (videoUrl && /odysee|lbry/.test(videoUrl)) ? videoUrl : '',
         category: category || 'state',
         tags: Array.isArray(tags) ? tags : (tags ? String(tags).split(',').map(t => t.trim()).filter(Boolean) : []),
         featured: featured === true || featured === 'true',
