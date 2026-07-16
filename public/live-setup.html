@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>📺 OBS Live Setup Guide | DainikState</title>
+<link rel="stylesheet" href="/design-system.css" />
+<style>
+  body { padding: 0; margin: 0; }
+  .guide-hero {
+    background: linear-gradient(135deg, #dc2626 0%, #f59e0b 100%);
+    padding: 24px 20px;
+    color: #fff;
+    text-align: center;
+  }
+  .guide-hero h1 { font-size: 28px; margin-bottom: 8px; }
+  .guide-hero p { font-size: 14px; opacity: 0.95; }
+  .guide-step {
+    background: var(--ds-bg-2);
+    border: 1px solid var(--ds-border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .step-num {
+    position: absolute;
+    top: -10px; left: 16px;
+    background: linear-gradient(135deg, #dc2626, #f59e0b);
+    color: #fff;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 14px;
+    box-shadow: 0 2px 8px rgba(220,38,38,0.4);
+  }
+  .step-title { font-size: 16px; font-weight: 800; margin: 8px 0 10px; }
+  .step-content { font-size: 13px; line-height: 1.6; color: var(--ds-text-2); }
+  .code-block {
+    background: #000;
+    color: #10b981;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    margin: 8px 0;
+    border: 1px solid #1f2937;
+    overflow-x: auto;
+    word-break: break-all;
+  }
+  .code-block.warn { color: #fbbf24; }
+  .code-block.danger { color: #ef4444; }
+  .feature-list { list-style: none; padding: 0; }
+  .feature-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--ds-border);
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .feature-list li::before {
+    content: '✓';
+    color: #10b981;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .live-indicator {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #dc2626;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px; font-weight: 900;
+    animation: livePulse 1.5s infinite;
+  }
+  @keyframes livePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.7); }
+    50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+  }
+  .obs-screenshot {
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 12px;
+    padding: 12px;
+    margin: 10px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #d1d5db;
+  }
+  .obs-screenshot .field { color: #fbbf24; }
+  .obs-screenshot .value { color: #10b981; }
+  .yt-form {
+    background: var(--ds-bg-2);
+    border: 1px solid var(--ds-border);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 12px;
+  }
+  .yt-form input {
+    width: 100%;
+    background: var(--ds-bg-3);
+    border: 1px solid var(--ds-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="ds-app">
+  <div id="navMount"></div>
+
+  <div class="ds-content">
+    <!-- Hero -->
+    <div class="guide-hero">
+      <div style="font-size:60px;margin-bottom:8px;">📺</div>
+      <h1>OBS Live Stream → DainikState TV</h1>
+      <p>अपने कंप्यूटर से OBS Studio से Live News stream करें — DainikState TV Channel पर दिखाएं!</p>
+      <div style="margin-top:14px;">
+        <span class="live-indicator"><span style="width:6px;height:6px;background:#fff;border-radius:50%;"></span> 100% FREE METHOD</span>
+      </div>
+    </div>
+
+    <!-- Quick Summary -->
+    <div class="ds-card ds-mt-2" style="background:linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.05));border-color:#10b981;">
+      <h3 style="color:#10b981;">⚡ Quick Summary (5 min setup)</h3>
+      <ol style="margin:10px 0 0 20px;line-height:1.8;font-size:13px;">
+        <li><strong>YouTube Studio</strong> pe Go Live karo → Stream Key lo</li>
+        <li><strong>OBS Studio</strong> me YouTube RTMP URL + Stream Key paste karo</li>
+        <li>OBS me <strong>Start Streaming</strong> click karo</li>
+        <li>YouTube Live URL <strong>DainikState me add karo</strong></li>
+        <li>TV Channel khole → <strong>Auto-play hoga!</strong> 🎉</li>
+      </ol>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="guide-step">
+      <div class="step-num">1</div>
+      <div class="step-title">📥 OBS Studio Install Karo</div>
+      <div class="step-content">
+        <p>Download from: <a href="https://obsproject.com/" target="_blank" style="color:#3b82f6;">obsproject.com</a></p>
+        <p style="margin-top:6px;">Available for: Windows / Mac / Linux — 100% FREE</p>
+        <div class="code-block">
+          # After install, open OBS Studio<br>
+          # First time: Auto Configuration Wizard use karo
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="guide-step">
+      <div class="step-num">2</div>
+      <div class="step-title">📺 YouTube Studio me Live Stream Setup</div>
+      <div class="step-content">
+        <p><strong>Browser me jao:</strong></p>
+        <a href="https://studio.youtube.com/channel/UC/livestreaming" target="_blank" style="color:#3b82f6;">studio.youtube.com → Go Live</a>
+        <p style="margin-top:8px;"><strong>Steps:</strong></p>
+        <ul class="feature-list">
+          <li>"Go Live" button click karo (top right)</li>
+          <li>"Stream" tab select karo (not Webcam)</li>
+          <li>Title daal do: e.g., "DainikState Live News"</li>
+          <li>Privacy: <strong>Public</strong> (ya Unlisted)</li>
+          <li>Click <strong>"Create Stream"</strong></li>
+        </ul>
+        <p style="margin-top:10px;">YouTube dega 2 cheezein:</p>
+        <div class="obs-screenshot">
+          <span class="field">Stream URL:</span> <span class="value">rtmps://a.rtmp.youtube.com/live2</span><br>
+          <span class="field">Stream Key:</span> <span class="value">xxxx-xxxx-xxxx-xxxx-xxxx</span>
+        </div>
+        <p style="margin-top:8px;font-size:11px;color:var(--ds-text-3);">⚠️ Stream Key SECRET hai — kisi ko share mat karo!</p>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="guide-step">
+      <div class="step-num">3</div>
+      <div class="step-title">⚙️ OBS me YouTube Settings</div>
+      <div class="step-content">
+        <p><strong>OBS Studio me:</strong></p>
+        <ul class="feature-list">
+          <li>Settings (⚙️) → "Stream" tab</li>
+          <li>Service: <strong>YouTube - RTMPS</strong></li>
+          <li>Stream Key: <strong>YouTube wala paste karo</strong></li>
+          <li>OK click karo</li>
+        </ul>
+        <div class="obs-screenshot">
+          ⚙️ Settings → Stream<br>
+          ┌────────────────────────────────┐<br>
+          │ Service: YouTube - RTMPS      │<br>
+          │ Stream Key: ●●●●●●●●●●●●●●●●● │<br>
+          └────────────────────────────────┘
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="guide-step">
+      <div class="step-num">4</div>
+      <div class="step-title">🎬 OBS me Scene Setup</div>
+      <div class="step-content">
+        <p><strong>Sources add karo (bottom panel me + button):</strong></p>
+        <ul class="feature-list">
+          <li><strong>Video Capture Device</strong> — Webcam (face/news anchor)</li>
+          <li><strong>Window Capture / Display Capture</strong> — Screen share</li>
+          <li><strong>Image / Text</strong> — Title, ticker, logo</li>
+          <li><strong>Browser Source</strong> — News website embed</li>
+        </ul>
+        <p style="margin-top:10px;"><strong>Best Setup for News Channel:</strong></p>
+        <div class="obs-screenshot">
+          Scene: "News Broadcast"<br>
+          ┌─────────────────────────────────┐<br>
+          │ 📰 Title Bar (top, full width) │<br>
+          │                                 │<br>
+          │ [Webcam]    [News Display]    │<br>
+          │ small         big              │<br>
+          │                                 │<br>
+          │ 🎵 Ticker Bar (bottom scrolling)│<br>
+          └─────────────────────────────────┘
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="guide-step">
+      <div class="step-num">5</div>
+      <div class="step-title">▶️ Start Streaming</div>
+      <div class="step-content">
+        <p><strong>OBS me:</strong></p>
+        <ol style="margin:10px 0 0 20px;line-height:1.8;font-size:13px;">
+          <li>"Start Streaming" button click karo (right side)</li>
+          <li>YouTube Studio pe "Go Live" → "Stream" → confirm</li>
+          <li>YouTube me 5-15 sec me live ho jayega</li>
+        </ol>
+        <p style="margin-top:10px;"><strong>YouTube URL note karo:</strong></p>
+        <div class="code-block warn">
+          https://www.youtube.com/watch?v=XXXXXXXXX
+        </div>
+        <p style="margin-top:6px;font-size:12px;">Ye URL DainikState me add karna hai ⬇️</p>
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="guide-step">
+      <div class="step-num">6</div>
+      <div class="step-title">📺 DainikState me Add Karo</div>
+      <div class="step-content">
+        <p><strong>Option A: news.html form se</strong></p>
+        <ul class="feature-list">
+          <li>Open <a href="/news.html" style="color:#3b82f6;">/news.html</a></li>
+          <li>Header me ⚙️ → "Add News to Channel"</li>
+          <li>Title: e.g., "🔴 LIVE: DainikState News Broadcast"</li>
+          <li>Video URL: YouTube Live URL paste karo</li>
+          <li>Featured: ✅ ON karo (top pe dikhega)</li>
+          <li>Submit</li>
+        </ul>
+
+        <p style="margin-top:14px;"><strong>Option B: Direct API call (advanced)</strong></p>
+        <div class="code-block">
+          curl -X POST "https://canyou-uqkp.onrender.com/api/news/group-channel/add" \<br>
+          &nbsp;&nbsp;-H "Content-Type: application/json" \<br>
+          &nbsp;&nbsp;-d '{<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;"title": "🔴 LIVE: DainikState News",<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;"videoUrl": "https://www.youtube.com/watch?v=XXX",<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;"category": "news",<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;"groupId": "dainikstate",<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;"featured": true<br>
+          &nbsp;&nbsp;}'
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 7 -->
+    <div class="guide-step">
+      <div class="step-num">7</div>
+      <div class="step-title">🎉 TV Channel me LIVE Dekho!</div>
+      <div class="step-content">
+        <p><strong>Open:</strong> <a href="/news-channel.html" style="color:#3b82f6;">/news-channel.html</a></p>
+        <ul class="feature-list">
+          <li>✅ Featured news = LIVE video top pe dikhega</li>
+          <li>✅ "🔴 LIVE NOW" badge automatically show hoga</li>
+          <li>✅ Real-time viewer count</li>
+          <li>✅ Auto-play (muted by default)</li>
+          <li>✅ Click 🔊 for sound</li>
+          <li>✅ Fullscreen available</li>
+        </ul>
+
+        <div style="background:rgba(16,185,129,0.15);border:1px solid #10b981;border-radius:10px;padding:12px;margin-top:12px;">
+          <strong style="color:#10b981;">🎊 Setup Complete!</strong><br>
+          <span style="font-size:12px;">Ab aap Hazaribagh se local news broadcast kar sakte ho pure India me!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRO TIPS -->
+    <div class="guide-step" style="background:linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.05));border-color:#f59e0b;">
+      <div class="step-num">⭐</div>
+      <div class="step-title">Pro Tips (Broadcast Quality)</div>
+      <div class="step-content">
+        <ul class="feature-list">
+          <li><strong>Resolution:</strong> 1920x1080 (Full HD) for best quality</li>
+          <li><strong>Bitrate:</strong> 4500-6000 kbps for 1080p</li>
+          <li><strong>FPS:</strong> 30 fps (smooth), 60 fps (sports)</li>
+          <li><strong>Encoder:</strong> x264 (CPU) ya NVENC (NVIDIA GPU)</li>
+          <li><strong>Audio:</strong> 128 kbps AAC stereo</li>
+          <li><strong>Internet:</strong> Min 10 Mbps upload speed</li>
+        </ul>
+        <p style="margin-top:10px;"><strong>OBS Best Settings:</strong></p>
+        <div class="obs-screenshot">
+          Settings → Output → Streaming<br>
+          ┌──────────────────────────────┐<br>
+          │ Video Bitrate: 4500 Kbps   │<br>
+          │ Encoder: x264 (or NVENC)   │<br>
+          │ Audio Bitrate: 128 Kbps    │<br>
+          └──────────────────────────────┘
+        </div>
+      </div>
+    </div>
+
+    <!-- Alternative: Direct HLS -->
+    <div class="guide-step" style="background:linear-gradient(135deg, rgba(139,92,246,0.15), rgba(99,102,241,0.05));border-color:#8b5cf6;">
+      <div class="step-num">🎁</div>
+      <div class="step-title">Bonus: Direct HLS Stream (No YouTube)</div>
+      <div class="step-content">
+        <p><strong>Already HLS URL hai?</strong> Direct add karo!</p>
+        <p style="margin-top:6px;">Agar aapke paas khud ka HLS stream URL hai (jaise nginx-rtmp, AWS MediaLive, Mux, etc), direct add kar sakte ho:</p>
+        <div class="yt-form">
+          <label style="font-size:12px;color:var(--ds-text-3);">HLS URL (.m3u8)</label>
+          <input type="url" id="hlsUrl" placeholder="https://your-server.com/live/stream.m3u8">
+          <button class="ds-btn ds-btn-primary ds-btn-block" onclick="addHLS()">📺 Add HLS Stream</button>
+        </div>
+        <p style="margin-top:10px;font-size:11px;color:var(--ds-text-3);">HLS streams TV Channel me HLS.js ke through play hongi (auto-fallback).</p>
+      </div>
+    </div>
+
+    <!-- Alternative: Facebook Live -->
+    <div class="guide-step">
+      <div class="step-num">📘</div>
+      <div class="step-title">Alternative: Facebook Live</div>
+      <div class="step-content">
+        <p>YouTube ki jagah Facebook Live bhi use kar sakte ho:</p>
+        <ul class="feature-list">
+          <li>Facebook Page → Live → Go Live</li>
+          <li>"Use Stream Key" select karo</li>
+          <li>Server URL + Stream Key copy karo</li>
+          <li>OBS me custom service set karo</li>
+          <li>Stream URL: <code style="color:#fbbf24;">rtmps://live-api-s.facebook.com:443/rtmp/</code></li>
+          <li>Live URL format: <code style="color:#fbbf24;">https://facebook.com/yourpage/videos/XXXX</code></li>
+        </ul>
+        <p style="margin-top:10px;font-size:12px;">⚠️ Facebook ka video URL direct embed nahi hota easily. YouTube recommended hai.</p>
+      </div>
+    </div>
+
+    <!-- Need Help -->
+    <div class="ds-card ds-mt-3" style="background:linear-gradient(135deg, rgba(59,130,246,0.15), rgba(99,102,241,0.05));border-color:#3b82f6;text-align:center;">
+      <h3 style="color:#3b82f6;">❓ Help Chahiye?</h3>
+      <p style="margin-top:8px;font-size:13px;">Agar koi step pe problem aaye, contact karein:</p>
+      <a href="https://wa.me/919876500001" class="ds-btn ds-btn-primary ds-mt-2" style="display:inline-block;text-decoration:none;">📞 WhatsApp Support</a>
+    </div>
+  </div>
+</div>
+
+<script src="/nav.js"></script>
+<script>
+async function addHLS() {
+  const url = document.getElementById('hlsUrl').value.trim();
+  if (!url) {
+    DS.toast('⚠️ HLS URL required', 'error');
+    return;
+  }
+  if (!url.includes('.m3u8')) {
+    DS.toast('⚠️ Valid HLS URL required (.m3u8)', 'error');
+    return;
+  }
+  try {
+    const r = await fetch('/api/news/group-channel/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: '📺 LIVE Stream',
+        description: 'Live broadcast from DainikState',
+        videoUrl: url,
+        url: url + '#' + Date.now(),
+        category: 'news',
+        groupId: 'dainikstate',
+        featured: true
+      })
+    }).then(r => r.json());
+    if (r.success) {
+      DS.toast('✅ Live stream added! Opening TV Channel...', 'success');
+      setTimeout(() => location.href = '/news-channel.html', 1000);
+    } else {
+      DS.toast('❌ ' + (r.error || 'Failed'), 'error');
+    }
+  } catch (e) {
+    DS.toast('❌ Network error: ' + e.message, 'error');
+  }
+}
+</script>
+</body>
+</html>
