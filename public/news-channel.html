@@ -1440,26 +1440,31 @@ const channel = {
   },
 
   // ============ VIDEO HELPERS ============
-  // Detect & extract video URL (YouTube or Odysee)
+  // Detect & extract video URL (YouTube, Vimeo, Odysee, MP4, HLS, DASH)
   extractVideoUrl(news) {
     if (!news) return null;
     // Check various fields
     const candidates = [
-      news.videoUrl, news.video, news.youtubeUrl, news.odyseeUrl, news.embedUrl,
+      news.videoUrl, news.video, news.youtubeUrl, news.odyseeUrl,
+      news.vimeoUrl, news.mp4Url, news.hlsUrl, news.dashUrl,
+      news.embedUrl, news.streamUrl,
       news.video_url, news.youtube_url, news.odysee_url
     ].filter(Boolean);
 
     // Also check if description/content contains video URL
     const text = (news.description || '') + ' ' + (news.content || '') + ' ' + (news.url || '');
     const ytMatch = text.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    const vimeoMatch = text.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
     const odMatch = text.match(/odysee\.com\/(@[^\/]+\/[a-zA-Z0-9_-]+|[a-zA-Z0-9_-]+:[a-z0-9]+)/);
+    const mp4Match = text.match(/(https?:\/\/[^\s"']+\.mp4(?:\?[^\s"']*)?)/i);
+    const hlsMatch = text.match(/(https?:\/\/[^\s"']+\.m3u8(?:\?[^\s"']*)?)/i);
 
-    if (candidates[0]) {
-      return this.parseVideoUrl(candidates[0]);
-    }
+    if (candidates[0]) return this.parseVideoUrl(candidates[0]);
     if (ytMatch) return { type: 'YouTube', id: ytMatch[1], embedUrl: this.getYouTubeEmbed(ytMatch[1]) };
+    if (vimeoMatch) return { type: 'Vimeo', id: vimeoMatch[1], embedUrl: this.getVimeoEmbed(vimeoMatch[1]) };
     if (odMatch) return { type: 'Odysee', id: odMatch[1], embedUrl: this.getOdyseeEmbed(odMatch[1]) };
-
+    if (hlsMatch) return { type: 'HLS', url: hlsMatch[1], embedUrl: this.getHLSEmbed(hlsMatch[1]) };
+    if (mp4Match) return { type: 'MP4', url: mp4Match[1], embedUrl: this.getMP4Embed(mp4Match[1]) };
     return null;
   },
 
@@ -1467,9 +1472,16 @@ const channel = {
     // YouTube
     let m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if (m) return { type: 'YouTube', id: m[1], embedUrl: this.getYouTubeEmbed(m[1]) };
+    // Vimeo
+    m = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
+    if (m) return { type: 'Vimeo', id: m[1], embedUrl: this.getVimeoEmbed(m[1]) };
     // Odysee
     m = url.match(/odysee\.com\/(@[^\/]+\/[a-zA-Z0-9_-]+|[a-zA-Z0-9_-]+:[a-z0-9]+)/);
     if (m) return { type: 'Odysee', id: m[1], embedUrl: this.getOdyseeEmbed(m[1]) };
+    // HLS / m3u8
+    if (/\.m3u8(\?|$)/i.test(url)) return { type: 'HLS', url, embedUrl: this.getHLSEmbed(url) };
+    // MP4
+    if (/\.mp4(\?|$)/i.test(url)) return { type: 'MP4', url, embedUrl: this.getMP4Embed(url) };
     return null;
   },
 
@@ -1478,19 +1490,69 @@ const channel = {
     return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`;
   },
 
+  getVimeoEmbed(videoId) {
+    // Vimeo player - autoplay, muted, title off
+    return `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&title=0&byline=0&portrait=0&dnt=1`;
+  },
+
   getOdyseeEmbed(odyseeId) {
-    // Odysee uses lbry.tv or odysee.com embed
     return `https://odysee.com/$/embed/${odyseeId}?autoplay=true&muted=true`;
   },
 
+  // HLS stream (.m3u8) - uses native HLS support
+  getHLSEmbed(url) {
+    return { type: 'HLS', url };
+  },
+
+  // Direct MP4 file
+  getMP4Embed(url) {
+    return { type: 'MP4', url };
+  },
+
+  // Smart embed - handles all types
   getVideoEmbed(videoData) {
-    if (!videoData || !videoData.embedUrl) return '';
-    return `<iframe class="tv-news-video"
-      src="${this.escapeHtml(videoData.embedUrl)}"
-      frameborder="0"
-      allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-      allowfullscreen
-      playsinline></iframe>`;
+    if (!videoData) return '';
+    const t = videoData.type;
+
+    // YouTube, Vimeo, Odysee = iframe
+    if (t === 'YouTube' || t === 'Vimeo' || t === 'Odysee') {
+      return `<iframe class="tv-news-video"
+        src="${this.escapeHtml(videoData.embedUrl)}"
+        frameborder="0"
+        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen playsinline></iframe>`;
+    }
+
+    // HLS - use native + hls.js fallback
+    if (t === 'HLS') {
+      return `<video class="tv-news-video" autoplay muted playsinline controls
+        style="width:100%;height:100%;object-fit:contain;background:#000;">
+        <source src="${this.escapeHtml(videoData.url)}" type="application/vnd.apple.mpegurl">
+        Your browser does not support HLS.
+      </video>
+      <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+      <script>
+        (function(){
+          var v = document.currentScript.previousElementSibling;
+          if (window.Hls && Hls.isSupported() && v && v.canPlayType('application/vnd.apple.mpegurl') === '') {
+            var hls = new Hls();
+            hls.loadSource('${this.escapeHtml(videoData.url)}');
+            hls.attachMedia(v);
+          }
+        })();
+      </script>`;
+    }
+
+    // MP4 - direct playback
+    if (t === 'MP4') {
+      return `<video class="tv-news-video" autoplay muted playsinline controls
+        style="width:100%;height:100%;object-fit:contain;background:#000;">
+        <source src="${this.escapeHtml(videoData.url)}" type="video/mp4">
+        Your browser does not support MP4.
+      </video>`;
+    }
+
+    return '';
   }
 };
 
