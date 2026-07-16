@@ -5,47 +5,93 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>TOTO - सभी के लिए राइड | DainikState</title>
 <link rel="stylesheet" href="/design-system.css" />
+<!-- Leaflet CSS (FREE open source) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin="" />
 <style>
   .toto-hero { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
-  .live-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--ds-green);
-    display: inline-block; margin-right: 5px;
-    animation: pulse 1.5s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.3); }
-  }
+
   /* ============= MAP ============= */
   #totoMap {
-    width: 100%; height: 280px;
+    width: 100%; height: 360px;
     border-radius: 16px; margin-bottom: 16px;
     border: 2px solid var(--ds-accent);
     box-shadow: 0 4px 16px rgba(245,158,11,0.3);
     z-index: 1;
+    background: #1a1a1a;  /* While loading */
   }
+  .leaflet-container { background: #1a1a1a !important; }
+  .leaflet-tile-pane { filter: brightness(0.8) saturate(1.2); }
+  .leaflet-control-attribution {
+    background: rgba(0,0,0,0.7) !important; color: #aaa !important; font-size: 10px !important;
+  }
+  .leaflet-control-attribution a { color: #ffd700 !important; }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background: #1f2937 !important; color: #fff !important; border: 1px solid #f59e0b;
+  }
+  .leaflet-popup-content { color: #fff !important; margin: 8px 12px !important; font-size: 13px !important; }
+
   .map-controls {
-    position: absolute; right: 10px; top: 70px;
-    z-index: 5; display: flex; flex-direction: column; gap: 6px;
+    position: absolute; right: 10px; top: 10px;
+    z-index: 1000; display: flex; flex-direction: column; gap: 6px;
   }
   .map-btn {
     width: 40px; height: 40px; border-radius: 50%;
     background: #fff; border: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     font-size: 18px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
   }
-  .map-btn:hover { background: #f3f4f6; }
+  .map-btn:hover { background: #f3f4f6; transform: scale(1.1); }
   .map-btn.active { background: var(--ds-accent); color: #fff; }
+
   .map-eta {
     position: absolute; bottom: 10px; left: 10px; right: 10px;
-    background: rgba(0,0,0,0.85); color: #fff;
+    background: rgba(0,0,0,0.92); color: #fff;
     padding: 10px 14px; border-radius: 12px;
-    font-size: 12px; z-index: 5;
+    font-size: 13px; z-index: 1000;
     display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid #f59e0b;
   }
-  .map-eta strong { color: var(--ds-gold); }
+  .map-eta strong { color: #ffd700; font-size: 15px; }
+
+  .map-loading {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 1001; color: #ffd700; font-size: 14px; text-align: center;
+    background: rgba(0,0,0,0.8); padding: 12px 20px; border-radius: 10px;
+  }
+  .map-loading.hidden { display: none; }
+
+  /* Custom markers */
+  .custom-marker {
+    background: transparent !important; border: none !important;
+  }
+  .marker-pin {
+    width: 36px; height: 36px; border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    border: 3px solid #fff;
+    position: relative;
+  }
+  .marker-pin span { transform: rotate(45deg); font-size: 18px; }
+  .marker-pin.from { background: #10b981; }
+  .marker-pin.to { background: #ef4444; }
+  .marker-pin.you { background: #3b82f6; animation: bounce 1.5s infinite; }
+  @keyframes bounce {
+    0%, 100% { transform: rotate(-45deg) translateY(0); }
+    50% { transform: rotate(-45deg) translateY(-6px); }
+  }
+
+  .driver-marker {
+    background: #f59e0b !important; border: 3px solid #fff !important;
+    border-radius: 50% !important; width: 36px !important; height: 36px !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    font-size: 20px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+  }
 
   .stat-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
@@ -57,6 +103,7 @@
     transition: all 0.2s; cursor: pointer;
   }
   .quick-action:hover { border-color: var(--ds-accent); transform: translateY(-2px); }
+  .quick-action.active { background: var(--ds-accent); color: #fff; }
   .quick-action-icon { font-size: 28px; }
   .quick-action-label { font-size: 11px; font-weight: 700; text-align: center; }
   .service-card {
@@ -162,25 +209,26 @@
     <div class="ds-hero toto-hero">
       <div class="ds-hero-emoji">🗺️</div>
       <h2>TOTO + Live Map</h2>
-      <p>अब Google Maps के साथ! पिकअप-ड्रॉप map पर देखो, ड्राइवर को live track करो, दूरी हिसाब से किराया। <strong>100% मुफ्त!</strong></p>
+      <p>OpenStreetMap के साथ — बिल्कुल FREE, कोई API key नहीं! Map पर tap करो, ड्राइवर live track करो, दूरी अनुसार किराया।</p>
       <div class="ds-hero-actions">
-        <button class="ds-btn ds-btn-accent ds-btn-lg" onclick="toto.openMap()">🗺️ Map पर बुक करें</button>
+        <button class="ds-btn ds-btn-accent ds-btn-lg" onclick="toto.scrollToMap()">🗺️ Map पर बुक करें</button>
         <button class="ds-btn ds-btn-outline ds-btn-lg" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);" onclick="toto.becomeDriver()">🛺 ड्राइवर बनें</button>
       </div>
     </div>
 
     <!-- Map Section -->
     <div class="ds-section-title">
-      <h3>🗺️ <span class="live-dot"></span>Live Map</h3>
+      <h3>🗺️ <span id="liveDot" class="live-dot"></span>Live Map</h3>
       <a onclick="toto.centerMap()">🎯 Center</a>
     </div>
     <div style="position:relative;">
       <div id="totoMap"></div>
+      <div class="map-loading" id="mapLoading">🗺️ Map लोड हो रहा है...</div>
       <div class="map-controls">
         <button class="map-btn" onclick="toto.zoomIn()" title="Zoom In">➕</button>
         <button class="map-btn" onclick="toto.zoomOut()" title="Zoom Out">➖</button>
         <button class="map-btn" id="locateBtn" onclick="toto.locateMe()" title="My Location">📍</button>
-        <button class="map-btn" id="trafficBtn" onclick="toto.toggleTraffic()" title="Traffic">🚦</button>
+        <button class="map-btn" onclick="toto.refreshDrivers()" title="Refresh Drivers">🔄</button>
       </div>
       <div class="map-eta" id="mapEta" style="display:none;">
         <span>📏 <strong id="etaDist">--</strong> km</span>
@@ -190,33 +238,33 @@
     </div>
 
     <div class="map-instructions">
-      💡 <strong>Tip:</strong> Map पर कहीं भी tap करें → वो pickup या drop बन जाएगा
+      💡 <strong>Tip:</strong> Map पर कहीं भी tap करें → पहले Pickup (🟢), फिर Drop (🔴)
     </div>
 
     <!-- Quick Ride Booking -->
     <div class="ride-cta">
       <div class="ride-cta-title">⚡ तुरंत राइड बुक करें</div>
-      <div class="ride-cta-sub">कहाँ से कहाँ? बस बताइए</div>
+      <div class="ride-cta-sub">कहाँ से कहाँ? Map पर tap करें या ऊपर input भरें</div>
       <div class="from-to-box">
         <div class="from-to-row">
           <div class="from-to-dot from"></div>
-          <input type="text" class="from-to-input" id="fromInput" placeholder="📍 पिकअप - Map पर tap करें" readonly onclick="toto.pickFromMap('from')">
+          <input type="text" class="from-to-input" id="fromInput" placeholder="📍 पिकअप - Map पर tap करें" onclick="toto.pickFromMap('from')" readonly>
         </div>
         <div class="from-to-row">
           <div class="from-to-dot to"></div>
-          <input type="text" class="from-to-input" id="toInput" placeholder="🏁 ड्रॉप - Map पर tap करें" readonly onclick="toto.pickFromMap('to')">
+          <input type="text" class="from-to-input" id="toInput" placeholder="🏁 ड्रॉप - Map पर tap करें" onclick="toto.pickFromMap('to')" readonly>
         </div>
       </div>
       <div class="stat-grid-3 ds-mb-2">
-        <div class="quick-action" onclick="toto.selectVehicle('auto')">
+        <div class="quick-action" id="veh-auto" onclick="toto.selectVehicle('auto')">
           <div class="quick-action-icon">🛺</div>
           <div class="quick-action-label">ऑटो</div>
         </div>
-        <div class="quick-action" onclick="toto.selectVehicle('bike')">
+        <div class="quick-action" id="veh-bike" onclick="toto.selectVehicle('bike')">
           <div class="quick-action-icon">🏍️</div>
           <div class="quick-action-label">बाइक</div>
         </div>
-        <div class="quick-action" onclick="toto.selectVehicle('car')">
+        <div class="quick-action" id="veh-car" onclick="toto.selectVehicle('car')">
           <div class="quick-action-icon">🚗</div>
           <div class="quick-action-label">कार</div>
         </div>
@@ -238,17 +286,17 @@
       </div>
 
       <button class="ds-btn ds-btn-accent ds-btn-lg ds-btn-block" onclick="toto.bookRide()">
-        🚀 अभी बुक करें
+        🚀 अभी WhatsApp पर बुक करें
       </button>
     </div>
 
     <!-- All Services -->
-    <div class="ds-section-title"><h3>🚖 अन्य सेवाएं</h3></div>
+    <div class="ds-section-title"><h3>🚖 अन्य सेवाएं (Map के साथ)</h3></div>
 
     <div class="service-card" onclick="toto.openService('parcel')">
       <div class="service-icon parcel">📦</div>
       <div style="flex:1;">
-        <div class="ds-fw-bold ds-text-lg">📦 पार्सल / डिलीवरी</div>
+        <div class="ds-fw-bold ds-text-lg">📦 पार्सल डिलीवरी</div>
         <div class="ds-text-3 ds-text-sm">Map पर From → To चुनो, ड्राइवर उठाएगा</div>
       </div>
       <div style="font-size:24px;color:var(--ds-text-3);">›</div>
@@ -308,7 +356,7 @@
 
     <!-- Available drivers -->
     <div class="ds-section-title">
-      <h3>🛺 उपलब्ध चालक</h3>
+      <h3>🛺 उपलब्ध चालक (Map पर भी)</h3>
       <a onclick="toto.findDrivers()">सभी देखें →</a>
     </div>
     <div id="driversList">
@@ -318,51 +366,20 @@
       </div>
     </div>
 
-    <!-- How it works -->
-    <div class="ds-section-title"><h3>📖 कैसे काम करता है?</h3></div>
-    <div class="ds-card">
-      <div style="display:flex;gap:12px;align-items:start;margin-bottom:12px;">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-accent);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">1</div>
-        <div>
-          <div class="ds-fw-bold">🗺️ Map पर Pin Set करें</div>
-          <div class="ds-text-3 ds-text-sm">अपनी location (green) और drop (red) tap करें</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:start;margin-bottom:12px;">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-accent);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">2</div>
-        <div>
-          <div class="ds-fw-bold">💰 किराया देखें (दूरी अनुसार)</div>
-          <div class="ds-text-3 ds-text-sm">₹/km × कुल km + base fare</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:start;margin-bottom:12px;">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-accent);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">3</div>
-        <div>
-          <div class="ds-fw-bold">📲 WhatsApp पर Confirm</div>
-          <div class="ds-text-3 ds-text-sm">पास के ड्राइवर को तुरंत notification</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:start;">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-green);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">✓</div>
-        <div>
-          <div class="ds-fw-bold">🛺 Live Track</div>
-          <div class="ds-text-3 ds-text-sm">ड्राइवर की हर movement map पर</div>
-        </div>
-      </div>
-    </div>
-
     <button class="ds-fab" onclick="DS.openSOS()" style="background:linear-gradient(135deg, #ef4444, #b91c1c);">🆘</button>
   </div>
 </div>
 
-<!-- Google Maps API (Free tier) -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&libraries=places,directions,geometry&callback=toto.initMap" async defer></script>
+<!-- Leaflet JS (FREE, no key) -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""></script>
 
 <script src="/nav.js"></script>
 <script>
 // ============================================================
-// TOTO - With Google Maps Integration
-// Free tier API key (2500 requests/day per user - enough for Hazaribagh)
+// TOTO - With Leaflet + OpenStreetMap (100% FREE, NO API KEY)
+// Uses: Leaflet | OpenStreetMap | OSRM (routing) | Nominatim (geocoding)
 // ============================================================
 const toto = {
   map: null,
@@ -370,80 +387,76 @@ const toto = {
   fromMarker: null,
   toMarker: null,
   driverMarkers: [],
-  directionsService: null,
-  directionsRenderer: null,
-  geocoder: null,
-  placesService: null,
-  trafficLayer: null,
+  routeLine: null,
   selectedVehicle: 'auto',
   pickingMode: null,  // 'from' or 'to'
   fromLatLng: null,
   toLatLng: null,
   user: null,
-  hazaribagh: { lat: 23.9925, lng: 85.3637 },  // Hazaribagh center
+  hazaribagh: { lat: 23.9925, lng: 85.3637 },
 
-  // Called when Google Maps API loads
-  initMap() {
-    console.log('🗺️ Google Maps loaded!');
-    this.map = new google.maps.Map(document.getElementById('totoMap'), {
-      center: this.hazaribagh,
-      zoom: 13,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-      styles: this.getDarkMapStyle()
-    });
+  // Initialize map immediately
+  init() {
+    console.log('🗺️ Initializing Leaflet map...');
+    try {
+      this.map = L.map('totoMap', {
+        center: [this.hazaribagh.lat, this.hazaribagh.lng],
+        zoom: 13,
+        zoomControl: false,
+        attributionControl: true
+      });
 
-    this.directionsService = new google.maps.DirectionsService();
-    this.directionsRenderer = new google.maps.DirectionsRenderer({
-      map: this.map,
-      suppressMarkers: true,  // We use our own custom markers
-      polylineOptions: {
-        strokeColor: '#f59e0b',
-        strokeWeight: 5,
-        strokeOpacity: 0.8
-      }
-    });
-    this.geocoder = new google.maps.Geocoder();
-    this.placesService = new google.maps.places.PlacesService(this.map);
-    this.trafficLayer = new google.maps.TrafficLayer();
+      // Use CartoDB Dark Matter tiles (FREE, beautiful dark theme)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap, © CartoDB',
+        maxZoom: 19,
+        subdomains: 'abcd'
+      }).addTo(this.map);
 
-    // Click on map = set pickup/drop
-    this.map.addListener('click', (e) => this.handleMapClick(e));
+      // Also add OSM as fallback
+      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 19,
+      });
 
-    // Try to locate user
-    this.locateMe();
+      // Layer control
+      L.control.layers({
+        '🌙 Dark': this.map._layers[Object.keys(this.map._layers)[0]],
+        '☀️ Light (OSM)': osmLayer
+      }).addTo(this.map);
 
-    // Load drivers + stats
-    this.loadStats();
-    this.loadDrivers();
+      // Click on map = set pickup/drop
+      this.map.on('click', (e) => this.handleMapClick(e));
 
-    // Update driver positions every 30s (live tracking)
-    setInterval(() => this.refreshDrivers(), 30000);
-  },
+      // Hide loading
+      setTimeout(() => {
+        const ml = document.getElementById('mapLoading');
+        if (ml) ml.classList.add('hidden');
+        DS.toast('🗺️ Map तैयार है! Tap करके location set करें', 'success');
+      }, 500);
 
-  getDarkMapStyle() {
-    return [
-      { elementType: 'geometry', stylers: [{ color: '#1d2c4d' }] },
-      { elementType: 'labels.text.fill', stylers: [{ color: '#8ec3b9' }] },
-      { elementType: 'labels.text.stroke', stylers: [{ color: '#1a3646' }] },
-      { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#4b6878' }] },
-      { featureType: 'land', elementType: 'geometry', stylers: [{ color: '#0e1626' }] },
-      { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#283d6a' }] },
-      { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#6f9ba5' }] },
-      { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#304a7d' }] },
-      { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#255763' }] },
-      { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#2c6675' }] },
-      { featureType: 'transit', elementType: 'labels.text.fill', stylers: [{ color: '#98a5be' }] },
-      { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e1626' }] },
-      { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4e6d70' }] }
-    ];
+      // Try to locate user
+      this.locateMe();
+
+      // Load data
+      this.loadStats();
+      this.loadDrivers();
+      this.refreshDrivers();
+
+      // Auto-refresh drivers every 30s
+      setInterval(() => this.refreshDrivers(), 30000);
+
+      console.log('✅ Map ready!');
+    } catch (e) {
+      console.error('Map init error:', e);
+      document.getElementById('mapLoading').textContent = '❌ Map load failed. Refresh page.';
+    }
   },
 
   // ============ LOCATION ============
   locateMe() {
     if (!navigator.geolocation) {
-      this.setUserMarker(this.hazaribagh, 'हाजारीबाग़ (Default)');
+      this.setUserMarker(this.hazaribagh.lat, this.hazaribagh.lng, 'हाजारीबाग़ (Default)');
       return;
     }
     DS.toast('📍 आपकी location ढूंढ रहे हैं...');
@@ -451,149 +464,192 @@ const toto = {
       (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        this.setUserMarker({ lat, lng }, 'आप यहाँ हैं');
-        this.map.setCenter({ lat, lng });
-        this.map.setZoom(15);
+        this.setUserMarker(lat, lng, 'आप यहाँ हैं');
+        this.map.setView([lat, lng], 15);
         this.fromLatLng = { lat, lng };
-        this.reverseGeocode({ lat, lng }, 'from');
+        this.reverseGeocode(lat, lng, 'from');
       },
       (err) => {
-        console.warn('Geolocation denied/error:', err);
-        this.setUserMarker(this.hazaribagh, 'हाजारीबाग़ (Default location)');
+        console.warn('Geolocation denied:', err);
+        this.setUserMarker(this.hazaribagh.lat, this.hazaribagh.lng, 'हाजारीबाग़ (Default)');
+        DS.toast('⚠️ GPS not available, using Hazaribagh', 'error');
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   },
 
-  setUserMarker(latLng, title) {
-    if (this.userMarker) this.userMarker.setMap(null);
-    this.userMarker = new google.maps.Marker({
-      position: latLng,
-      map: this.map,
-      title: title,
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 10,
-        fillColor: '#3b82f6',
-        fillOpacity: 1,
-        strokeColor: '#fff',
-        strokeWeight: 3
-      },
-      animation: google.maps.Animation.DROP
+  setUserMarker(lat, lng, title) {
+    if (this.userMarker) this.map.removeLayer(this.userMarker);
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div class="marker-pin you"><span>📍</span></div>`,
+      iconSize: [36, 36],
+      iconAnchor: [18, 36]
     });
+    this.userMarker = L.marker([lat, lng], { icon, title }).addTo(this.map);
   },
 
   // ============ MAP CLICK ============
   handleMapClick(e) {
+    const { lat, lng } = e.latlng;
     if (this.pickingMode === 'from') {
-      this.setFromMarker(e.latLng);
+      this.setFromMarker(lat, lng);
       this.pickingMode = null;
     } else if (this.pickingMode === 'to') {
-      this.setToMarker(e.latLng);
+      this.setToMarker(lat, lng);
       this.pickingMode = null;
     } else {
       // Default: set as pickup
-      this.setFromMarker(e.latLng);
+      this.setFromMarker(lat, lng);
     }
   },
 
   pickFromMap(which) {
     this.pickingMode = which;
-    DS.toast(`📍 Map पर ${which === 'from' ? 'पिकअप' : 'ड्रॉप'} location tap करें`, 'success');
-    // Visual indicator
-    document.getElementById('totoMap').style.boxShadow = `0 0 0 4px ${which === 'from' ? '#10b981' : '#ef4444'}`;
+    DS.toast(`📍 Map पर ${which === 'from' ? 'पिकअप (🟢)' : 'ड्रॉप (🔴)'} location tap करें`, 'success');
+    const map = document.getElementById('totoMap');
+    map.style.boxShadow = `0 0 0 4px ${which === 'from' ? '#10b981' : '#ef4444'}, 0 4px 16px rgba(245,158,11,0.3)`;
     setTimeout(() => {
-      document.getElementById('totoMap').style.boxShadow = '0 4px 16px rgba(245,158,11,0.3)';
-    }, 2000);
+      map.style.boxShadow = '0 4px 16px rgba(245,158,11,0.3)';
+    }, 2500);
   },
 
-  setFromMarker(latLng) {
-    if (this.fromMarker) this.fromMarker.setMap(null);
-    this.fromLatLng = { lat: latLng.lat(), lng: latLng.lng() };
-    this.fromMarker = new google.maps.Marker({
-      position: latLng,
-      map: this.map,
-      title: 'पिकअप',
-      icon: {
-        path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
-        fillColor: '#10b981',
-        fillOpacity: 1,
-        strokeColor: '#fff',
-        strokeWeight: 2,
-        scale: 1.2
-      },
-      animation: google.maps.Animation.DROP
+  setFromMarker(lat, lng) {
+    if (this.fromMarker) this.map.removeLayer(this.fromMarker);
+    this.fromLatLng = { lat, lng };
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div class="marker-pin from"><span>🟢</span></div>`,
+      iconSize: [36, 36],
+      iconAnchor: [18, 36]
     });
-    this.reverseGeocode(latLng, 'from');
+    this.fromMarker = L.marker([lat, lng], { icon, title: 'पिकअप (Pickup)' }).addTo(this.map);
+    this.reverseGeocode(lat, lng, 'from');
     if (this.toLatLng) this.calculateRoute();
   },
 
-  setToMarker(latLng) {
-    if (this.toMarker) this.toMarker.setMap(null);
-    this.toLatLng = { lat: latLng.lat(), lng: latLng.lng() };
-    this.toMarker = new google.maps.Marker({
-      position: latLng,
-      map: this.map,
-      title: 'ड्रॉप',
-      icon: {
-        path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
-        fillColor: '#ef4444',
-        fillOpacity: 1,
-        strokeColor: '#fff',
-        strokeWeight: 2,
-        scale: 1.2
-      },
-      animation: google.maps.Animation.DROP
+  setToMarker(lat, lng) {
+    if (this.toMarker) this.map.removeLayer(this.toMarker);
+    this.toLatLng = { lat, lng };
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div class="marker-pin to"><span>🔴</span></div>`,
+      iconSize: [36, 36],
+      iconAnchor: [18, 36]
     });
-    this.reverseGeocode(latLng, 'to');
+    this.toMarker = L.marker([lat, lng], { icon, title: 'ड्रॉप (Drop)' }).addTo(this.map);
+    this.reverseGeocode(lat, lng, 'to');
     if (this.fromLatLng) this.calculateRoute();
   },
 
-  reverseGeocode(latLng, which) {
-    this.geocoder.geocode({ location: latLng }, (results, status) => {
-      if (status === 'OK' && results[0]) {
-        const addr = results[0].formatted_address;
-        document.getElementById(which + 'Input').value = addr;
-      } else {
-        document.getElementById(which + 'Input').value = `${latLng.lat().toFixed(4)}, ${latLng.lng().toFixed(4)}`;
-      }
+  reverseGeocode(lat, lng, which) {
+    // Use Nominatim (FREE) for reverse geocoding
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+      headers: { 'Accept-Language': 'hi,en' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      const addr = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      const short = data.name || data.address?.road || data.address?.suburb || addr.split(',')[0];
+      document.getElementById(which + 'Input').value = short;
+    })
+    .catch(() => {
+      document.getElementById(which + 'Input').value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     });
   },
 
-  // ============ ROUTE CALCULATION ============
+  // ============ ROUTE (using OSRM - FREE) ============
   calculateRoute() {
     if (!this.fromLatLng || !this.toLatLng) return;
+    DS.toast('🛣️ रास्ता ढूंढ रहे हैं...');
 
-    this.directionsService.route({
-      origin: this.fromLatLng,
-      destination: this.toLatLng,
-      travelMode: 'DRIVING'
-    }, (response, status) => {
-      if (status === 'OK') {
-        this.directionsRenderer.setDirections(response);
-        const route = response.routes[0].legs[0];
-        const distKm = (route.distance.value / 1000).toFixed(1);
-        const timeMin = Math.round(route.duration.value / 60);
-        const fare = this.calculateFare(parseFloat(distKm));
+    // Use OSRM public API (FREE, no key)
+    const url = `https://router.project-osrm.org/route/v1/driving/${this.fromLatLng.lng},${this.fromLatLng.lat};${this.toLatLng.lng},${this.toLatLng.lat}?overview=full&geometries=geojson`;
 
-        // Show in map ETA
-        document.getElementById('mapEta').style.display = 'flex';
-        document.getElementById('etaDist').textContent = distKm;
-        document.getElementById('etaTime').textContent = timeMin;
-        document.getElementById('etaFare').textContent = '₹' + fare;
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        if (data.code === 'Ok' && data.routes && data.routes[0]) {
+          const route = data.routes[0];
+          const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+          const distKm = (route.distance / 1000).toFixed(1);
+          const timeMin = Math.round(route.duration / 60);
+          const fare = this.calculateFare(parseFloat(distKm));
 
-        // Show in fare display
-        document.getElementById('fareDisplay').style.display = 'block';
-        document.getElementById('fareAmount').textContent = '₹' + fare;
-        document.getElementById('fareDist').textContent = distKm;
-        document.getElementById('fareTime').textContent = timeMin;
+          // Draw route
+          if (this.routeLine) this.map.removeLayer(this.routeLine);
+          this.routeLine = L.polyline(coords, {
+            color: '#f59e0b',
+            weight: 5,
+            opacity: 0.8,
+            lineJoin: 'round',
+            lineCap: 'round'
+          }).addTo(this.map);
 
-        // Find nearby drivers
-        this.findNearbyDrivers();
-      } else {
-        DS.toast('⚠️ रास्ता नहीं मिल सका', 'error');
-      }
-    });
+          // Fit map to route
+          this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
+
+          // Show ETA
+          document.getElementById('mapEta').style.display = 'flex';
+          document.getElementById('etaDist').textContent = distKm;
+          document.getElementById('etaTime').textContent = timeMin;
+          document.getElementById('etaFare').textContent = '₹' + fare;
+
+          // Show fare display
+          document.getElementById('fareDisplay').style.display = 'block';
+          document.getElementById('fareAmount').textContent = '₹' + fare;
+          document.getElementById('fareDist').textContent = distKm;
+          document.getElementById('fareTime').textContent = timeMin;
+
+          // Find nearby drivers
+          this.findNearbyDrivers();
+        } else {
+          DS.toast('⚠️ रास्ता नहीं मिल सका, straight line दिखा रहे हैं', 'error');
+          this.drawStraightLine();
+        }
+      })
+      .catch(e => {
+        console.error('Route error:', e);
+        DS.toast('⚠️ Route error, straight line दिखा रहे हैं', 'error');
+        this.drawStraightLine();
+      });
+  },
+
+  drawStraightLine() {
+    if (!this.fromLatLng || !this.toLatLng) return;
+    if (this.routeLine) this.map.removeLayer(this.routeLine);
+    this.routeLine = L.polyline(
+      [[this.fromLatLng.lat, this.fromLatLng.lng], [this.toLatLng.lat, this.toLatLng.lng]],
+      { color: '#f59e0b', weight: 4, opacity: 0.7, dashArray: '10, 10' }
+    ).addTo(this.map);
+
+    // Haversine distance
+    const dist = this.haversineDistance(this.fromLatLng.lat, this.fromLatLng.lng, this.toLatLng.lat, this.toLatLng.lng);
+    const distKm = (dist / 1000).toFixed(1);
+    const timeMin = Math.round(distKm * 3);  // ~20 km/h avg in city
+    const fare = this.calculateFare(parseFloat(distKm));
+
+    document.getElementById('mapEta').style.display = 'flex';
+    document.getElementById('etaDist').textContent = distKm;
+    document.getElementById('etaTime').textContent = timeMin;
+    document.getElementById('etaFare').textContent = '₹' + fare;
+    document.getElementById('fareDisplay').style.display = 'block';
+    document.getElementById('fareAmount').textContent = '₹' + fare;
+    document.getElementById('fareDist').textContent = distKm;
+    document.getElementById('fareTime').textContent = timeMin;
+
+    this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
+    this.findNearbyDrivers();
+  },
+
+  haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(Δφ/2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   },
 
   calculateFare(km) {
@@ -614,85 +670,62 @@ const toto = {
       const r = await fetch('/api/erikso/drivers?online=true');
       const d = await r.json();
       if (d.success && d.drivers) {
-        // Clear old markers
-        this.driverMarkers.forEach(m => m.setMap(null));
+        this.driverMarkers.forEach(m => this.map.removeLayer(m));
         this.driverMarkers = [];
-        // Add new markers (mock positions around Hazaribagh if no GPS)
         d.drivers.forEach((drv, i) => {
-          const angle = (i / d.drivers.length) * Math.PI * 2;
-          const radius = 0.015 + Math.random() * 0.01;
-          const pos = drv.currentLat ? { lat: drv.currentLat, lng: drv.currentLng } : {
-            lat: this.hazaribagh.lat + Math.cos(angle) * radius,
-            lng: this.hazaribagh.lng + Math.sin(angle) * radius
-          };
+          const angle = (i / Math.max(d.drivers.length, 1)) * Math.PI * 2;
+          const radius = 0.008 + (i * 0.003);
+          const lat = drv.currentLat || (this.hazaribagh.lat + Math.cos(angle) * radius);
+          const lng = drv.currentLng || (this.hazaribagh.lng + Math.sin(angle) * radius);
           const icon = drv.vehicleType === 'bike' ? '🏍️' :
                        drv.vehicleType === 'car' ? '🚗' :
-                       drv.vehicleType === 'van' ? '🚐' : '🛺';
-          const marker = new google.maps.Marker({
-            position: pos,
-            map: this.map,
-            title: drv.name,
-            icon: {
-              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-                  <circle cx="20" cy="20" r="18" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
-                  <text x="20" y="28" font-size="20" text-anchor="middle">${icon}</text>
-                </svg>
-              `),
-              scaledSize: new google.maps.Size(40, 40)
-            }
+                       drv.vehicleType === 'van' ? '🚐' :
+                       drv.vehicleType === 'bus' ? '🚌' : '🛺';
+          const driverIcon = L.divIcon({
+            className: 'driver-marker',
+            html: icon,
+            iconSize: [36, 36],
+            iconAnchor: [18, 18]
           });
-          const info = new google.maps.InfoWindow({
-            content: `
-              <div style="color:#000;padding:8px;">
-                <strong>${drv.name}</strong><br>
-                <span style="font-size:12px;">${drv.vehicleNumber || 'N/A'}</span><br>
-                <span style="color:#f59e0b;">★ ${(drv.rating || 5).toFixed(1)}</span>
+          const marker = L.marker([lat, lng], { icon: driverIcon, title: drv.name })
+            .addTo(this.map)
+            .bindPopup(`
+              <div style="min-width:150px;">
+                <strong>${drv.name || 'चालक'}</strong><br>
+                <span style="font-size:11px;color:#888;">${drv.vehicleNumber || 'N/A'}</span><br>
+                <span style="color:#ffd700;">★ ${(drv.rating || 5).toFixed(1)}</span>
+                <span style="font-size:11px;"> • ${drv.totalRides || 0} राइड</span>
               </div>
-            `
-          });
-          marker.addListener('click', () => info.open(this.map, marker));
+            `);
           this.driverMarkers.push(marker);
         });
+        this.findNearbyDrivers();
       }
     } catch (e) { console.error('Driver load error:', e); }
   },
 
   findNearbyDrivers() {
-    // Count drivers within 3 km of pickup
+    if (!this.fromLatLng) return;
     let count = 0;
     this.driverMarkers.forEach(m => {
-      const dist = google.maps.geometry.spherical.computeDistanceBetween(
-        m.getPosition(), this.fromLatLng
-      );
-      if (dist < 3000) count++;
+      const ll = m.getLatLng();
+      const dist = this.haversineDistance(this.fromLatLng.lat, this.fromLatLng.lng, ll.lat, ll.lng);
+      if (dist < 5000) count++;  // 5 km radius
     });
     if (count > 0) {
       document.getElementById('nearbyDrivers').style.display = 'flex';
       document.getElementById('nearbyCount').textContent = count;
-    } else {
-      document.getElementById('nearbyDrivers').style.display = 'none';
     }
   },
 
   // ============ MAP CONTROLS ============
-  zoomIn() { this.map.setZoom(this.map.getZoom() + 1); },
-  zoomOut() { this.map.setZoom(this.map.getZoom() - 1); },
+  zoomIn() { this.map.zoomIn(); },
+  zoomOut() { this.map.zoomOut(); },
   centerMap() {
-    if (this.userMarker) this.map.setCenter(this.userMarker.getPosition());
-    else this.map.setCenter(this.hazaribagh);
+    if (this.userMarker) this.map.setView(this.userMarker.getLatLng(), 15);
+    else this.map.setView([this.hazaribagh.lat, this.hazaribagh.lng], 13);
   },
-  toggleTraffic() {
-    const btn = document.getElementById('trafficBtn');
-    if (this.trafficLayer.getMap()) {
-      this.trafficLayer.setMap(null);
-      btn.classList.remove('active');
-    } else {
-      this.trafficLayer.setMap(this.map);
-      btn.classList.add('active');
-    }
-  },
-  openMap() {
+  scrollToMap() {
     document.getElementById('totoMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
   },
 
@@ -716,13 +749,13 @@ const toto = {
       const d = await r.json();
       if (d.success && d.drivers && d.drivers.length) {
         list.innerHTML = d.drivers.slice(0, 5).map(dr => {
-          const icon = drv => drv.vehicleType === 'bike' ? '🏍️' :
-                       drv.vehicleType === 'car' ? '🚗' :
-                       drv.vehicleType === 'bus' ? '🚌' :
-                       drv.vehicleType === 'van' ? '🚐' : '🛺';
+          const icon = dr.vehicleType === 'bike' ? '🏍️' :
+                       dr.vehicleType === 'car' ? '🚗' :
+                       dr.vehicleType === 'bus' ? '🚌' :
+                       dr.vehicleType === 'van' ? '🚐' : '🛺';
           return `
             <div class="driver-card">
-              <div class="driver-avatar">${icon(dr)}</div>
+              <div class="driver-avatar">${icon}</div>
               <div style="flex:1;min-width:0;">
                 <div class="ds-fw-bold">${dr.name || 'चालक'}</div>
                 <div class="ds-text-3 ds-text-sm">${dr.route || 'Hazaribagh'}</div>
@@ -750,8 +783,12 @@ const toto = {
   // ============ VEHICLE ============
   selectVehicle(type) {
     this.selectedVehicle = type;
+    // Update UI
+    ['auto', 'bike', 'car'].forEach(t => {
+      const el = document.getElementById('veh-' + t);
+      if (el) el.classList.toggle('active', t === type);
+    });
     DS.toast(`✅ ${this.getVehicleName(type)} चुना गया`, 'success');
-    // Re-calculate if route exists
     if (this.fromLatLng && this.toLatLng) this.calculateRoute();
   },
 
@@ -771,15 +808,15 @@ const toto = {
   bookRide() {
     this.user = DS.user();
     if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
-    if (!this.fromLatLng) { DS.toast('⚠️ पिकअप location set करें (Map पर tap करें)', 'error'); return; }
-    if (!this.toLatLng) { DS.toast('⚠️ ड्रॉप location set करें (Map पर tap करें)', 'error'); return; }
+    if (!this.fromLatLng) { DS.toast('⚠️ Map पर tap करके पिकअप set करें', 'error'); this.scrollToMap(); return; }
+    if (!this.toLatLng) { DS.toast('⚠️ Map पर tap करके ड्रॉप set करें', 'error'); this.scrollToMap(); return; }
 
     const fromAddr = document.getElementById('fromInput').value;
     const toAddr = document.getElementById('toInput').value;
     const distKm = document.getElementById('fareDist').textContent;
+    const timeMin = document.getElementById('fareTime').textContent;
     const fare = document.getElementById('fareAmount').textContent;
     const vehicleName = this.getVehicleName(this.selectedVehicle);
-
     const mapsLink = `https://www.google.com/maps/dir/${this.fromLatLng.lat},${this.fromLatLng.lng}/${this.toLatLng.lat},${this.toLatLng.lng}/`;
 
     const msg = `🗺️ *DainikState TOTO - Map Booking*\n\n` +
@@ -787,8 +824,9 @@ const toto = {
       `📍 पिकअप: ${fromAddr}\n` +
       `🏁 ड्रॉप: ${toAddr}\n` +
       `📏 दूरी: ${distKm} km\n` +
+      `⏱️ समय: ${timeMin} मिनट\n` +
       `💰 किराया: ${fare}\n` +
-      `🗺️ Map: ${mapsLink}\n` +
+      `🗺️ Google Maps: ${mapsLink}\n` +
       `📱 नंबर: ${this.user.phone}\n` +
       `👤 नाम: ${this.user.name || 'User'}\n\n` +
       `कृपया ड्राइवर assign करें। धन्यवाद! 🙏`;
@@ -803,7 +841,6 @@ const toto = {
     this.openService(this.selectedVehicle, driverId);
   },
 
-  // ============ SERVICE ROUTING ============
   openService(type, driverId) {
     this.user = DS.user();
     if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
@@ -817,13 +854,12 @@ const toto = {
       night: '🌙 रात की Safe राइड',
     };
 
-    const fromLL = this.fromLatLng ? `${this.fromLatLng.lat},${this.fromLatLng.lng}` : 'Hazaribagh';
-    const toLL = this.toLatLng ? `${this.toLatLng.lat},${this.toLatLng.lng}` : 'TBD';
-    const mapLink = this.fromLatLng && this.toLatLng ?
-      `https://www.google.com/maps/dir/${fromLL}/${toLL}/` : 'कोई location नहीं';
+    const mapsLink = this.fromLatLng && this.toLatLng ?
+      `https://www.google.com/maps/dir/${this.fromLatLng.lat},${this.fromLatLng.lng}/${this.toLatLng.lat},${this.toLatLng.lng}/` :
+      'कोई location नहीं';
 
     const msg = `🛺 *DainikState TOTO - ${names[type] || type}*\n\n` +
-      `🗺️ Route: ${mapLink}\n` +
+      `🗺️ Route: ${mapsLink}\n` +
       `📍 पिकअप: ${document.getElementById('fromInput').value || 'Hazaribagh'}\n` +
       `🏁 ड्रॉप: ${document.getElementById('toInput').value || 'TBD'}\n` +
       `📱 नंबर: ${this.user.phone}\n` +
@@ -842,9 +878,11 @@ const toto = {
   }
 };
 
-// Auto-init if Google Maps already loaded
-if (typeof google !== 'undefined' && google.maps) {
-  toto.initMap();
+// Initialize when DOM + Leaflet ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => toto.init());
+} else {
+  toto.init();
 }
 </script>
 </body>
