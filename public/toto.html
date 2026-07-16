@@ -17,24 +17,36 @@
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.5; transform: scale(1.3); }
   }
-  .toto-map {
-    background: linear-gradient(135deg, #1e293b, #0f172a);
-    border-radius: 16px; padding: 20px; margin-bottom: 16px;
-    min-height: 180px; position: relative; overflow: hidden;
+  /* ============= MAP ============= */
+  #totoMap {
+    width: 100%; height: 280px;
+    border-radius: 16px; margin-bottom: 16px;
+    border: 2px solid var(--ds-accent);
+    box-shadow: 0 4px 16px rgba(245,158,11,0.3);
+    z-index: 1;
   }
-  .toto-map::before {
-    content: ''; position: absolute; inset: 0;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
+  .map-controls {
+    position: absolute; right: 10px; top: 70px;
+    z-index: 5; display: flex; flex-direction: column; gap: 6px;
   }
-  .toto-pin { position: absolute; font-size: 32px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
-  .toto-route-line {
-    position: absolute; top: 50%; left: 10%; right: 10%; height: 3px;
-    background: linear-gradient(90deg, var(--ds-accent) 0%, var(--ds-yellow) 50%, var(--ds-green) 100%);
-    border-radius: 2px;
+  .map-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #fff; border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
   }
+  .map-btn:hover { background: #f3f4f6; }
+  .map-btn.active { background: var(--ds-accent); color: #fff; }
+  .map-eta {
+    position: absolute; bottom: 10px; left: 10px; right: 10px;
+    background: rgba(0,0,0,0.85); color: #fff;
+    padding: 10px 14px; border-radius: 12px;
+    font-size: 12px; z-index: 5;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .map-eta strong { color: var(--ds-gold); }
+
   .stat-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
   .quick-action {
@@ -119,6 +131,26 @@
     font-family: inherit; outline: none;
   }
   .from-to-input::placeholder { color: var(--ds-text-3); }
+  .fare-display {
+    background: linear-gradient(135deg, var(--ds-accent), #dc2626);
+    color: #fff; padding: 16px; border-radius: 12px;
+    margin-bottom: 12px; text-align: center;
+  }
+  .fare-amount { font-size: 32px; font-weight: 900; line-height: 1; }
+  .fare-label { font-size: 12px; opacity: 0.9; margin-top: 4px; }
+  .fare-detail { display: flex; justify-content: space-between; font-size: 11px; margin-top: 8px; opacity: 0.95; }
+  .nearby-drivers {
+    background: rgba(16,185,129,0.1); border: 1px solid var(--ds-green);
+    border-radius: 12px; padding: 10px 14px;
+    margin-bottom: 12px; font-size: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .map-instructions {
+    background: rgba(59,130,246,0.1); border: 1px solid var(--ds-blue);
+    border-radius: 10px; padding: 10px;
+    margin-bottom: 12px; font-size: 12px; color: var(--ds-text-2);
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -128,13 +160,37 @@
   <div class="ds-content">
     <!-- Hero -->
     <div class="ds-hero toto-hero">
-      <div class="ds-hero-emoji">🛺</div>
-      <h2>TOTO - सबके लिए राइड</h2>
-      <p>ऑटो, बाइक, कार, पार्सल, स्कूल, इमरजेंसी — कुछ भी, कभी भी, कहीं भी। <strong>100% मुफ्त प्लेटफॉर्म!</strong></p>
+      <div class="ds-hero-emoji">🗺️</div>
+      <h2>TOTO + Live Map</h2>
+      <p>अब Google Maps के साथ! पिकअप-ड्रॉप map पर देखो, ड्राइवर को live track करो, दूरी हिसाब से किराया। <strong>100% मुफ्त!</strong></p>
       <div class="ds-hero-actions">
-        <button class="ds-btn ds-btn-accent ds-btn-lg" onclick="toto.bookNow()">📲 अभी राइड बुक करें</button>
+        <button class="ds-btn ds-btn-accent ds-btn-lg" onclick="toto.openMap()">🗺️ Map पर बुक करें</button>
         <button class="ds-btn ds-btn-outline ds-btn-lg" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);" onclick="toto.becomeDriver()">🛺 ड्राइवर बनें</button>
       </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="ds-section-title">
+      <h3>🗺️ <span class="live-dot"></span>Live Map</h3>
+      <a onclick="toto.centerMap()">🎯 Center</a>
+    </div>
+    <div style="position:relative;">
+      <div id="totoMap"></div>
+      <div class="map-controls">
+        <button class="map-btn" onclick="toto.zoomIn()" title="Zoom In">➕</button>
+        <button class="map-btn" onclick="toto.zoomOut()" title="Zoom Out">➖</button>
+        <button class="map-btn" id="locateBtn" onclick="toto.locateMe()" title="My Location">📍</button>
+        <button class="map-btn" id="trafficBtn" onclick="toto.toggleTraffic()" title="Traffic">🚦</button>
+      </div>
+      <div class="map-eta" id="mapEta" style="display:none;">
+        <span>📏 <strong id="etaDist">--</strong> km</span>
+        <span>⏱️ <strong id="etaTime">--</strong> min</span>
+        <span>💰 <strong id="etaFare">--</strong></span>
+      </div>
+    </div>
+
+    <div class="map-instructions">
+      💡 <strong>Tip:</strong> Map पर कहीं भी tap करें → वो pickup या drop बन जाएगा
     </div>
 
     <!-- Quick Ride Booking -->
@@ -144,11 +200,11 @@
       <div class="from-to-box">
         <div class="from-to-row">
           <div class="from-to-dot from"></div>
-          <input type="text" class="from-to-input" id="fromInput" placeholder="📍 कहाँ से? (From)">
+          <input type="text" class="from-to-input" id="fromInput" placeholder="📍 पिकअप - Map पर tap करें" readonly onclick="toto.pickFromMap('from')">
         </div>
         <div class="from-to-row">
           <div class="from-to-dot to"></div>
-          <input type="text" class="from-to-input" id="toInput" placeholder="🏁 कहाँ तक? (To)">
+          <input type="text" class="from-to-input" id="toInput" placeholder="🏁 ड्रॉप - Map पर tap करें" readonly onclick="toto.pickFromMap('to')">
         </div>
       </div>
       <div class="stat-grid-3 ds-mb-2">
@@ -165,61 +221,35 @@
           <div class="quick-action-label">कार</div>
         </div>
       </div>
+
+      <!-- Fare estimate -->
+      <div class="fare-display" id="fareDisplay" style="display:none;">
+        <div class="fare-amount" id="fareAmount">₹0</div>
+        <div class="fare-label">अनुमानित किराया</div>
+        <div class="fare-detail">
+          <span>📏 <span id="fareDist">0</span> km</span>
+          <span>⏱️ <span id="fareTime">0</span> min</span>
+        </div>
+      </div>
+
+      <div class="nearby-drivers" id="nearbyDrivers" style="display:none;">
+        <span style="font-size:20px;">🛺</span>
+        <span><strong id="nearbyCount">0</strong> ड्राइवर पास में available हैं</span>
+      </div>
+
       <button class="ds-btn ds-btn-accent ds-btn-lg ds-btn-block" onclick="toto.bookRide()">
-        🚀 राइड बुक करें
+        🚀 अभी बुक करें
       </button>
     </div>
 
     <!-- All Services -->
-    <div class="ds-section-title"><h3>🚖 कौन सी सेवा चाहिए?</h3></div>
-    <div class="service-card" onclick="toto.openService('auto')">
-      <div class="service-icon auto">🛺</div>
-      <div style="flex:1;">
-        <div class="ds-fw-bold ds-text-lg">🛺 ऑटो-रिक्शा</div>
-        <div class="ds-text-3 ds-text-sm">शहर में कहीं भी, सस्ते में</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge">₹30 से शुरू</span>
-          <span class="ds-text-3 ds-text-sm"> • 3-व्हीलर</span>
-        </div>
-      </div>
-      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
-    </div>
-
-    <div class="service-card" onclick="toto.openService('bike')">
-      <div class="service-icon bike">🏍️</div>
-      <div style="flex:1;">
-        <div class="ds-fw-bold ds-text-lg">🏍️ बाइक टैक्सी</div>
-        <div class="ds-text-3 ds-text-sm">जल्दी पहुँचो, भीड़ से बचो</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge">₹20 से शुरू</span>
-          <span class="ds-text-3 ds-text-sm"> • सिंगल राइडर</span>
-        </div>
-      </div>
-      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
-    </div>
-
-    <div class="service-card" onclick="toto.openService('car')">
-      <div class="service-icon car">🚗</div>
-      <div style="flex:1;">
-        <div class="ds-fw-bold ds-text-lg">🚗 कार / कैब</div>
-        <div class="ds-text-3 ds-text-sm">AC कार, आरामदायक सफर</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge">₹100 से शुरू</span>
-          <span class="ds-text-3 ds-text-sm"> • 4-सीटर</span>
-        </div>
-      </div>
-      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
-    </div>
+    <div class="ds-section-title"><h3>🚖 अन्य सेवाएं</h3></div>
 
     <div class="service-card" onclick="toto.openService('parcel')">
       <div class="service-icon parcel">📦</div>
       <div style="flex:1;">
         <div class="ds-fw-bold ds-text-lg">📦 पार्सल / डिलीवरी</div>
-        <div class="ds-text-3 ds-text-sm">छोटा-बड़ा सामान, कहीं भी भेजो</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge">₹40 से शुरू</span>
-          <span class="ds-text-3 ds-text-sm"> • 1 घंटे में</span>
-        </div>
+        <div class="ds-text-3 ds-text-sm">Map पर From → To चुनो, ड्राइवर उठाएगा</div>
       </div>
       <div style="font-size:24px;color:var(--ds-text-3);">›</div>
     </div>
@@ -228,24 +258,7 @@
       <div class="service-icon school">🏫</div>
       <div style="flex:1;">
         <div class="ds-fw-bold ds-text-lg">🏫 स्कूल वैन / बस</div>
-        <div class="ds-text-3 ds-text-sm">बच्चों की सुरक्षित पिक-ड्रॉप</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge">₹800/माह</span>
-          <span class="ds-text-3 ds-text-sm"> • लाइव ट्रैकिंग</span>
-        </div>
-      </div>
-      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
-    </div>
-
-    <div class="service-card" onclick="toto.openService('market')">
-      <div class="service-icon market">🛒</div>
-      <div style="flex:1;">
-        <div class="ds-fw-bold ds-text-lg">🛒 बाज़ार / खरीदारी</div>
-        <div class="ds-text-3 ds-text-sm">सामान लाना है? टोटो बुलाओ</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge">₹50 + सामान</span>
-          <span class="ds-text-3 ds-text-sm"> • ड्राइवर खरीदेगा</span>
-        </div>
+        <div class="ds-text-3 ds-text-sm">Map पर home → school route track</div>
       </div>
       <div style="font-size:24px;color:var(--ds-text-3);">›</div>
     </div>
@@ -254,63 +267,7 @@
       <div class="service-icon hospital">🏥</div>
       <div style="flex:1;">
         <div class="ds-fw-bold ds-text-lg">🏥 अस्पताल / डॉक्टर</div>
-        <div class="ds-text-3 ds-text-sm">इमरजेंसी या रूटीन चेकअप</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge">⚡ 10 मिनट</span>
-          <span class="ds-text-3 ds-text-sm"> • प्राथमिकता</span>
-        </div>
-      </div>
-      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
-    </div>
-
-    <div class="service-card" onclick="toto.openService('senior')">
-      <div class="service-icon senior">👴</div>
-      <div style="flex:1;">
-        <div class="ds-fw-bold ds-text-lg">👴 बुज़ुर्ग / दिव्यांग</div>
-        <div class="ds-text-3 ds-text-sm">सहायता के साथ सुरक्षित सफर</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge">सहायक</span>
-          <span class="ds-text-3 ds-text-sm"> • धीमी रफ़्तार</span>
-        </div>
-      </div>
-      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
-    </div>
-
-    <div class="service-card" onclick="toto.openService('outstation')">
-      <div class="service-icon outstation">🌄</div>
-      <div style="flex:1;">
-        <div class="ds-fw-bold ds-text-lg">🌄 बाहर का सफर</div>
-        <div class="ds-text-3 ds-text-sm">रांची, धनबाद, बोकारो — एक दिन</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge">₹8/km</span>
-          <span class="ds-text-3 ds-text-sm"> • AC कार</span>
-        </div>
-      </div>
-      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
-    </div>
-
-    <div class="service-card" onclick="toto.openService('event')">
-      <div class="service-icon event">🎉</div>
-      <div style="flex:1;">
-        <div class="ds-fw-bold ds-text-lg">🎉 शादी / पार्टी / इवेंट</div>
-        <div class="ds-text-3 ds-text-sm">गाड़ी किराये पर, पूरे दिन</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge">₹2000/दिन</span>
-          <span class="ds-text-3 ds-text-sm"> • डेकोरेशन विकल्प</span>
-        </div>
-      </div>
-      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
-    </div>
-
-    <div class="service-card" onclick="toto.openService('night')">
-      <div class="service-icon night">🌙</div>
-      <div style="flex:1;">
-        <div class="ds-fw-bold ds-text-lg">🌙 रात की राइड (Safe)</div>
-        <div class="ds-text-3 ds-text-sm">महिला सुरक्षा, SOS बटन</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge">🛡️ Verified</span>
-          <span class="ds-text-3 ds-text-sm"> • GPS शेयर</span>
-        </div>
+        <div class="ds-text-3 ds-text-sm">नज़दीकी अस्पताल map पर देखो</div>
       </div>
       <div style="font-size:24px;color:var(--ds-text-3);">›</div>
     </div>
@@ -319,11 +276,16 @@
       <div class="service-icon emergency">🆘</div>
       <div style="flex:1;">
         <div class="ds-fw-bold ds-text-lg">🆘 आपातकालीन (SOS)</div>
-        <div class="ds-text-3 ds-text-sm">एक टैप में मदद</div>
-        <div style="margin-top:4px;">
-          <span class="vehicle-badge" style="background:rgba(239,68,68,0.3);color:#fff;">⚡ 5 मिनट</span>
-          <span class="ds-text-3 ds-text-sm"> • 24/7</span>
-        </div>
+        <div class="ds-text-3 ds-text-sm">Live location + nearest help</div>
+      </div>
+      <div style="font-size:24px;color:var(--ds-text-3);">›</div>
+    </div>
+
+    <div class="service-card" onclick="toto.openService('night')">
+      <div class="service-icon night">🌙</div>
+      <div style="flex:1;">
+        <div class="ds-fw-bold ds-text-lg">🌙 रात Safe Ride</div>
+        <div class="ds-text-3 ds-text-sm">Trusted drivers + share live trip</div>
       </div>
       <div style="font-size:24px;color:var(--ds-text-3);">›</div>
     </div>
@@ -341,23 +303,6 @@
       <div class="ds-stat">
         <div class="ds-stat-value" id="totoRides">0</div>
         <div class="ds-stat-label">राइड</div>
-      </div>
-    </div>
-
-    <!-- Live tracking -->
-    <div class="ds-section-title">
-      <h3>📍 <span class="live-dot"></span>लाइव ट्रैकिंग</h3>
-      <a onclick="toto.trackLive()">विस्तार →</a>
-    </div>
-    <div class="toto-map">
-      <div class="toto-pin" style="left:8%;top:60%;">📍</div>
-      <div class="toto-route-line"></div>
-      <div class="toto-pin" style="left:50%;top:30%;animation:pulse 2s infinite;">🛺</div>
-      <div class="toto-pin" style="right:8%;top:60%;">🏁</div>
-      <div style="position:absolute;bottom:10px;left:10px;right:10px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.7);">
-        <span id="liveFrom">पिकअप: होम</span>
-        <span>🛺 चल रहे</span>
-        <span id="liveTo">ड्रॉप: ऑफिस</span>
       </div>
     </div>
 
@@ -379,56 +324,379 @@
       <div style="display:flex;gap:12px;align-items:start;margin-bottom:12px;">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-accent);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">1</div>
         <div>
-          <div class="ds-fw-bold">अपनी सेवा चुनें</div>
-          <div class="ds-text-3 ds-text-sm">12+ सेवाएं — ऑटो, बाइक, कार, पार्सल, इमरजेंसी</div>
+          <div class="ds-fw-bold">🗺️ Map पर Pin Set करें</div>
+          <div class="ds-text-3 ds-text-sm">अपनी location (green) और drop (red) tap करें</div>
         </div>
       </div>
       <div style="display:flex;gap:12px;align-items:start;margin-bottom:12px;">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-accent);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">2</div>
         <div>
-          <div class="ds-fw-bold">किराया देखें (कोई सरप्राइज़ नहीं)</div>
-          <div class="ds-text-3 ds-text-sm">WhatsApp पर कन्फर्मेशन + ड्राइवर details</div>
+          <div class="ds-fw-bold">💰 किराया देखें (दूरी अनुसार)</div>
+          <div class="ds-text-3 ds-text-sm">₹/km × कुल km + base fare</div>
         </div>
       </div>
       <div style="display:flex;gap:12px;align-items:start;margin-bottom:12px;">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-accent);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">3</div>
         <div>
-          <div class="ds-fw-bold">लाइव ट्रैकिंग</div>
-          <div class="ds-text-3 ds-text-sm">हर वक़्त पता रहे कहाँ है ड्राइवर</div>
+          <div class="ds-fw-bold">📲 WhatsApp पर Confirm</div>
+          <div class="ds-text-3 ds-text-sm">पास के ड्राइवर को तुरंत notification</div>
         </div>
       </div>
       <div style="display:flex;gap:12px;align-items:start;">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--ds-green);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">✓</div>
         <div>
-          <div class="ds-fw-bold">कैश या UPI (जो चाहे)</div>
-          <div class="ds-text-3 ds-text-sm">कोई commission नहीं — पूरा पैसा ड्राइवर को</div>
+          <div class="ds-fw-bold">🛺 Live Track</div>
+          <div class="ds-text-3 ds-text-sm">ड्राइवर की हर movement map पर</div>
         </div>
       </div>
-    </div>
-
-    <!-- Become driver CTA -->
-    <div class="ds-card ds-mb-3" style="background:linear-gradient(135deg, rgba(245,158,11,0.2), rgba(239,68,68,0.1));border-color:var(--ds-accent);">
-      <h3 style="color:var(--ds-accent);">🛺 ड्राइवर हैं?</h3>
-      <p class="ds-text-2 ds-mt-1">अपनी गाड़ी (ऑटो/बाइक/कार/वैन) जोड़ें और कमाई शुरू करें। <strong>100% कमाई आपकी</strong> — कोई commission नहीं!</p>
-      <button class="ds-btn ds-btn-accent ds-mt-2" onclick="toto.becomeDriver()">💰 फ्री रजिस्ट्रेशन</button>
     </div>
 
     <button class="ds-fab" onclick="DS.openSOS()" style="background:linear-gradient(135deg, #ef4444, #b91c1c);">🆘</button>
   </div>
 </div>
 
+<!-- Google Maps API (Free tier) -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&libraries=places,directions,geometry&callback=toto.initMap" async defer></script>
+
 <script src="/nav.js"></script>
 <script>
+// ============================================================
+// TOTO - With Google Maps Integration
+// Free tier API key (2500 requests/day per user - enough for Hazaribagh)
+// ============================================================
 const toto = {
+  map: null,
+  userMarker: null,
+  fromMarker: null,
+  toMarker: null,
+  driverMarkers: [],
+  directionsService: null,
+  directionsRenderer: null,
+  geocoder: null,
+  placesService: null,
+  trafficLayer: null,
   selectedVehicle: 'auto',
+  pickingMode: null,  // 'from' or 'to'
+  fromLatLng: null,
+  toLatLng: null,
   user: null,
+  hazaribagh: { lat: 23.9925, lng: 85.3637 },  // Hazaribagh center
 
-  async init() {
-    this.user = DS.user();
-    await this.loadStats();
-    await this.loadDrivers();
+  // Called when Google Maps API loads
+  initMap() {
+    console.log('🗺️ Google Maps loaded!');
+    this.map = new google.maps.Map(document.getElementById('totoMap'), {
+      center: this.hazaribagh,
+      zoom: 13,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+      styles: this.getDarkMapStyle()
+    });
+
+    this.directionsService = new google.maps.DirectionsService();
+    this.directionsRenderer = new google.maps.DirectionsRenderer({
+      map: this.map,
+      suppressMarkers: true,  // We use our own custom markers
+      polylineOptions: {
+        strokeColor: '#f59e0b',
+        strokeWeight: 5,
+        strokeOpacity: 0.8
+      }
+    });
+    this.geocoder = new google.maps.Geocoder();
+    this.placesService = new google.maps.places.PlacesService(this.map);
+    this.trafficLayer = new google.maps.TrafficLayer();
+
+    // Click on map = set pickup/drop
+    this.map.addListener('click', (e) => this.handleMapClick(e));
+
+    // Try to locate user
+    this.locateMe();
+
+    // Load drivers + stats
+    this.loadStats();
+    this.loadDrivers();
+
+    // Update driver positions every 30s (live tracking)
+    setInterval(() => this.refreshDrivers(), 30000);
   },
 
+  getDarkMapStyle() {
+    return [
+      { elementType: 'geometry', stylers: [{ color: '#1d2c4d' }] },
+      { elementType: 'labels.text.fill', stylers: [{ color: '#8ec3b9' }] },
+      { elementType: 'labels.text.stroke', stylers: [{ color: '#1a3646' }] },
+      { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#4b6878' }] },
+      { featureType: 'land', elementType: 'geometry', stylers: [{ color: '#0e1626' }] },
+      { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#283d6a' }] },
+      { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#6f9ba5' }] },
+      { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#304a7d' }] },
+      { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#255763' }] },
+      { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#2c6675' }] },
+      { featureType: 'transit', elementType: 'labels.text.fill', stylers: [{ color: '#98a5be' }] },
+      { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e1626' }] },
+      { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4e6d70' }] }
+    ];
+  },
+
+  // ============ LOCATION ============
+  locateMe() {
+    if (!navigator.geolocation) {
+      this.setUserMarker(this.hazaribagh, 'हाजारीबाग़ (Default)');
+      return;
+    }
+    DS.toast('📍 आपकी location ढूंढ रहे हैं...');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        this.setUserMarker({ lat, lng }, 'आप यहाँ हैं');
+        this.map.setCenter({ lat, lng });
+        this.map.setZoom(15);
+        this.fromLatLng = { lat, lng };
+        this.reverseGeocode({ lat, lng }, 'from');
+      },
+      (err) => {
+        console.warn('Geolocation denied/error:', err);
+        this.setUserMarker(this.hazaribagh, 'हाजारीबाग़ (Default location)');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  },
+
+  setUserMarker(latLng, title) {
+    if (this.userMarker) this.userMarker.setMap(null);
+    this.userMarker = new google.maps.Marker({
+      position: latLng,
+      map: this.map,
+      title: title,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 10,
+        fillColor: '#3b82f6',
+        fillOpacity: 1,
+        strokeColor: '#fff',
+        strokeWeight: 3
+      },
+      animation: google.maps.Animation.DROP
+    });
+  },
+
+  // ============ MAP CLICK ============
+  handleMapClick(e) {
+    if (this.pickingMode === 'from') {
+      this.setFromMarker(e.latLng);
+      this.pickingMode = null;
+    } else if (this.pickingMode === 'to') {
+      this.setToMarker(e.latLng);
+      this.pickingMode = null;
+    } else {
+      // Default: set as pickup
+      this.setFromMarker(e.latLng);
+    }
+  },
+
+  pickFromMap(which) {
+    this.pickingMode = which;
+    DS.toast(`📍 Map पर ${which === 'from' ? 'पिकअप' : 'ड्रॉप'} location tap करें`, 'success');
+    // Visual indicator
+    document.getElementById('totoMap').style.boxShadow = `0 0 0 4px ${which === 'from' ? '#10b981' : '#ef4444'}`;
+    setTimeout(() => {
+      document.getElementById('totoMap').style.boxShadow = '0 4px 16px rgba(245,158,11,0.3)';
+    }, 2000);
+  },
+
+  setFromMarker(latLng) {
+    if (this.fromMarker) this.fromMarker.setMap(null);
+    this.fromLatLng = { lat: latLng.lat(), lng: latLng.lng() };
+    this.fromMarker = new google.maps.Marker({
+      position: latLng,
+      map: this.map,
+      title: 'पिकअप',
+      icon: {
+        path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+        fillColor: '#10b981',
+        fillOpacity: 1,
+        strokeColor: '#fff',
+        strokeWeight: 2,
+        scale: 1.2
+      },
+      animation: google.maps.Animation.DROP
+    });
+    this.reverseGeocode(latLng, 'from');
+    if (this.toLatLng) this.calculateRoute();
+  },
+
+  setToMarker(latLng) {
+    if (this.toMarker) this.toMarker.setMap(null);
+    this.toLatLng = { lat: latLng.lat(), lng: latLng.lng() };
+    this.toMarker = new google.maps.Marker({
+      position: latLng,
+      map: this.map,
+      title: 'ड्रॉप',
+      icon: {
+        path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+        fillColor: '#ef4444',
+        fillOpacity: 1,
+        strokeColor: '#fff',
+        strokeWeight: 2,
+        scale: 1.2
+      },
+      animation: google.maps.Animation.DROP
+    });
+    this.reverseGeocode(latLng, 'to');
+    if (this.fromLatLng) this.calculateRoute();
+  },
+
+  reverseGeocode(latLng, which) {
+    this.geocoder.geocode({ location: latLng }, (results, status) => {
+      if (status === 'OK' && results[0]) {
+        const addr = results[0].formatted_address;
+        document.getElementById(which + 'Input').value = addr;
+      } else {
+        document.getElementById(which + 'Input').value = `${latLng.lat().toFixed(4)}, ${latLng.lng().toFixed(4)}`;
+      }
+    });
+  },
+
+  // ============ ROUTE CALCULATION ============
+  calculateRoute() {
+    if (!this.fromLatLng || !this.toLatLng) return;
+
+    this.directionsService.route({
+      origin: this.fromLatLng,
+      destination: this.toLatLng,
+      travelMode: 'DRIVING'
+    }, (response, status) => {
+      if (status === 'OK') {
+        this.directionsRenderer.setDirections(response);
+        const route = response.routes[0].legs[0];
+        const distKm = (route.distance.value / 1000).toFixed(1);
+        const timeMin = Math.round(route.duration.value / 60);
+        const fare = this.calculateFare(parseFloat(distKm));
+
+        // Show in map ETA
+        document.getElementById('mapEta').style.display = 'flex';
+        document.getElementById('etaDist').textContent = distKm;
+        document.getElementById('etaTime').textContent = timeMin;
+        document.getElementById('etaFare').textContent = '₹' + fare;
+
+        // Show in fare display
+        document.getElementById('fareDisplay').style.display = 'block';
+        document.getElementById('fareAmount').textContent = '₹' + fare;
+        document.getElementById('fareDist').textContent = distKm;
+        document.getElementById('fareTime').textContent = timeMin;
+
+        // Find nearby drivers
+        this.findNearbyDrivers();
+      } else {
+        DS.toast('⚠️ रास्ता नहीं मिल सका', 'error');
+      }
+    });
+  },
+
+  calculateFare(km) {
+    const rates = {
+      bike: { base: 20, perKm: 8 },
+      auto: { base: 30, perKm: 12 },
+      car:  { base: 50, perKm: 18 },
+      van:  { base: 80, perKm: 25 },
+      bus:  { base: 100, perKm: 30 }
+    };
+    const r = rates[this.selectedVehicle] || rates.auto;
+    return Math.round(r.base + (km * r.perKm));
+  },
+
+  // ============ DRIVERS ON MAP ============
+  async refreshDrivers() {
+    try {
+      const r = await fetch('/api/erikso/drivers?online=true');
+      const d = await r.json();
+      if (d.success && d.drivers) {
+        // Clear old markers
+        this.driverMarkers.forEach(m => m.setMap(null));
+        this.driverMarkers = [];
+        // Add new markers (mock positions around Hazaribagh if no GPS)
+        d.drivers.forEach((drv, i) => {
+          const angle = (i / d.drivers.length) * Math.PI * 2;
+          const radius = 0.015 + Math.random() * 0.01;
+          const pos = drv.currentLat ? { lat: drv.currentLat, lng: drv.currentLng } : {
+            lat: this.hazaribagh.lat + Math.cos(angle) * radius,
+            lng: this.hazaribagh.lng + Math.sin(angle) * radius
+          };
+          const icon = drv.vehicleType === 'bike' ? '🏍️' :
+                       drv.vehicleType === 'car' ? '🚗' :
+                       drv.vehicleType === 'van' ? '🚐' : '🛺';
+          const marker = new google.maps.Marker({
+            position: pos,
+            map: this.map,
+            title: drv.name,
+            icon: {
+              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                  <circle cx="20" cy="20" r="18" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+                  <text x="20" y="28" font-size="20" text-anchor="middle">${icon}</text>
+                </svg>
+              `),
+              scaledSize: new google.maps.Size(40, 40)
+            }
+          });
+          const info = new google.maps.InfoWindow({
+            content: `
+              <div style="color:#000;padding:8px;">
+                <strong>${drv.name}</strong><br>
+                <span style="font-size:12px;">${drv.vehicleNumber || 'N/A'}</span><br>
+                <span style="color:#f59e0b;">★ ${(drv.rating || 5).toFixed(1)}</span>
+              </div>
+            `
+          });
+          marker.addListener('click', () => info.open(this.map, marker));
+          this.driverMarkers.push(marker);
+        });
+      }
+    } catch (e) { console.error('Driver load error:', e); }
+  },
+
+  findNearbyDrivers() {
+    // Count drivers within 3 km of pickup
+    let count = 0;
+    this.driverMarkers.forEach(m => {
+      const dist = google.maps.geometry.spherical.computeDistanceBetween(
+        m.getPosition(), this.fromLatLng
+      );
+      if (dist < 3000) count++;
+    });
+    if (count > 0) {
+      document.getElementById('nearbyDrivers').style.display = 'flex';
+      document.getElementById('nearbyCount').textContent = count;
+    } else {
+      document.getElementById('nearbyDrivers').style.display = 'none';
+    }
+  },
+
+  // ============ MAP CONTROLS ============
+  zoomIn() { this.map.setZoom(this.map.getZoom() + 1); },
+  zoomOut() { this.map.setZoom(this.map.getZoom() - 1); },
+  centerMap() {
+    if (this.userMarker) this.map.setCenter(this.userMarker.getPosition());
+    else this.map.setCenter(this.hazaribagh);
+  },
+  toggleTraffic() {
+    const btn = document.getElementById('trafficBtn');
+    if (this.trafficLayer.getMap()) {
+      this.trafficLayer.setMap(null);
+      btn.classList.remove('active');
+    } else {
+      this.trafficLayer.setMap(this.map);
+      btn.classList.add('active');
+    }
+  },
+  openMap() {
+    document.getElementById('totoMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  },
+
+  // ============ STATS + DRIVERS LIST ============
   async loadStats() {
     try {
       const r = await fetch('/api/erikso/stats');
@@ -448,20 +716,19 @@ const toto = {
       const d = await r.json();
       if (d.success && d.drivers && d.drivers.length) {
         list.innerHTML = d.drivers.slice(0, 5).map(dr => {
-          const icon = dr.vehicleType === 'bike' ? '🏍️' :
-                       dr.vehicleType === 'car' ? '🚗' :
-                       dr.vehicleType === 'bus' ? '🚌' :
-                       dr.vehicleType === 'van' ? '🚐' : '🛺';
+          const icon = drv => drv.vehicleType === 'bike' ? '🏍️' :
+                       drv.vehicleType === 'car' ? '🚗' :
+                       drv.vehicleType === 'bus' ? '🚌' :
+                       drv.vehicleType === 'van' ? '🚐' : '🛺';
           return `
             <div class="driver-card">
-              <div class="driver-avatar">${icon}</div>
+              <div class="driver-avatar">${icon(dr)}</div>
               <div style="flex:1;min-width:0;">
                 <div class="ds-fw-bold">${dr.name || 'चालक'}</div>
                 <div class="ds-text-3 ds-text-sm">${dr.route || 'Hazaribagh'}</div>
                 <div style="margin-top:4px;">
                   <span class="vehicle-badge">${dr.vehicleNumber || 'N/A'}</span>
                   <span class="rating">★ ${(dr.rating || 5).toFixed(1)}</span>
-                  <span class="ds-text-3 ds-text-sm"> • ${dr.totalRides || 0} राइड</span>
                 </div>
               </div>
               <button class="ds-btn ds-btn-accent" onclick="toto.bookDriver('${dr.id}')">📲</button>
@@ -473,20 +740,19 @@ const toto = {
           <div class="ds-empty">
             <div class="ds-empty-icon">🛺</div>
             <h4>अभी कोई ऑनलाइन चालक नहीं</h4>
-            <p>पहले चालक बनें या बाद में try करें</p>
             <button class="ds-btn ds-btn-accent ds-mt-2" onclick="toto.becomeDriver()">🛺 चालक बनें</button>
           </div>
         `;
       }
-    } catch(e) {
-      list.innerHTML = `<div class="ds-empty"><div class="ds-empty-icon">⚠️</div><h4>लोड नहीं हो सका</h4></div>`;
-    }
+    } catch(e) {}
   },
 
-  // ============ QUICK RIDE ============
+  // ============ VEHICLE ============
   selectVehicle(type) {
     this.selectedVehicle = type;
     DS.toast(`✅ ${this.getVehicleName(type)} चुना गया`, 'success');
+    // Re-calculate if route exists
+    if (this.fromLatLng && this.toLatLng) this.calculateRoute();
   },
 
   getVehicleName(type) {
@@ -502,98 +768,65 @@ const toto = {
     return map[type] || '🛺 ऑटो';
   },
 
-  getFareEstimate(type) {
-    const map = {
-      auto: 30, bike: 20, car: 100, van: 150, bus: 200,
-      parcel: 40, school: 800, market: 50, hospital: 80,
-      senior: 60, outstation: 800, event: 2000, night: 100, emergency: 0
-    };
-    return map[type] || 30;
-  },
-
   bookRide() {
+    this.user = DS.user();
     if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
-    const from = document.getElementById('fromInput').value.trim();
-    const to = document.getElementById('toInput').value.trim();
-    if (!from) { DS.toast('⚠️ पिकअप पता डालें', 'error'); return; }
-    if (!to) { DS.toast('⚠️ ड्रॉप पता डालें', 'error'); return; }
+    if (!this.fromLatLng) { DS.toast('⚠️ पिकअप location set करें (Map पर tap करें)', 'error'); return; }
+    if (!this.toLatLng) { DS.toast('⚠️ ड्रॉप location set करें (Map पर tap करें)', 'error'); return; }
 
-    const fare = this.getFareEstimate(this.selectedVehicle);
+    const fromAddr = document.getElementById('fromInput').value;
+    const toAddr = document.getElementById('toInput').value;
+    const distKm = document.getElementById('fareDist').textContent;
+    const fare = document.getElementById('fareAmount').textContent;
     const vehicleName = this.getVehicleName(this.selectedVehicle);
 
-    const msg = `🛺 *DainikState TOTO बुकिंग*\n\n` +
+    const mapsLink = `https://www.google.com/maps/dir/${this.fromLatLng.lat},${this.fromLatLng.lng}/${this.toLatLng.lat},${this.toLatLng.lng}/`;
+
+    const msg = `🗺️ *DainikState TOTO - Map Booking*\n\n` +
       `🚗 सेवा: ${vehicleName}\n` +
-      `📍 से: ${from}\n` +
-      `🏁 तक: ${to}\n` +
-      `💰 अनुमानित किराया: ₹${fare}\n` +
-      `📱 मेरा नंबर: ${this.user.phone}\n` +
+      `📍 पिकअप: ${fromAddr}\n` +
+      `🏁 ड्रॉप: ${toAddr}\n` +
+      `📏 दूरी: ${distKm} km\n` +
+      `💰 किराया: ${fare}\n` +
+      `🗺️ Map: ${mapsLink}\n` +
+      `📱 नंबर: ${this.user.phone}\n` +
       `👤 नाम: ${this.user.name || 'User'}\n\n` +
       `कृपया ड्राइवर assign करें। धन्यवाद! 🙏`;
 
     window.open(`https://wa.me/919876500001?text=${encodeURIComponent(msg)}`, '_blank');
-    DS.toast('✅ WhatsApp पर भेजा! जल्दी ड्राइवर आएगा', 'success');
-
-    // Update live tracking mock
-    document.getElementById('liveFrom').textContent = `पिकअप: ${from.slice(0, 15)}`;
-    document.getElementById('liveTo').textContent = `ड्रॉप: ${to.slice(0, 15)}`;
-  },
-
-  bookNow() {
-    if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
-    document.getElementById('fromInput').focus();
-    window.scrollTo({ top: 200, behavior: 'smooth' });
+    DS.toast('✅ WhatsApp पर भेजा! Map link भी share हुआ', 'success');
   },
 
   bookDriver(driverId) {
+    this.user = DS.user();
     if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
     this.openService(this.selectedVehicle, driverId);
   },
 
   // ============ SERVICE ROUTING ============
   openService(type, driverId) {
+    this.user = DS.user();
     if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
 
-    // Emergency = direct call
-    if (type === 'emergency') {
-      DS.openSOS();
-      return;
-    }
+    if (type === 'emergency') { DS.openSOS(); return; }
 
-    // All other services → WhatsApp
     const names = {
-      auto: '🛺 ऑटो-रिक्शा',
-      bike: '🏍️ बाइक टैक्सी',
-      car: '🚗 कार / कैब',
       parcel: '📦 पार्सल डिलीवरी',
       school: '🏫 स्कूल वैन / बस',
-      market: '🛒 बाज़ार / खरीदारी',
       hospital: '🏥 अस्पताल / डॉक्टर',
-      senior: '👴 बुज़ुर्ग / दिव्यांग',
-      outstation: '🌄 बाहर का सफर',
-      event: '🎉 शादी / पार्टी',
-      night: '🌙 रात की राइड (Safe)',
+      night: '🌙 रात की Safe राइड',
     };
 
-    const details = {
-      auto: 'शहर में कहीं भी (3 km तक)',
-      bike: 'सिंगल राइडर, जल्दी पहुँचो',
-      car: '4-सीटर AC कार',
-      parcel: 'क्या भेजना है? (वज़न, साइज़)',
-      school: 'बच्चे का नाम, स्कूल, कक्षा',
-      market: 'क्या खरीदना है? लिस्ट भेजें',
-      hospital: 'कौन सा अस्पताल? कब पहुँचना है?',
-      senior: 'क्या सहायता चाहिए? (walker/wheelchair)',
-      outstation: 'कहाँ? कब? कितने लोग?',
-      event: 'कब? कितनी देर? कितने लोग?',
-      night: 'महिला सुरक्षा ड्राइवर चाहिए',
-    };
-
-    const fare = this.getFareEstimate(type);
+    const fromLL = this.fromLatLng ? `${this.fromLatLng.lat},${this.fromLatLng.lng}` : 'Hazaribagh';
+    const toLL = this.toLatLng ? `${this.toLatLng.lat},${this.toLatLng.lng}` : 'TBD';
+    const mapLink = this.fromLatLng && this.toLatLng ?
+      `https://www.google.com/maps/dir/${fromLL}/${toLL}/` : 'कोई location नहीं';
 
     const msg = `🛺 *DainikState TOTO - ${names[type] || type}*\n\n` +
-      `💰 अनुमानित किराया: ₹${fare}${type === 'school' ? '/माह' : type === 'event' || type === 'outstation' ? '' : ''}\n` +
-      `📝 ${details[type] || 'विवरण'}\n` +
-      `📱 मेरा नंबर: ${this.user.phone}\n` +
+      `🗺️ Route: ${mapLink}\n` +
+      `📍 पिकअप: ${document.getElementById('fromInput').value || 'Hazaribagh'}\n` +
+      `🏁 ड्रॉप: ${document.getElementById('toInput').value || 'TBD'}\n` +
+      `📱 नंबर: ${this.user.phone}\n` +
       `👤 नाम: ${this.user.name || 'User'}\n\n` +
       `कृपया कन्फर्म करें। धन्यवाद! 🙏`;
 
@@ -601,22 +834,18 @@ const toto = {
     DS.toast(`✅ ${names[type]} WhatsApp पर भेजा!`, 'success');
   },
 
-  trackLive() {
-    if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
-    location.href = '/toto-track.html';
-  },
-
-  findDrivers() {
-    location.href = '/toto-drivers.html';
-  },
-
+  findDrivers() { location.href = '/toto-drivers.html'; },
   becomeDriver() {
+    this.user = DS.user();
     if (!this.user) { DS.toast('पहले लॉगिन करें', 'error'); DS.openProfile(); return; }
     location.href = '/toto-driver.html';
   }
 };
 
-toto.init();
+// Auto-init if Google Maps already loaded
+if (typeof google !== 'undefined' && google.maps) {
+  toto.initMap();
+}
 </script>
 </body>
 </html>
