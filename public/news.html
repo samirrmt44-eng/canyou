@@ -472,11 +472,107 @@
     <div class="channel-stats" id="channelStats">📰 0 news • 0 followers</div>
   </div>
   <div class="channel-btns">
+    <a href="/news-channel.html" class="ch-btn tv-btn" title="TV Channel Mode" style="background:linear-gradient(135deg,#dc2626,#f59e0b);border-color:transparent;animation:tvPulse 2s infinite;text-decoration:none;">📺</a>
     <button class="ch-btn" onclick="toggleBookmarkView()" title="Saved">🔖</button>
     <button class="ch-btn" onclick="openSearch()" title="Search">🔍</button>
     <button class="ch-btn" onclick="openChannelSettings()" title="Channel Settings">⚙️</button>
   </div>
 </div>
+
+<!-- TV MODE BANNER (promo) -->
+<a href="/news-channel.html" class="tv-banner">
+  <div class="tv-banner-content">
+    <div class="tv-banner-icon">📺</div>
+    <div class="tv-banner-text">
+      <div class="tv-banner-title">📺 TV CHANNEL MODE - LIVE</div>
+      <div class="tv-banner-sub">Top 10 news auto-play • TV जैसा feel • Tap to watch</div>
+    </div>
+    <div class="tv-banner-arrow">▶</div>
+  </div>
+</a>
+
+<style>
+  /* TV MODE button pulse */
+  @keyframes tvPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.7); }
+    50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+  }
+  .tv-btn { position: relative; }
+  .tv-btn::after {
+    content: 'LIVE';
+    position: absolute; top: -3px; right: -3px;
+    background: #fff; color: #dc2626;
+    font-size: 7px; font-weight: 900; padding: 1px 3px;
+    border-radius: 4px; letter-spacing: 0.5px;
+  }
+  /* TV BANNER */
+  .tv-banner {
+    display: block;
+    margin: 12px 16px 0;
+    padding: 0;
+    background: linear-gradient(135deg, #0a0e1a 0%, #1a0000 50%, #0a0e1a 100%);
+    background-size: 200% 200%;
+    border: 1px solid #dc2626;
+    border-radius: 14px;
+    overflow: hidden;
+    text-decoration: none;
+    color: #fff;
+    position: relative;
+    animation: tvBannerShift 4s ease-in-out infinite, tvBannerGlow 2s ease-in-out infinite;
+  }
+  @keyframes tvBannerShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  @keyframes tvBannerGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4), 0 4px 12px rgba(0,0,0,0.3); }
+    50% { box-shadow: 0 0 20px 4px rgba(220,38,38,0.6), 0 4px 12px rgba(0,0,0,0.3); }
+  }
+  .tv-banner::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, #dc2626, #f59e0b, #ffd700, #f59e0b, #dc2626);
+    background-size: 200% 100%;
+    animation: scanLine 2s linear infinite;
+  }
+  @keyframes scanLine {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .tv-banner-content {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    position: relative;
+  }
+  .tv-banner-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, #dc2626, #f59e0b);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 0 16px rgba(220,38,38,0.6);
+    flex-shrink: 0;
+  }
+  .tv-banner-text { flex: 1; min-width: 0; }
+  .tv-banner-title {
+    font-size: 13px; font-weight: 900;
+    background: linear-gradient(90deg, #dc2626, #f59e0b);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: 0.5px;
+  }
+  .tv-banner-sub {
+    font-size: 11px; color: rgba(255,255,255,0.7);
+    margin-top: 2px; font-weight: 600;
+  }
+  .tv-banner-arrow {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: #f59e0b;
+    flex-shrink: 0;
+    border: 1px solid rgba(245,158,11,0.3);
+  }
+</style>
 
 <!-- CHANNEL SWITCHER -->
 <div class="channel-switcher" id="channelSwitcher">
