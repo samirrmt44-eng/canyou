@@ -689,6 +689,155 @@
     border-color: transparent;
   }
 
+  /* ============ NEW FEATURES (Phase 2) ============ */
+  /* Live viewers counter */
+  .tv-viewers {
+    position: absolute;
+    top: 100px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    background: rgba(220,38,38,0.95);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 14px;
+    font-size: 11px; font-weight: 900;
+    display: none;
+    align-items: center; gap: 6px;
+    box-shadow: 0 2px 10px rgba(220,38,38,0.5);
+  }
+  .tv-viewers.show { display: flex; }
+  .tv-viewers-dot {
+    width: 6px; height: 6px;
+    background: #fff;
+    border-radius: 50%;
+    animation: pulse 1s infinite;
+  }
+  /* Search bar in TV mode */
+  .tv-search-btn {
+    position: absolute;
+    top: 130px; right: 12px;
+    z-index: 50;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+  }
+  .tv-search-bar {
+    position: absolute;
+    top: 60px; left: 12px; right: 12px;
+    z-index: 60;
+    background: rgba(0,0,0,0.95);
+    border: 1px solid #dc2626;
+    border-radius: 12px;
+    padding: 8px 12px;
+    display: none;
+    align-items: center; gap: 8px;
+  }
+  .tv-search-bar.show { display: flex; }
+  .tv-search-bar input {
+    flex: 1; background: none; border: none; outline: none;
+    color: #fff; font-size: 14px; font-family: inherit;
+  }
+  .tv-search-results {
+    position: absolute;
+    top: 110px; left: 12px; right: 12px;
+    z-index: 60;
+    background: rgba(0,0,0,0.95);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+  }
+  .tv-search-results.show { display: block; }
+  .tv-search-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid #1e293b;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tv-search-item:hover { background: rgba(255,255,255,0.05); }
+  .tv-search-item-title {
+    flex: 1;
+    font-size: 12px; font-weight: 600;
+    color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tv-search-item-type {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    background: rgba(220,38,38,0.2);
+    color: #ef4444;
+  }
+  .tv-search-item-type.text { background: rgba(59,130,246,0.2); color: #3b82f6; }
+  /* Theme toggle */
+  .tv-theme-btn {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+  }
+  .tv-theme-btn:hover { background: rgba(255,255,255,0.2); }
+  /* Light theme styles (toggled via .light-mode on body) */
+  body.light-mode { background: #f5f5f5; }
+  body.light-mode .ds-app { background: #fff; }
+  body.light-mode .tv-controls { background: linear-gradient(to top, rgba(255,255,255,0.98), rgba(255,255,255,0.7)); color: #1a1a2e; }
+  body.light-mode .tv-progress { background: rgba(0,0,0,0.1); }
+  body.light-mode .tv-ctrl { background: rgba(0,0,0,0.08); color: #1a1a2e; border-color: rgba(0,0,0,0.1); }
+  body.light-mode .tv-tts-btn { background: rgba(139,92,246,0.15); color: #7c3aed; border-color: rgba(139,92,246,0.3); }
+  body.light-mode .tv-now-title { color: #1a1a2e; }
+  body.light-mode .tv-now-counter { color: #4b5563; }
+  body.light-mode .tv-playlist { background: linear-gradient(135deg, #f1f5f9, #e2e8f0); border-left-color: #cbd5e1; }
+  body.light-mode .tv-playlist-header { background: #f8fafc; color: #1a1a2e; }
+  body.light-mode .tv-playlist-header h3 { color: #d97706; }
+  body.light-mode .tv-playlist-item { border-bottom-color: #e2e8f0; color: #1a1a2e; }
+  body.light-mode .tv-playlist-title { color: #1a1a2e; }
+  body.light-mode .tv-playlist-num { background: rgba(0,0,0,0.08); color: #4b5563; }
+  body.light-mode .tv-news-title { color: #fff; }
+  /* Pinned news badge */
+  .tv-pinned-badge {
+    position: absolute;
+    top: 12px; left: 12px;
+    z-index: 10;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #1a1a2e;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px; font-weight: 900;
+    display: flex; align-items: center; gap: 4px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(245,158,11,0.6);
+  }
+  .tv-pinned-badge::before { content: '📌'; font-size: 9px; }
+  /* Schedule banner */
+  .tv-schedule-banner {
+    position: absolute;
+    top: 70px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    background: rgba(59,130,246,0.95);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 11px; font-weight: 700;
+    display: none;
+    align-items: center; gap: 6px;
+    box-shadow: 0 2px 10px rgba(59,130,246,0.5);
+  }
+  .tv-schedule-banner.show { display: flex; }
+
   /* Responsive */
   @media (min-width: 768px) {
     .tv-news-title { font-size: 32px; }
@@ -747,6 +896,29 @@
         <div class="tts-bar"></div>
       </div>
       <span>🗣️ HINDI READER</span>
+    </div>
+
+    <!-- Live Viewers Counter -->
+    <div class="tv-viewers" id="tvViewers">
+      <div class="tv-viewers-dot"></div>
+      <span><strong id="viewerCount">0</strong> देख रहे हैं</span>
+    </div>
+
+    <!-- Search button (top) -->
+    <div class="tv-search-btn" onclick="channel.toggleSearch()" title="Search">🔍</div>
+
+    <!-- Search bar -->
+    <div class="tv-search-bar" id="tvSearchBar">
+      <span>🔍</span>
+      <input type="text" id="tvSearchInput" placeholder="खबर खोजें..." oninput="channel.searchNews(this.value)">
+      <button class="tv-ctrl" onclick="channel.closeSearch()" title="Close">✕</button>
+    </div>
+    <div class="tv-search-results" id="tvSearchResults"></div>
+
+    <!-- Schedule banner -->
+    <div class="tv-schedule-banner" id="tvScheduleBanner">
+      <span>⏰</span>
+      <span id="tvScheduleText">शेड्यूल मोड ON</span>
     </div>
 
     <!-- Video filter pills -->
@@ -816,8 +988,10 @@
         <div class="tv-control-right">
           <div class="tv-ctrl" onclick="channel.likeCurrent()" id="likeBtn" title="Like">🤍</div>
           <div class="tv-ctrl" onclick="channel.shareCurrent()" title="Share">📤</div>
+          <div class="tv-ctrl" onclick="channel.togglePin()" id="pinBtn" title="Pin/Unpin current">📌</div>
           <div class="tv-tts-btn" id="ttsBtn" onclick="channel.toggleTTS()" title="Hindi TTS: OFF">🔇</div>
           <div class="tv-ctrl" id="soundBtn" onclick="channel.toggleSound()" title="BBC Music: OFF">🔇</div>
+          <div class="tv-theme-btn" onclick="channel.toggleTheme()" title="Toggle Theme" id="themeBtn">🌙</div>
           <div class="tv-ctrl" onclick="channel.openSettings()" title="Settings">⚙️</div>
         </div>
       </div>
@@ -1121,6 +1295,18 @@ const channel = {
   videoFilter: localStorage.getItem('dsVideoFilter') || 'all', // 'all', 'video', 'text'
   // ============ AUTO-REFRESH ============
   refreshInterval: null,
+  viewerInterval: null,
+  // ============ PINNED NEWS ============
+  pinnedIds: JSON.parse(localStorage.getItem('dsPinnedNews') || '[]'),
+  // ============ SEARCH ============
+  searchQuery: '',
+  searchResults: [],
+  // ============ THEME ============
+  theme: localStorage.getItem('dsTheme') || 'dark',
+  // ============ SCHEDULE ============
+  scheduleMode: false,
+  // ============ VIEWERS (mock realistic) ============
+  viewerCount: 0,
 
   async init() {
     this.startClock();
@@ -1141,6 +1327,191 @@ const channel = {
     this.play();
     // Auto-refresh every 5 minutes (new video news)
     this.refreshInterval = setInterval(() => this.autoRefresh(), 5 * 60 * 1000);
+    // Live viewers counter (mock but realistic)
+    this.startViewerCounter();
+    // Apply saved theme
+    this.applyTheme();
+    // Apply schedule mode (auto based on time)
+    this.applyScheduleMode();
+  },
+
+  // ============ LIVE VIEWERS COUNTER (MOCK BUT REALISTIC) ============
+  startViewerCounter() {
+    // Initial count based on time of day
+    const hour = new Date().getHours();
+    let base = 5;
+    if (hour >= 8 && hour < 11) base = 25;      // Morning news
+    else if (hour >= 18 && hour < 22) base = 60;  // Prime time
+    else if (hour >= 22 || hour < 6) base = 12;   // Night
+    this.viewerCount = base + Math.floor(Math.random() * 15);
+    this.updateViewerCount();
+    // Update every 5 seconds
+    this.viewerInterval = setInterval(() => {
+      // Realistic fluctuation
+      const change = Math.floor(Math.random() * 7) - 3; // -3 to +3
+      this.viewerCount = Math.max(1, this.viewerCount + change);
+      this.updateViewerCount();
+    }, 5000);
+  },
+
+  updateViewerCount() {
+    const el = document.getElementById('viewerCount');
+    const wrap = document.getElementById('tvViewers');
+    if (el) el.textContent = this.viewerCount.toLocaleString('hi-IN');
+    if (wrap) wrap.classList.add('show');
+  },
+
+  // ============ PIN/UNPIN NEWS ============
+  togglePin() {
+    const news = this.playlist[this.current];
+    if (!news) return;
+    const id = news.id || news.slug;
+    const idx = this.pinnedIds.indexOf(id);
+    if (idx > -1) {
+      this.pinnedIds.splice(idx, 1);
+      DS.toast('📌 Unpinned', 'success');
+    } else {
+      this.pinnedIds.push(id);
+      DS.toast('📌 Pinned! (will always show first)', 'success');
+    }
+    localStorage.setItem('dsPinnedNews', JSON.stringify(this.pinnedIds));
+    this.applyPinnedToPlaylist();
+    this.renderPlaylist();
+  },
+
+  applyPinnedToPlaylist() {
+    if (!this.pinnedIds.length) return;
+    const pinnedArticles = this.playlist.filter(a => this.pinnedIds.includes(a.id || a.slug));
+    const others = this.playlist.filter(a => !this.pinnedIds.includes(a.id || a.slug));
+    this.playlist = [...pinnedArticles, ...others].slice(0, 10);
+  },
+
+  isCurrentPinned() {
+    const news = this.playlist[this.current];
+    if (!news) return false;
+    return this.pinnedIds.includes(news.id || news.slug);
+  },
+
+  // ============ SEARCH IN TV MODE ============
+  toggleSearch() {
+    const bar = document.getElementById('tvSearchBar');
+    const results = document.getElementById('tvSearchResults');
+    const isOpen = bar.classList.contains('show');
+    if (isOpen) {
+      this.closeSearch();
+    } else {
+      bar.classList.add('show');
+      document.getElementById('tvSearchInput').focus();
+    }
+  },
+
+  closeSearch() {
+    document.getElementById('tvSearchBar')?.classList.remove('show');
+    document.getElementById('tvSearchResults')?.classList.remove('show');
+    document.getElementById('tvSearchInput').value = '';
+    this.searchQuery = '';
+    this.searchResults = [];
+  },
+
+  async searchNews(query) {
+    this.searchQuery = query;
+    const resultsEl = document.getElementById('tvSearchResults');
+    if (!query || query.length < 2) {
+      resultsEl.classList.remove('show');
+      return;
+    }
+    try {
+      const r = await fetch(`/api/news?limit=30&search=${encodeURIComponent(query)}`);
+      const d = await r.json();
+      if (d.success && d.articles) {
+        this.searchResults = d.articles.slice(0, 10);
+        this.renderSearchResults();
+      }
+    } catch (e) { console.error('Search error:', e); }
+  },
+
+  renderSearchResults() {
+    const resultsEl = document.getElementById('tvSearchResults');
+    if (!this.searchResults.length) {
+      resultsEl.innerHTML = '<div class="tv-search-item"><div class="tv-search-item-title">कोई result नहीं</div></div>';
+      resultsEl.classList.add('show');
+      return;
+    }
+    resultsEl.innerHTML = this.searchResults.map((a, i) => {
+      const hasVideo = this.extractVideoUrl(a);
+      return `
+        <div class="tv-search-item" onclick="channel.playFromSearch(${i})">
+          <span class="tv-search-item-type ${hasVideo ? '' : 'text'}">${hasVideo ? '🎬' : '📰'}</span>
+          <div class="tv-search-item-title">${this.escapeHtml(a.title)}</div>
+        </div>
+      `;
+    }).join('');
+    resultsEl.classList.add('show');
+  },
+
+  playFromSearch(idx) {
+    const news = this.searchResults[idx];
+    if (!news) return;
+    // Check if already in playlist
+    const existingIdx = this.playlist.findIndex(a => (a.id || a.slug) === (news.id || news.slug));
+    if (existingIdx >= 0) {
+      this.current = existingIdx;
+    } else {
+      // Add to top of playlist
+      this.playlist.unshift(news);
+      this.current = 0;
+    }
+    this.renderPlaylist();
+    this.closeSearch();
+    this.showCurrent();
+  },
+
+  // ============ THEME TOGGLE ============
+  toggleTheme() {
+    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+    this.applyTheme();
+    localStorage.setItem('dsTheme', this.theme);
+    DS.toast(this.theme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode', 'success');
+  },
+
+  applyTheme() {
+    if (this.theme === 'light') {
+      document.body.classList.add('light-mode');
+      document.getElementById('themeBtn')?.textContent = '☀️';
+    } else {
+      document.body.classList.remove('light-mode');
+      document.getElementById('themeBtn')?.textContent = '🌙';
+    }
+  },
+
+  // ============ SCHEDULE MODE ============
+  applyScheduleMode() {
+    // Auto-detect best content based on time
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 10) {
+      // Morning: Focus on state + local news
+      this.scheduleMode = true;
+      this.category = 'state';
+      this.showScheduleBanner('सुबह की खबरें • झारखंड');
+    } else if (hour >= 18 && hour < 22) {
+      // Prime time: All news
+      this.scheduleMode = true;
+      this.category = '';
+      this.showScheduleBanner('🌟 प्राइम टाइम न्यूज़');
+    } else {
+      this.scheduleMode = false;
+    }
+  },
+
+  showScheduleBanner(text) {
+    const banner = document.getElementById('tvScheduleBanner');
+    const textEl = document.getElementById('tvScheduleText');
+    if (banner && textEl) {
+      textEl.textContent = text;
+      banner.classList.add('show');
+      // Auto-hide after 5 sec
+      setTimeout(() => banner.classList.remove('show'), 5000);
+    }
   },
 
   // ============ TTS (Hindi Text-to-Speech) ============
@@ -1399,14 +1770,17 @@ const channel = {
   // ============ LOAD PLAYLIST ============
   async loadPlaylist() {
     try {
-      let url = '/api/news?limit=20';  // Fetch more, then filter to top 10
+      let url = '/api/news?limit=30';  // Fetch more for pinned + filter
       if (this.category) url += `&category=${this.category}`;
       const r = await fetch(url);
       const d = await r.json();
       if (d.success && d.articles && d.articles.length) {
-        // Apply video filter and take top 10
+        // Apply video filter
         const filtered = this.filterPlaylist(d.articles);
-        this.playlist = filtered.slice(0, 10);
+        // Apply pinned first
+        const pinned = filtered.filter(a => this.pinnedIds.includes(a.id || a.slug));
+        const others = filtered.filter(a => !this.pinnedIds.includes(a.id || a.slug));
+        this.playlist = [...pinned, ...others].slice(0, 10);
         document.getElementById('nowTotal').textContent = this.playlist.length;
         document.getElementById('playlistCount').textContent = this.playlist.length;
         this.renderPlaylist();
@@ -1494,11 +1868,13 @@ const channel = {
 
       if (videoUrl) {
         // Show video player
+        const pinnedBadge = this.isCurrentPinned() ? '<div class="tv-pinned-badge">PINNED</div>' : '';
         screen.innerHTML = `
           <div class="tv-news-video-wrap">
             ${this.getVideoEmbed(videoUrl)}
           </div>
           <div class="tv-video-badge">VIDEO</div>
+          ${pinnedBadge}
           <div class="tv-news-overlay active">
             <span class="tv-news-category ${isBreaking ? 'breaking' : ''}">${isBreaking ? '🔴 BREAKING' : this.getCategoryLabel(news.category)}</span>
             <h1 class="tv-news-title">${this.escapeHtml(news.title)}</h1>
