@@ -1050,7 +1050,37 @@
   </div>
 </div>
 
-<script src="/nav.js"></script>
+<script>
+// ============================================================
+// TV CHANNEL MODE - Self-contained (NO nav.js to avoid conflicts!)
+// ============================================================
+// Mock DS for any legacy code
+window.DS = window.DS || {};
+
+// Toast notification (simple shim)
+let dsToastTimer;
+window.DS.toast = function(msg, type) {
+  let t = document.getElementById('dsToastShim');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'dsToastShim';
+    t.style.cssText = 'position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;border:1px solid rgba(255,255,255,0.2);';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.borderColor = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : 'rgba(255,255,255,0.2)';
+  clearTimeout(dsToastTimer);
+  dsToastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+};
+
+window.DS.openSOS = function() {
+  alert('🆘 आपातकालीन:\n📞 पुलिस: 112\n🚑 एम्बुलेंस: 108\n🔥 दमकल: 100\n\n📞 DainikState: +91 98765 00001');
+};
+
+window.DS.openProfile = function() { /* TV mode me no-op */ };
+window.DS.user = function() { return null; };
+</script>
 <script>
 // ============================================================
 // BBC NEWS THEME - Web Audio API Synthesizer
@@ -1310,6 +1340,7 @@ const channel = {
 
   async init() {
     try {
+      console.log('🚀 TV Channel init starting...');
       this.startClock();
       // Init sound engine (but don't auto-start - browser blocks until user interaction)
       bbcSound.init();
@@ -1325,31 +1356,39 @@ const channel = {
       this.loadHindiVoices();
       if (this.ttsEnabled) this.updateTTSButton();
       // Load playlist FIRST (so something plays)
+      console.log('📰 Loading playlist...');
       await this.loadPlaylist();
+      console.log('✅ Playlist loaded, attaching events...');
       this.attachEvents();
+      console.log('▶️ Starting playback...');
       this.play();
-      // THEN apply schedule mode (might re-load with category filter)
-      this.applyScheduleMode();
-      // Start background tasks
+      console.log('✅ TV Channel initialized successfully');
+      // Start background tasks AFTER playback
       this.refreshInterval = setInterval(() => this.autoRefresh(), 5 * 60 * 1000);
       this.startViewerCounter();
-      console.log('✅ TV Channel initialized successfully');
+      this.applyScheduleMode();
     } catch (e) {
-      console.error('Init error:', e);
+      console.error('❌ Init error:', e);
+      console.error('Stack:', e.stack);
       // Force hide loading even on error
       const loading = document.getElementById('tvLoading');
       if (loading) loading.style.display = 'none';
       // Show error message
-      const screen = document.getElementById('tvScreen');
-      if (screen) {
-        screen.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:20px;">
-          <div style="font-size:60px;margin-bottom:20px;">⚠️</div>
-          <h2 style="font-size:18px;margin-bottom:10px;">लोड करने में समस्या</h2>
-          <p style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:20px;">${e.message || 'Network error'}</p>
-          <button class="ds-btn ds-btn-accent" onclick="location.reload()">🔄 दोबारा कोशिश करें</button>
-          <a href="/news.html" class="ds-btn ds-btn-outline ds-mt-1" style="margin-top:10px;text-decoration:none;display:inline-block;">📰 Grid View</a>
-        </div>`;
-      }
+      this.showErrorScreen(e.message || 'Unknown error');
+    }
+  },
+
+  showErrorScreen(msg) {
+    const screen = document.getElementById('tvScreen');
+    if (screen) {
+      screen.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:20px;">
+        <div style="font-size:60px;margin-bottom:16px;">⚠️</div>
+        <h2 style="font-size:20px;font-weight:900;margin-bottom:10px;">लोड करने में समस्या</h2>
+        <p style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:6px;line-height:1.5;">Error: ${msg}</p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:20px;">Console me details dekho (F12)</p>
+        <button class="ds-btn ds-btn-accent" onclick="channel.retry()" style="margin-bottom:8px;">🔄 दोबारा कोशिश करें</button>
+        <a href="/news.html" class="ds-btn ds-btn-outline" style="text-decoration:none;display:inline-block;">📰 Grid View पर जाएं</a>
+      </div>`;
     }
   },
 
