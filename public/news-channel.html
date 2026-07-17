@@ -587,6 +587,108 @@
     text-align: center;
   }
 
+  /* ============ TTS (Text-to-Speech) STYLES ============ */
+  .tts-indicator {
+    position: absolute;
+    top: 100px; right: 12px;
+    z-index: 50;
+    display: none;
+    align-items: center; gap: 6px;
+    background: rgba(139,92,246,0.2);
+    border: 1px solid #8b5cf6;
+    color: #a78bfa;
+    padding: 5px 10px;
+    border-radius: 14px;
+    font-size: 10px; font-weight: 700;
+    animation: ttsPulse 1s infinite;
+  }
+  .tts-indicator.show { display: flex; }
+  @keyframes ttsPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.5); }
+    50% { box-shadow: 0 0 0 6px rgba(139,92,246,0); }
+  }
+  .tts-bars {
+    display: flex; align-items: flex-end; gap: 1.5px; height: 12px;
+  }
+  .tts-bar {
+    width: 2.5px; background: #a78bfa; border-radius: 1px;
+    animation: ttsWave 0.6s ease-in-out infinite alternate;
+  }
+  .tts-bar:nth-child(1) { animation-delay: 0s; }
+  .tts-bar:nth-child(2) { animation-delay: 0.15s; }
+  .tts-bar:nth-child(3) { animation-delay: 0.3s; }
+  .tts-bar:nth-child(4) { animation-delay: 0.1s; }
+  .tts-bar:nth-child(5) { animation-delay: 0.2s; }
+  @keyframes ttsWave {
+    0% { height: 3px; }
+    100% { height: 12px; }
+  }
+  .tv-tts-btn {
+    background: rgba(139,92,246,0.15);
+    border: 1px solid rgba(139,92,246,0.4);
+    color: #a78bfa;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+  }
+  .tv-tts-btn:hover { background: rgba(139,92,246,0.3); transform: scale(1.05); }
+  .tv-tts-btn.active { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+  .tv-tts-btn.muted { background: rgba(107,114,128,0.3); border-color: #6b7280; color: #9ca3af; }
+  /* Read-along text (TTS karaoke effect) */
+  .tv-tts-text {
+    position: absolute;
+    bottom: 130px; left: 20px; right: 20px;
+    z-index: 4;
+    background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.7), transparent);
+    padding: 30px 20px 20px;
+    color: #fff;
+    font-size: 16px;
+    line-height: 1.5;
+    text-align: center;
+    display: none;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .tv-tts-text.show { display: block; }
+  .tv-tts-text .word {
+    display: inline;
+    transition: all 0.2s;
+    padding: 2px 1px;
+  }
+  .tv-tts-text .word.speaking {
+    background: rgba(251,191,36,0.6);
+    color: #fff;
+    border-radius: 3px;
+    font-weight: 700;
+  }
+  /* Filter pills (Video only / All / Text only) */
+  .tv-filter-pills {
+    position: absolute;
+    top: 130px; left: 12px;
+    z-index: 50;
+    display: flex; gap: 4px;
+  }
+  .tv-filter-pill {
+    background: rgba(0,0,0,0.7);
+    color: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 10px; font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.2s;
+  }
+  .tv-filter-pill.active {
+    background: linear-gradient(135deg, #dc2626, #f59e0b);
+    color: #fff;
+    border-color: transparent;
+  }
+
   /* Responsive */
   @media (min-width: 768px) {
     .tv-news-title { font-size: 32px; }
@@ -634,6 +736,28 @@
       </div>
       <span>🎵 BBC THEME</span>
     </div>
+
+    <!-- TTS (Hindi News Reader) indicator -->
+    <div class="tts-indicator" id="ttsIndicator">
+      <div class="tts-bars">
+        <div class="tts-bar"></div>
+        <div class="tts-bar"></div>
+        <div class="tts-bar"></div>
+        <div class="tts-bar"></div>
+        <div class="tts-bar"></div>
+      </div>
+      <span>🗣️ HINDI READER</span>
+    </div>
+
+    <!-- Video filter pills -->
+    <div class="tv-filter-pills">
+      <div class="tv-filter-pill active" data-filter="all" onclick="channel.setVideoFilter('all')">📋 सभी</div>
+      <div class="tv-filter-pill" data-filter="video" onclick="channel.setVideoFilter('video')">🎬 Video Only</div>
+      <div class="tv-filter-pill" data-filter="text" onclick="channel.setVideoFilter('text')">📰 Text Only</div>
+    </div>
+
+    <!-- TTS read-along text -->
+    <div class="tv-tts-text" id="ttsText"></div>
 
     <!-- Volume slider -->
     <div class="tv-volume" id="volumeSlider">
@@ -692,6 +816,7 @@
         <div class="tv-control-right">
           <div class="tv-ctrl" onclick="channel.likeCurrent()" id="likeBtn" title="Like">🤍</div>
           <div class="tv-ctrl" onclick="channel.shareCurrent()" title="Share">📤</div>
+          <div class="tv-tts-btn" id="ttsBtn" onclick="channel.toggleTTS()" title="Hindi TTS: OFF">🔇</div>
           <div class="tv-ctrl" id="soundBtn" onclick="channel.toggleSound()" title="BBC Music: OFF">🔇</div>
           <div class="tv-ctrl" onclick="channel.openSettings()" title="Settings">⚙️</div>
         </div>
@@ -987,6 +1112,15 @@ const channel = {
   imageCache: {},
   soundOn: false,  // BBC theme state
   musicEnabled: JSON.parse(localStorage.getItem('dsMusicEnabled') || 'false'),
+  // ============ TTS (Hindi Text-to-Speech) ============
+  ttsOn: false,
+  ttsEnabled: JSON.parse(localStorage.getItem('dsTtsEnabled') || 'false'),
+  ttsVoice: localStorage.getItem('dsTtsVoice') || 'hi-IN',
+  hindiVoices: [],
+  // ============ VIDEO FILTER ============
+  videoFilter: localStorage.getItem('dsVideoFilter') || 'all', // 'all', 'video', 'text'
+  // ============ AUTO-REFRESH ============
+  refreshInterval: null,
 
   async init() {
     this.startClock();
@@ -997,9 +1131,216 @@ const channel = {
       // Will be started on first user interaction
       this.updateSoundButton();
     }
+    // Load Hindi TTS voices
+    this.loadHindiVoices();
+    if (this.ttsEnabled) this.updateTTSButton();
+    // Apply video filter
+    this.applyVideoFilterUI();
     await this.loadPlaylist();
     this.attachEvents();
     this.play();
+    // Auto-refresh every 5 minutes (new video news)
+    this.refreshInterval = setInterval(() => this.autoRefresh(), 5 * 60 * 1000);
+  },
+
+  // ============ TTS (Hindi Text-to-Speech) ============
+  loadHindiVoices() {
+    if (!('speechSynthesis' in window)) {
+      console.warn('TTS not supported');
+      return;
+    }
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      // Find Hindi voices
+      this.hindiVoices = voices.filter(v =>
+        v.lang.startsWith('hi') || v.lang.includes('IN')
+      );
+      // Also save all voices for fallback
+      this.allVoices = voices;
+      console.log('🗣️ Hindi voices loaded:', this.hindiVoices.length);
+    };
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  },
+
+  toggleTTS() {
+    if (!('speechSynthesis' in window)) {
+      DS.toast('❌ TTS not supported in this browser', 'error');
+      return;
+    }
+    this.ttsOn = !this.ttsOn;
+    this.ttsEnabled = this.ttsOn;
+    localStorage.setItem('dsTtsEnabled', JSON.stringify(this.ttsOn));
+    this.updateTTSButton();
+    if (this.ttsOn) {
+      // Speak current news immediately
+      this.speakCurrent();
+      DS.toast('🗣️ Hindi reader ON', 'success');
+    } else {
+      window.speechSynthesis.cancel();
+      document.getElementById('ttsText')?.classList.remove('show');
+      DS.toast('🔇 Hindi reader OFF', 'success');
+    }
+  },
+
+  updateTTSButton() {
+    const btn = document.getElementById('ttsBtn');
+    if (!btn) return;
+    if (this.ttsOn) {
+      btn.textContent = '🗣️';
+      btn.classList.add('active');
+      btn.title = 'Hindi TTS: ON';
+    } else {
+      btn.textContent = '🔇';
+      btn.classList.remove('active');
+      btn.classList.add('muted');
+      btn.title = 'Hindi TTS: OFF';
+    }
+  },
+
+  // Speak current news in Hindi
+  speakCurrent() {
+    if (!this.ttsOn || !('speechSynthesis' in window)) return;
+    const news = this.playlist[this.current];
+    if (!news) return;
+    // Cancel any previous speech
+    window.speechSynthesis.cancel();
+    // Build the text to speak (Hindi)
+    const title = this.stripHtml(news.title || '');
+    const desc = this.stripHtml(news.description || news.content || '').slice(0, 400);
+    const text = `${title}। ${desc}`;
+    // Show read-along text
+    this.showTTSText(text);
+    // Create utterance
+    const utterance = new SpeechSynthesisUtterance(text);
+    // Set Hindi voice
+    const voice = this.hindiVoices.find(v => v.name === this.ttsVoice) ||
+                  this.hindiVoices[0] ||
+                  this.allVoices.find(v => v.lang.startsWith('hi')) ||
+                  this.allVoices[0];
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang;
+    } else {
+      utterance.lang = 'hi-IN';
+    }
+    utterance.rate = 0.95;  // Slightly slower for clarity
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    // Events
+    utterance.onstart = () => {
+      document.getElementById('ttsIndicator')?.classList.add('show');
+    };
+    utterance.onend = () => {
+      document.getElementById('ttsIndicator')?.classList.remove('show');
+      document.getElementById('ttsText')?.classList.remove('show');
+    };
+    utterance.onerror = () => {
+      document.getElementById('ttsIndicator')?.classList.remove('show');
+      document.getElementById('ttsText')?.classList.remove('show');
+    };
+    // Speak
+    window.speechSynthesis.speak(utterance);
+  },
+
+  showTTSText(text) {
+    const el = document.getElementById('ttsText');
+    if (!el) return;
+    // Split into words with karaoke effect
+    const words = text.split(/\s+/);
+    el.innerHTML = words.map(w => `<span class="word">${this.escapeHtml(w)}</span>`).join(' ');
+    el.classList.add('show');
+    // Highlight words as speech progresses
+    if (this.ttsOn && 'speechSynthesis' in window) {
+      let currentWord = 0;
+      const highlightInterval = setInterval(() => {
+        const spans = el.querySelectorAll('.word');
+        if (currentWord >= spans.length) {
+          clearInterval(highlightInterval);
+          return;
+        }
+        spans.forEach(s => s.classList.remove('speaking'));
+        if (spans[currentWord]) spans[currentWord].classList.add('speaking');
+        currentWord++;
+      }, 400);
+      // Stop on cancel
+      const checkCancel = setInterval(() => {
+        if (!window.speechSynthesis.speaking) {
+          clearInterval(highlightInterval);
+          clearInterval(checkCancel);
+          spans.forEach(s => s.classList.remove('speaking'));
+        }
+      }, 200);
+    }
+  },
+
+  stripHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/<[^>]*>/g, '').trim();
+  },
+
+  // ============ VIDEO FILTER ============
+  setVideoFilter(filter) {
+    this.videoFilter = filter;
+    localStorage.setItem('dsVideoFilter', filter);
+    this.applyVideoFilterUI();
+    // Stop current TTS
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    // Reload playlist
+    this.pause();
+    this.current = 0;
+    document.getElementById('tvLoading').style.display = 'flex';
+    document.getElementById('tvEnd').classList.remove('show');
+    this.loadPlaylist().then(() => this.play());
+  },
+
+  applyVideoFilterUI() {
+    document.querySelectorAll('.tv-filter-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.filter === this.videoFilter);
+    });
+  },
+
+  filterPlaylist(articles) {
+    if (this.videoFilter === 'video') {
+      return articles.filter(a => this.extractVideoUrl(a));
+    } else if (this.videoFilter === 'text') {
+      return articles.filter(a => !this.extractVideoUrl(a));
+    }
+    return articles;
+  },
+
+  // ============ AUTO-REFRESH (5 min) ============
+  async autoRefresh() {
+    try {
+      console.log('🔄 Auto-refreshing news playlist...');
+      // Save current news ID
+      const currentNewsId = this.playlist[this.current]?.id;
+      // Fetch fresh news
+      const r = await fetch('/api/news?limit=20');
+      const d = await r.json();
+      if (d.success && d.articles) {
+        const filtered = this.filterPlaylist(d.articles);
+        // Only update if there are new articles
+        const newIds = filtered.slice(0, 10).map(a => a.id || a.slug);
+        const oldIds = this.playlist.map(a => a.id || a.slug);
+        const hasNew = newIds.some(id => !oldIds.includes(id));
+        if (hasNew) {
+          console.log('✨ New news detected, updating playlist');
+          this.playlist = filtered.slice(0, 10);
+          this.renderPlaylist();
+          document.getElementById('nowTotal').textContent = this.playlist.length;
+          document.getElementById('playlistCount').textContent = this.playlist.length;
+          // Update metadata for current
+          if (currentNewsId) {
+            const newIdx = this.playlist.findIndex(a => (a.id || a.slug) === currentNewsId);
+            if (newIdx >= 0) this.current = newIdx;
+          }
+          DS.toast('✨ Top 10 refreshed!', 'success');
+        }
+      }
+    } catch (e) { console.error('Auto-refresh error:', e); }
   },
 
   // ============ SOUND CONTROL ============
@@ -1058,17 +1399,22 @@ const channel = {
   // ============ LOAD PLAYLIST ============
   async loadPlaylist() {
     try {
-      let url = '/api/news?limit=10';
+      let url = '/api/news?limit=20';  // Fetch more, then filter to top 10
       if (this.category) url += `&category=${this.category}`;
       const r = await fetch(url);
       const d = await r.json();
       if (d.success && d.articles && d.articles.length) {
-        this.playlist = d.articles;
+        // Apply video filter and take top 10
+        const filtered = this.filterPlaylist(d.articles);
+        this.playlist = filtered.slice(0, 10);
         document.getElementById('nowTotal').textContent = this.playlist.length;
         document.getElementById('playlistCount').textContent = this.playlist.length;
         this.renderPlaylist();
         // Hide loading
         document.getElementById('tvLoading').style.display = 'none';
+        if (this.playlist.length === 0) {
+          this.showEnd('इस filter में कोई खबर नहीं', 'Filter बदलें');
+        }
       } else {
         this.showEnd('कोई खबर नहीं मिली', 'बाद में try करें');
       }
@@ -1222,6 +1568,12 @@ const channel = {
       this.renderPlaylist();
     }, 400);
 
+    // If TTS is on and no video playing, start speaking after 1.5s
+    // (for video news, TTS happens after video ends or via button)
+    if (this.ttsOn && !this.extractVideoUrl(news)) {
+      setTimeout(() => this.speakCurrent(), 1500);
+    }
+
     // Progress animation
     this.animateProgress();
 
@@ -1253,9 +1605,13 @@ const channel = {
 
   next() {
     bbcSound.playSwoosh();
+    // Cancel any TTS speaking
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     if (this.current < this.playlist.length - 1) {
       this.current++;
       this.showCurrent();
+      // If TTS is on, speak new news
+      if (this.ttsOn) setTimeout(() => this.speakCurrent(), 800);
     } else {
       this.showEnd();
     }
@@ -1263,9 +1619,11 @@ const channel = {
 
   prev() {
     bbcSound.playSwoosh();
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     if (this.current > 0) {
       this.current--;
       this.showCurrent();
+      if (this.ttsOn) setTimeout(() => this.speakCurrent(), 800);
     }
   },
 
