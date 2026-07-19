@@ -458,6 +458,20 @@
         <div style="font-size:12px;font-weight:900;color:rgba(255,255,255,0.7);">📊 USDT-M FUTURES</div>
         <button class="trading-icon-btn" style="width:28px;height:28px;font-size:12px;" onclick="trader.loadCoins()" title="Refresh coins">🔄</button>
       </div>
+
+      <!-- Custom Coin Search -->
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="customCoinInput" placeholder="🔍 Search any coin (e.g. DOGE, PEPE, WIF)..."
+            style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 10px;color:#fff;font-size:12px;font-family:inherit;outline:none;"
+            onkeypress="if(event.key==='Enter')trader.searchCustomCoin()">
+          <button class="trading-icon-btn" style="width:36px;height:36px;font-size:14px;background:linear-gradient(135deg, #10b981, #3b82f6);border-color:transparent;" onclick="trader.searchCustomCoin()" title="Analyze this coin">🔍</button>
+        </div>
+        <div id="searchStatus" style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:4px;min-height:14px;"></div>
+        <!-- Recent searches -->
+        <div id="recentSearches" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;"></div>
+      </div>
+
       <div class="coin-list" id="coinList">
         <div style="text-align:center;padding:20px;color:rgba(255,255,255,0.4);">Loading coins...</div>
       </div>
@@ -729,6 +743,7 @@ const trader = {
     this.initChart();
     this.loadSettings();
     this.setupEventListeners();
+    this.renderRecentSearches();
     await this.loadCoins();
     await this.refresh(true);
     this.startAutoRefresh();
@@ -903,6 +918,111 @@ const trader = {
     this.renderCoinList();
     this.updateHeader();
     await this.refresh(true);
+  },
+
+  // ============ CUSTOM COIN SEARCH ============
+  // User can search any Binance Futures pair not in default list
+  recentSearches: JSON.parse(localStorage.getItem('traderRecentSearches') || '[]'),
+
+  async searchCustomCoin() {
+    const input = document.getElementById('customCoinInput');
+    if (!input) return;
+    let query = input.value.trim().toUpperCase();
+    if (!query) {
+      this.showSearchStatus('⚠️ Type a coin symbol (e.g. BTC, ETH, PEPE)', 'error');
+      return;
+    }
+    // Auto-append USDT if not present
+    let symbol = query;
+    if (!symbol.endsWith('USDT') && !symbol.endsWith('USD') && !symbol.endsWith('BUSD')) {
+      symbol = symbol + 'USDT';
+    }
+    this.showSearchStatus(`🔍 Searching ${symbol}...`, 'info');
+
+    try {
+      // Try to fetch from Binance Vision
+      const r = await fetch(`${this.exchanges.binance.ticker}?symbol=${symbol}`);
+      if (!r.ok) {
+        // Try with USDT suffix
+        if (!symbol.endsWith('USDT')) {
+          const r2 = await fetch(`${this.exchanges.binance.ticker}?symbol=${symbol}USDT`);
+          if (r2.ok) {
+            return this.loadCustomCoin(symbol + 'USDT', query);
+          }
+        }
+        throw new Error('Symbol not found');
+      }
+      return this.loadCustomCoin(symbol, query);
+    } catch (e) {
+      this.showSearchStatus(`❌ "${query}" not found on Binance Futures. Try: BTC, ETH, SOL, PEPE, DOGE`, 'error');
+      return;
+    }
+  },
+
+  async loadCustomCoin(symbol, originalQuery) {
+    try {
+      // Add to recent searches
+      if (!this.recentSearches.includes(symbol)) {
+        this.recentSearches.unshift(symbol);
+        if (this.recentSearches.length > 10) this.recentSearches.pop();
+        localStorage.setItem('traderRecentSearches', JSON.stringify(this.recentSearches));
+        this.renderRecentSearches();
+      }
+      // Add to main coin list
+      const r = await fetch(`${this.exchanges.binance.ticker}?symbol=${symbol}`);
+      const t = await r.json();
+      // Check if already in coins list
+      let coin = this.coins.find(c => c.symbol === symbol);
+      if (!coin) {
+        coin = {
+          symbol: t.symbol,
+          price: parseFloat(t.lastPrice),
+          change: parseFloat(t.priceChangePercent),
+          volume: parseFloat(t.quoteVolume),
+          icon: t.symbol.replace('USDT', '').slice(0, 3),
+          custom: true
+        };
+        this.coins.unshift(coin);
+      } else {
+        coin.price = parseFloat(t.lastPrice);
+        coin.change = parseFloat(t.priceChangePercent);
+        coin.volume = parseFloat(t.quoteVolume);
+        coin.custom = true;
+      }
+      this.showSearchStatus(`✅ Loaded ${symbol}: $${this.formatPrice(coin.price)} (${coin.change >= 0 ? '↑' : '↓'}${Math.abs(coin.change).toFixed(2)}%)`, 'success');
+      // Switch to it
+      await this.selectCoin(symbol);
+    } catch (e) {
+      this.showSearchStatus(`❌ Failed to load ${symbol}: ${e.message}`, 'error');
+    }
+  },
+
+  showSearchStatus(msg, type) {
+    const el = document.getElementById('searchStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : 'rgba(255,255,255,0.5)';
+    if (type === 'success') {
+      setTimeout(() => { el.textContent = ''; }, 3000);
+    }
+  },
+
+  renderRecentSearches() {
+    const container = document.getElementById('recentSearches');
+    if (!container) return;
+    if (!this.recentSearches.length) {
+      container.innerHTML = '';
+      return;
+    }
+    container.innerHTML = this.recentSearches.slice(0, 6).map(s => {
+      const base = s.replace('USDT', '');
+      return `<div onclick="trader.searchRecent('${s}')" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);color:#3b82f6;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;">${base}</div>`;
+    }).join('');
+  },
+
+  searchRecent(symbol) {
+    document.getElementById('customCoinInput').value = symbol.replace('USDT', '');
+    this.searchCustomCoin();
   },
 
   updateHeader() {
