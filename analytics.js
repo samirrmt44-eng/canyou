@@ -16,6 +16,7 @@ module.exports = function(app, db, usersCol, notificationsCol) {
     eventsCol = db.collection('analytics_events');      // Clicks, form submits, etc.
     sessionsCol = db.collection('analytics_sessions');  // One per unique visitor
     pageviewsCol = db.collection('analytics_pageviews'); // Aggregated page stats
+    adminTokensCol = db.collection('adminTokens');      // Persistent admin tokens
 
     await visitsCol.createIndex({ sessionId: 1 });
     await visitsCol.createIndex({ ts: -1 });
@@ -26,6 +27,16 @@ module.exports = function(app, db, usersCol, notificationsCol) {
     await sessionsCol.createIndex({ sessionId: 1 }, { unique: true });
     await sessionsCol.createIndex({ lastSeen: -1 });
     await pageviewsCol.createIndex({ page: 1, day: 1 }, { unique: true });
+    await adminTokensCol.createIndex({ token: 1 }, { unique: true });
+    await adminTokensCol.createIndex({ lastUsed: -1 });
+
+    // Load existing tokens into memory on startup
+    if (!global.__dsAdminTokens) global.__dsAdminTokens = new Set();
+    try {
+      const tokens = await adminTokensCol.find({}).toArray();
+      for (const t of tokens) global.__dsAdminTokens.add(t.token);
+      console.log(`🔑 Loaded ${tokens.length} admin tokens from DB`);
+    } catch (e) { console.error('Failed to load admin tokens:', e.message); }
 
     console.log('📊 Analytics module loaded!');
   }
@@ -129,30 +140,81 @@ module.exports = function(app, db, usersCol, notificationsCol) {
   });
 
   // ============================================================
-  // ADMIN AUTH
+  // ADMIN AUTH (DB-persistent — survives server restarts)
   // ============================================================
+  let adminTokensCol;
+  async function _loadAdminTokensFromDB() {
+    if (!adminTokensCol) return [];
+    const tokens = await adminTokensCol.find({}).toArray();
+    if (!global.__dsAdminTokens) global.__dsAdminTokens = new Set();
+    for (const t of tokens) global.__dsAdminTokens.add(t.token);
+    return tokens;
+  }
+  async function _saveAdminToken(token) {
+    if (!adminTokensCol) return;
+    await adminTokensCol.updateOne(
+      { token },
+      { $set: { token, createdAt: Date.now(), lastUsed: Date.now() } },
+      { upsert: true }
+    );
+  }
+
   app.post('/api/admin/login', async (req, res) => {
     try {
       const { pin } = req.body;
       if (pin !== adminPin) {
         return res.status(401).json({ error: 'Galat PIN!' });
       }
-      adminToken = crypto.randomBytes(32).toString('hex');
-      // Share token globally so other modules (news_scraper.js) can verify
+      const token = crypto.randomBytes(32).toString('hex');
+      // Persist to memory (fast access) + DB (survives restart)
       if (!global.__dsAdminTokens) global.__dsAdminTokens = new Set();
-      global.__dsAdminTokens.add(adminToken);
-      res.json({ success: true, token: adminToken });
+      global.__dsAdminTokens.add(token);
+      await _saveAdminToken(token);  // DB persist
+      adminToken = token;
+      res.json({ success: true, token });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
   function checkAdmin(req, res, next) {
     const auth = req.headers['authorization'] || '';
     const token = auth.replace('Bearer ', '');
-    if (token !== adminToken) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    // Check memory first (fast), then DB (persistent)
+    const hasInMemory = global.__dsAdminTokens && global.__dsAdminTokens.has(token);
+    if (!hasInMemory) {
+      // Fallback: check DB (handles server restart scenario)
+      adminTokensCol.findOne({ token }).then(found => {
+        if (found) {
+          if (!global.__dsAdminTokens) global.__dsAdminTokens = new Set();
+          global.__dsAdminTokens.add(token);
+          return next();
+        }
+        return res.status(401).json({ error: 'Unauthorized — please login again' });
+      }).catch(() => res.status(401).json({ error: 'Unauthorized' }));
+    } else {
+      // Update lastUsed (fire and forget)
+      adminTokensCol.updateOne({ token }, { $set: { lastUsed: Date.now() } }).catch(() => {});
+      next();
     }
-    next();
   }
+
+  // Endpoint: validate token (called by frontend on page load)
+  app.get('/api/admin/validate', async (req, res) => {
+    const auth = req.headers['authorization'] || '';
+    const token = auth.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ valid: false });
+    const inMemory = global.__dsAdminTokens && global.__dsAdminTokens.has(token);
+    if (inMemory) return res.json({ valid: true });
+    // Check DB
+    try {
+      const found = await adminTokensCol.findOne({ token });
+      if (found) {
+        if (!global.__dsAdminTokens) global.__dsAdminTokens = new Set();
+        global.__dsAdminTokens.add(token);
+        return res.json({ valid: true });
+      }
+    } catch (e) {}
+    return res.status(401).json({ valid: false });
+  });
 
   // ============================================================
   // ADMIN DASHBOARD APIs
