@@ -695,6 +695,25 @@
 const API = 'https://canyou-uqkp.onrender.com';
 let currentUser = null;
 let currentSchool = null;
+
+// Admin token for destructive operations (delete school, etc.)
+let __adminToken = localStorage.getItem('ds_admin_token') || null;
+async function getAdminToken() {
+  if (__adminToken) return __adminToken;
+  // Auto-login with shared admin PIN
+  try {
+    const res = await fetch(API + '/api/admin/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: '1234' })
+    }).then(r => r.json());
+    if (res.success && res.token) {
+      __adminToken = res.token;
+      localStorage.setItem('ds_admin_token', __adminToken);
+      return __adminToken;
+    }
+  } catch (e) {}
+  return null;
+}
 let currentRole = null;
 let parentChildren = [];
 let currentParentChild = null;
@@ -2689,6 +2708,9 @@ function showSchoolSettings() {
     <div class="form-group"><label class="form-label">💰 Monthly Fee (₹)</label>
       <input type="number" class="form-input" id="setSchoolFee" value="${esc(currentSchool.monthlyFee || 0)}"></div>
     <button class="form-btn" onclick="saveSchoolSettings()">💾 Save</button>
+    <hr style="margin:16px 0;border:none;border-top:1px solid rgba(0,0,0,0.1);">
+    <p style="font-size:12px;color:#666;margin:0 0 8px;">⚠️ Danger Zone — स्कूल और सारा डेटा डिलीट हो जाएगा</p>
+    <button class="form-btn" style="background:#dc2626;" onclick="deleteMySchool()">🗑️ यह School डिलीट करें</button>
   `);
 }
 
@@ -2705,6 +2727,31 @@ async function saveSchoolSettings() {
     }).then(r => r.json());
     if (res.success) { Object.assign(currentSchool, updates); localStorage.setItem('ds_school_data', JSON.stringify(currentSchool)); toast('✅ Saved!'); closeModal(); showPrincipalDash(); }
   } catch (e) { toast('❌ Network error'); }
+}
+
+async function deleteMySchool() {
+  if (!currentSchool) return;
+  const schoolName = currentSchool.name;
+  const schoolId = currentSchool.id;
+  if (!confirm('⚠️ क्या आप सच में "' + schoolName + '" को डिलीट करना चाहते हैं?\n\nयह Action वापस नहीं होगा। सारे students, classes, attendance, photos, messages सब DELETE हो जाएंगे।')) return;
+  if (!confirm('🚨 Last Warning! "' + schoolName + '" और उसका सारा डेटा permanently delete हो जाएगा।\n\nकृपया confirm करें।')) return;
+  try {
+    const res = await fetch(API + '/api/school/admin/' + schoolId, {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminToken: getAdminToken() })
+    }).then(r => r.json());
+    if (res.success) {
+      toast('✅ School डिलीट हो गया!');
+      // Clear local data
+      localStorage.removeItem('ds_school_data');
+      currentSchool = null;
+      closeModal();
+      // Reload to login screen
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      toast('❌ Error: ' + (res.error || 'Failed'));
+    }
+  } catch (e) { toast('❌ Network error: ' + e.message); }
 }
 
 function viewClassStudents(className, section) { showAllStudents(); }
