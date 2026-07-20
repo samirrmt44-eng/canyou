@@ -775,8 +775,42 @@ function openDemoTour() {
 
 // Register service worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('/sw.js?v=4').then(reg => {
+    // Listen for messages from SW (cache cleared → clear localStorage too)
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data && e.data.type === 'CLEAR_STALE_DATA') {
+        console.log('SW v4: Clearing stale localStorage data...', e.data.reason);
+        localStorage.removeItem('ds_school_data');
+        localStorage.removeItem('ds_user_data');
+        localStorage.removeItem('ds_parent_data');
+        localStorage.removeItem('ds_school_user');
+      }
+    });
+  }).catch(() => {});
 }
+
+// ==================== STALE DATA MIGRATION ====================
+// On every page load, verify the cached school still exists in DB
+// If not, clear localStorage so user sees fresh data
+(async function migrateStaleData() {
+  try {
+    const cachedSchool = localStorage.getItem('ds_school_data');
+    const cachedUser = localStorage.getItem('ds_school_user');
+    if (!cachedSchool) return;  // Nothing cached, nothing to do
+    const school = JSON.parse(cachedSchool);
+    // Verify the school still exists in DB
+    const r = await fetch(API + '/api/school/' + school.id).then(r => r.json()).catch(() => ({ success: false }));
+    if (!r.success) {
+      console.log('Migration: Cached school no longer exists, clearing localStorage');
+      localStorage.removeItem('ds_school_data');
+      localStorage.removeItem('ds_school_user');
+      localStorage.removeItem('ds_user_data');
+    }
+  } catch (e) {
+    // If anything goes wrong, clear to be safe
+    localStorage.removeItem('ds_school_data');
+  }
+})();
 
 // ============ UTILITIES ============
 function esc(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
