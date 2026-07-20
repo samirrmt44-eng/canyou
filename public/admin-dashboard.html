@@ -497,12 +497,11 @@ function adminFetch(url, options = {}) {
   if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
   return fetch(API + url, opts).then(async r => {
     if (r.status === 401) {
-      // Token expired — clear and reload to login screen
+      // Token expired — clear localStorage and reload page (clean state)
       localStorage.removeItem('ds_admin_token');
       adminToken = null;
-      document.getElementById('dashboard').classList.add('hidden');
-      document.getElementById('loginScreen').classList.remove('hidden');
-      throw new Error('Session expired — please login again');
+      location.reload();  // Force reload so no stale UI remains
+      throw new Error('Session expired — reloading...');
     }
     return r.json();
   });
@@ -1072,28 +1071,28 @@ function renderChart(days) {
 // ==================== INIT ====================
 async function initAdmin() {
   if (!adminToken) return;
-  // Show dashboard optimistically (will be hidden if token is invalid)
-  document.getElementById('loginScreen').classList.add('hidden');
-  document.getElementById('dashboard').classList.remove('hidden');
-  // Validate token with server (handles server-restart scenario)
+  // Validate token first (BEFORE showing dashboard, to avoid flash)
   try {
     const r = await fetch(API + '/api/admin/validate', {
       headers: { 'Authorization': 'Bearer ' + adminToken }
     });
-    if (r.status === 401) {
-      // Token invalid — clear and show login
+    if (r.status === 401 || !r.ok) {
+      // Token invalid — clear and stay on login screen
       localStorage.removeItem('ds_admin_token');
       adminToken = null;
-      document.getElementById('dashboard').classList.add('hidden');
-      document.getElementById('loginScreen').classList.remove('hidden');
-      return;
+      return;  // Don't show dashboard
     }
+    // Token valid — show dashboard
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
     loadAll();
+    if (refreshInterval) clearInterval(refreshInterval);
     refreshInterval = setInterval(loadAll, 10000);
   } catch (e) {
-    // Network error — assume token valid, try to load
-    loadAll();
-    refreshInterval = setInterval(loadAll, 10000);
+    // Network error — stay on login screen, show error
+    console.error('Init error:', e);
+    localStorage.removeItem('ds_admin_token');
+    adminToken = null;
   }
 }
 initAdmin();
