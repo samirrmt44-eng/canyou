@@ -165,7 +165,12 @@ module.exports = function(app, db, usersCol, notificationsCol) {
   // DELETE /api/school/admin/:schoolId
   // ============================================================
   function _schoolAdminAuth(req, res, next) {
-    const token = req.headers['x-admin-token'] || req.body.adminToken || req.query.adminToken;
+    let token = req.headers['x-admin-token']
+             || req.body?.adminToken
+             || req.query?.adminToken;
+    if (!token && req.headers['authorization']) {
+      token = req.headers['authorization'].replace(/^Bearer\s+/i, '').trim();
+    }
     if (!global.__dsAdminTokens) global.__dsAdminTokens = new Set();
     if (!token || !global.__dsAdminTokens.has(token)) {
       return res.status(401).json({ error: 'Admin token required' });
