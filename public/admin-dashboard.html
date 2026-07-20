@@ -486,11 +486,24 @@ function doLogout() {
   document.getElementById('loginErr').textContent = '';
 }
 
-function adminFetch(url) {
-  return fetch(API + url, {
-    headers: { 'Authorization': 'Bearer ' + adminToken }
-  }).then(r => {
-    if (r.status === 401) { doLogout(); throw new Error('Session expired'); }
+function adminFetch(url, options = {}) {
+  const opts = Object.assign({}, options, {
+    headers: Object.assign(
+      { 'Authorization': 'Bearer ' + adminToken },
+      options.body ? { 'Content-Type': 'application/json' } : {},
+      options.headers || {}
+    )
+  });
+  if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
+  return fetch(API + url, opts).then(async r => {
+    if (r.status === 401) {
+      // Token expired — clear and reload to login screen
+      localStorage.removeItem('ds_admin_token');
+      adminToken = null;
+      document.getElementById('dashboard').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      throw new Error('Session expired — please login again');
+    }
     return r.json();
   });
 }
@@ -1057,12 +1070,34 @@ function renderChart(days) {
 }
 
 // ==================== INIT ====================
-if (adminToken) {
+async function initAdmin() {
+  if (!adminToken) return;
+  // Show dashboard optimistically (will be hidden if token is invalid)
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
-  loadAll();
-  refreshInterval = setInterval(loadAll, 10000);
+  // Validate token with server (handles server-restart scenario)
+  try {
+    const r = await fetch(API + '/api/admin/validate', {
+      headers: { 'Authorization': 'Bearer ' + adminToken }
+    });
+    if (r.status === 401) {
+      // Token invalid — clear and show login
+      localStorage.removeItem('ds_admin_token');
+      adminToken = null;
+      document.getElementById('dashboard').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      return;
+    }
+    loadAll();
+    refreshInterval = setInterval(loadAll, 10000);
+  } catch (e) {
+    // Network error — assume token valid, try to load
+    loadAll();
+    refreshInterval = setInterval(loadAll, 10000);
+  }
 }
+initAdmin();
+
 window.addEventListener('resize', () => {
   if (!document.getElementById('dashboard').classList.contains('hidden')) {
     adminFetch('/api/admin/chart?days=30').then(r => {
