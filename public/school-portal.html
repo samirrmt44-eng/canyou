@@ -4,14 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
 <meta name="theme-color" content="#ff6b6b" />
-<meta name="description" content="Child's Land School - Free pre-school management for Nursery/LKG/UKG" />
+<meta name="description" content="🆓 100% FREE School Management for ALL - Nursery, LKG, UKG, Class 1-12. No charges, no limits!" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Child's Land" />
+<meta name="apple-mobile-web-app-title" content="School Management" />
 <link rel="manifest" href="/manifest.json" />
 <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png" />
 <link rel="apple-touch-icon" href="/images/icon-192.png" />
-<title>🎓 Child's Land School - DainikState</title>
+<title>🎓 School Management - DainikState | 100% FREE</title>
 <script>
   // First-time visitor → redirect to demo
   if (!localStorage.getItem('ds_school_demo_seen') && !window.location.search.includes('noDemo')) {
@@ -251,6 +251,15 @@
 </style>
 </head>
 <body>
+
+<!-- 🆓 100% FREE FOR ALL BANNER -->
+<div id="freeBanner" style="background:linear-gradient(135deg, #10b981, #3b82f6);color:#fff;text-align:center;padding:8px 12px;font-size:13px;font-weight:900;position:sticky;top:0;z-index:9999;box-shadow:0 2px 10px rgba(16,185,129,0.4);display:flex;align-items:center;justify-content:center;gap:10px;">
+  <span style="font-size:18px;">🆓</span>
+  <span>100% FREE FOR ALL • NO CHARGES • NO LIMITS • सभी के लिए मुफ्त</span>
+  <span style="font-size:18px;">🇮🇳</span>
+  <button onclick="document.getElementById('freeBanner').style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:12px;margin-left:10px;">✕</button>
+</div>
+
 <div class="app">
 
 <!-- HEADER -->
@@ -259,7 +268,7 @@
     <div class="logo">
       <div class="logo-icon">🎓</div>
       <div>
-        <h1>Child's Land</h1>
+        <h1>School Management</h1>
         <div class="tagline">🏫 Free Pre-School App</div>
       </div>
     </div>
@@ -355,7 +364,7 @@
   <!-- Branded Message CTA -->
   <div class="share-banner" style="background:linear-gradient(135deg,#d4f4dd,#b8e6c8);border-color:#25D366;">
     <h3 style="color:#128C7E;">💬 Branded Message भेजें</h3>
-    <p style="color:#0a6e54;">WhatsApp/SMS पर "CANYOU/Child's Land" के नाम से parents को message करें - FREE!</p>
+    <p style="color:#0a6e54;">WhatsApp/SMS पर "DainikState School" के नाम से parents को message करें - FREE!</p>
     <button class="form-btn small" onclick="window.location.href='/school-message.html'" style="background:linear-gradient(135deg,#25D366,#128C7E);">📤 Send Branded Message →</button>
   </div>
 
@@ -849,7 +858,18 @@ async function principalRegister() {
     }
     // 3. Create school
     const slug = (name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + phone.slice(-4));
-    showModal('🏫 अपनी School बनाएं (FREE)', `
+    showModal('🏫 अपनी School बनाएं (100% FREE)', `
+      <div style="background:linear-gradient(135deg, #10b981, #3b82f6);color:#fff;padding:10px;border-radius:10px;margin-bottom:12px;text-align:center;font-size:12px;font-weight:900;">
+        🆓 100% FREE FOR ALL • NO CHARGES • NO LIMITS
+      </div>
+      <div class="form-group" style="text-align:center;">
+        <div id="schoolLogoPreview" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg, #3b82f6, #10b981);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:36px;cursor:pointer;overflow:hidden;border:3px solid #10b981;" onclick="document.getElementById('schoolLogoFile').click()">
+          🏫
+        </div>
+        <input type="file" id="schoolLogoFile" accept="image/*" style="display:none;" onchange="previewSchoolLogo(event)">
+        <button type="button" onclick="document.getElementById('schoolLogoFile').click()" style="background:rgba(59,130,246,0.15);border:1px solid #3b82f6;color:#3b82f6;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">📸 Add Logo / Banner (Optional)</button>
+        <p style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:4px;">JPG/PNG, max 1MB. Logo top me dikhega</p>
+      </div>
       <div class="form-group"><label class="form-label">School का नाम *</label>
         <input type="text" class="form-input" id="newSchoolName" placeholder="जैसे: Sunshine Pre-School" value="${esc(name)}"></div>
       <div class="form-group"><label class="form-label">🌐 URL Slug (auto-generated)</label>
@@ -869,9 +889,24 @@ async function principalRegister() {
           <option value="icse">ICSE</option>
           <option value="cambridge">Cambridge</option>
         </select></div>
-      <button class="form-btn" onclick="createSchool()">🚀 Create School (FREE)</button>
+      <button class="form-btn" onclick="createSchool()">🚀 Create School (100% FREE)</button>
     `);
   } catch (e) { toast('❌ Network error: ' + e.message); }
+}
+
+// Preview school logo on file select
+function previewSchoolLogo(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 1024 * 1024) { toast('⚠️ File too large (max 1MB)'); return; }
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const preview = document.getElementById('schoolLogoPreview');
+    preview.innerHTML = `<img src="${event.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
+    preview.dataset.logoData = event.target.result;
+    toast('✅ Logo ready! Click Create to save');
+  };
+  reader.readAsDataURL(file);
 }
 
 async function createSchool() {
@@ -889,6 +924,7 @@ async function createSchool() {
         principalName: currentUser.name,
         monthlyFee: parseInt(document.getElementById('newSchoolFee').value) || 0,
         board: document.getElementById('newSchoolBoard').value,
+        logo: (document.getElementById('schoolLogoPreview')?.dataset.logoData) || ''
       })
     }).then(r => r.json());
     if (res.success) {
@@ -2705,7 +2741,7 @@ function getShareLink() {
 
 function shareSchoolLink() {
   const link = getShareLink();
-  const text = `🎓 ${currentSchool?.name || 'Our School'} - Child's Land School App\nFree pre-school management for parents\n${link}`;
+  const text = `🎓 ${currentSchool?.name || 'Our School'} - School Management App\nFree pre-school management for parents\n${link}`;
   if (navigator.share) {
     navigator.share({ title: 'Child\'s Land School', text, url: link });
   } else if (navigator.clipboard) {
