@@ -181,21 +181,25 @@ module.exports = function(app, db, usersCol, notificationsCol) {
       // Cascade delete: classes, students, attendance, diary, photos, messages, etc.
       const schoolId = school.id;
       const ownerId = school.ownerId;
+      async function safeDelete(col, q) {
+        try { if (col) return await col.deleteMany(q); } catch (e) {}
+        return { deletedCount: 0 };
+      }
       const del = {
-        classes: await classesCol.deleteMany({ schoolId }),
-        students: await studentsCol.deleteMany({ schoolId }),
-        attendance: attendanceCol ? await attendanceCol.deleteMany({ schoolId }) : { deletedCount: 0 },
-        diary: await diaryCol.deleteMany({ schoolId }),
-        photos: await photosCol.deleteMany({ schoolId }),
-        messages: await schoolMessagesCol.deleteMany({ schoolId }),
-        fees: await schoolFeesCol ? await schoolFeesCol.deleteMany({ schoolId }) : { deletedCount: 0 },
-        results: await schoolResultsCol ? await schoolResultsCol.deleteMany({ schoolId }) : { deletedCount: 0 },
-        homework: await schoolHomeworkCol ? await schoolHomeworkCol.deleteMany({ schoolId }) : { deletedCount: 0 },
-        notices: await schoolNoticesCol ? await schoolNoticesCol.deleteMany({ schoolId }) : { deletedCount: 0 },
-        timetable: await schoolTimetableCol ? await schoolTimetableCol.deleteMany({ schoolId }) : { deletedCount: 0 },
-        events: await schoolEventsCol ? await schoolEventsCol.deleteMany({ schoolId }) : { deletedCount: 0 },
-        announcements: await schoolAnnouncementsCol ? await schoolAnnouncementsCol.deleteMany({ schoolId }) : { deletedCount: 0 },
-        chat: await schoolChatCol ? await schoolChatCol.deleteMany({ schoolId }) : { deletedCount: 0 },
+        classes: await safeDelete(classesCol, { schoolId }),
+        students: await safeDelete(studentsCol, { schoolId }),
+        attendance: await safeDelete(attendanceCol, { schoolId }),
+        diary: await safeDelete(diaryCol, { schoolId }),
+        photos: await safeDelete(photosCol, { schoolId }),
+        messages: await safeDelete(schoolMessagesCol, { schoolId }),
+        fees: await safeDelete(schoolFeesCol, { schoolId }),
+        results: await safeDelete(schoolResultsCol, { schoolId }),
+        homework: await safeDelete(schoolHomeworkCol, { schoolId }),
+        notices: await safeDelete(schoolNoticesCol, { schoolId }),
+        timetable: await safeDelete(schoolTimetableCol, { schoolId }),
+        events: await safeDelete(schoolEventsCol, { schoolId }),
+        announcements: await safeDelete(schoolAnnouncementsCol, { schoolId }),
+        chat: await safeDelete(schoolChatCol, { schoolId }),
         school: await schoolsCol.deleteOne({ id: schoolId }),
       };
       // Unlink owner user
@@ -207,8 +211,8 @@ module.exports = function(app, db, usersCol, notificationsCol) {
         diary: del.diary.deletedCount,
         photos: del.photos.deletedCount,
         messages: del.messages.deletedCount,
-        fees: del.fees.deletedCount || 0,
-        results: del.results.deletedCount || 0,
+        fees: del.fees.deletedCount,
+        results: del.results.deletedCount,
       }});
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -228,15 +232,19 @@ module.exports = function(app, db, usersCol, notificationsCol) {
         const school = await schoolsCol.findOne({ id: user.schoolId });
         if (school) {
           const schoolId = school.id;
-          await classesCol.deleteMany({ schoolId });
-          await studentsCol.deleteMany({ schoolId });
-          if (attendanceCol) await attendanceCol.deleteMany({ schoolId });
-          await diaryCol.deleteMany({ schoolId });
-          await photosCol.deleteMany({ schoolId });
-          await schoolMessagesCol.deleteMany({ schoolId });
-          if (schoolFeesCol) await schoolFeesCol.deleteMany({ schoolId });
-          if (schoolResultsCol) await schoolResultsCol.deleteMany({ schoolId });
-          if (schoolChatCol) await schoolChatCol.deleteMany({ schoolId });
+          async function safeDelete(col, q) {
+            try { if (col) return await col.deleteMany(q); } catch (e) {}
+            return { deletedCount: 0 };
+          }
+          await safeDelete(classesCol, { schoolId });
+          await safeDelete(studentsCol, { schoolId });
+          await safeDelete(attendanceCol, { schoolId });
+          await safeDelete(diaryCol, { schoolId });
+          await safeDelete(photosCol, { schoolId });
+          await safeDelete(schoolMessagesCol, { schoolId });
+          await safeDelete(schoolFeesCol, { schoolId });
+          await safeDelete(schoolResultsCol, { schoolId });
+          await safeDelete(schoolChatCol, { schoolId });
           await schoolsCol.deleteOne({ id: schoolId });
           schoolDeleted = { id: schoolId, name: school.name };
         }
