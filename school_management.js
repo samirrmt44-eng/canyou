@@ -21,6 +21,7 @@ module.exports = function(app, db, usersCol, notificationsCol) {
 
   let schoolsCol, classesCol, studentsCol, diaryCol, photosCol;
   let healthCol, ptmCol, holidaysCol, pickupAuthCol, schoolMessagesCol;
+  let attendanceCol;  // School-specific attendance (may be undefined if not initialized)
 
   async function connectDB_school() {
     schoolsCol = db.collection('schools');
@@ -33,6 +34,8 @@ module.exports = function(app, db, usersCol, notificationsCol) {
     holidaysCol = db.collection('schoolHolidays');
     pickupAuthCol = db.collection('schoolPickupAuth');
     schoolMessagesCol = db.collection('schoolMessages');
+    // Optional: school-specific attendance (separate from business suite attendance)
+    try { attendanceCol = db.collection('schoolAttendance'); } catch (e) {}
 
     // Indexes
     await schoolsCol.createIndex({ slug: 1 }, { unique: true });
@@ -181,7 +184,7 @@ module.exports = function(app, db, usersCol, notificationsCol) {
       const del = {
         classes: await classesCol.deleteMany({ schoolId }),
         students: await studentsCol.deleteMany({ schoolId }),
-        attendance: await attendanceCol.deleteMany({ schoolId }),
+        attendance: attendanceCol ? await attendanceCol.deleteMany({ schoolId }) : { deletedCount: 0 },
         diary: await diaryCol.deleteMany({ schoolId }),
         photos: await photosCol.deleteMany({ schoolId }),
         messages: await schoolMessagesCol.deleteMany({ schoolId }),
@@ -227,7 +230,7 @@ module.exports = function(app, db, usersCol, notificationsCol) {
           const schoolId = school.id;
           await classesCol.deleteMany({ schoolId });
           await studentsCol.deleteMany({ schoolId });
-          await attendanceCol.deleteMany({ schoolId });
+          if (attendanceCol) await attendanceCol.deleteMany({ schoolId });
           await diaryCol.deleteMany({ schoolId });
           await photosCol.deleteMany({ schoolId });
           await schoolMessagesCol.deleteMany({ schoolId });
@@ -238,14 +241,8 @@ module.exports = function(app, db, usersCol, notificationsCol) {
           schoolDeleted = { id: schoolId, name: school.name };
         }
       }
-      // Unlink parents whose students are deleted
-      if (studentsCol) {
-        const studentIds = await studentsCol.find({ schoolId: user.schoolId || '' }).project({ id: 1 }).toArray().catch(()=>[]);
-        // Delete the user
-        await usersCol.deleteOne({ id: req.params.userId });
-      } else {
-        await usersCol.deleteOne({ id: req.params.userId });
-      }
+      // Delete the user
+      await usersCol.deleteOne({ id: req.params.userId });
       res.json({ success: true, deletedUser: { id: user.id, name: user.name, phone: user.phone }, schoolDeleted });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
