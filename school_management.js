@@ -21,7 +21,7 @@ module.exports = function(app, db, usersCol, notificationsCol) {
 
   let schoolsCol, classesCol, studentsCol, diaryCol, photosCol;
   let healthCol, ptmCol, holidaysCol, pickupAuthCol, schoolMessagesCol;
-  let attendanceCol;  // School-specific attendance (may be undefined if not initialized)
+  let attendanceCol;  // School-specific attendance
 
   async function connectDB_school() {
     schoolsCol = db.collection('schools');
@@ -181,27 +181,25 @@ module.exports = function(app, db, usersCol, notificationsCol) {
       // Cascade delete: classes, students, attendance, diary, photos, messages, etc.
       const schoolId = school.id;
       const ownerId = school.ownerId;
-      async function safeDelete(col, q) {
-        try { if (col) return await col.deleteMany(q); } catch (e) {}
-        return { deletedCount: 0 };
-      }
+      // Only delete from collections that are actually declared in this module
       const del = {
-        classes: await safeDelete(classesCol, { schoolId }),
-        students: await safeDelete(studentsCol, { schoolId }),
-        attendance: await safeDelete(attendanceCol, { schoolId }),
-        diary: await safeDelete(diaryCol, { schoolId }),
-        photos: await safeDelete(photosCol, { schoolId }),
-        messages: await safeDelete(schoolMessagesCol, { schoolId }),
-        fees: await safeDelete(schoolFeesCol, { schoolId }),
-        results: await safeDelete(schoolResultsCol, { schoolId }),
-        homework: await safeDelete(schoolHomeworkCol, { schoolId }),
-        notices: await safeDelete(schoolNoticesCol, { schoolId }),
-        timetable: await safeDelete(schoolTimetableCol, { schoolId }),
-        events: await safeDelete(schoolEventsCol, { schoolId }),
-        announcements: await safeDelete(schoolAnnouncementsCol, { schoolId }),
-        chat: await safeDelete(schoolChatCol, { schoolId }),
+        classes: await classesCol.deleteMany({ schoolId }),
+        students: await studentsCol.deleteMany({ schoolId }),
+        attendance: attendanceCol ? await attendanceCol.deleteMany({ schoolId }) : { deletedCount: 0 },
+        diary: await diaryCol.deleteMany({ schoolId }),
+        photos: await photosCol.deleteMany({ schoolId }),
+        messages: await schoolMessagesCol.deleteMany({ schoolId }),
         school: await schoolsCol.deleteOne({ id: schoolId }),
       };
+      // Try to delete from optional collections (declared elsewhere in this file)
+      try { if (typeof schoolFeesCol !== 'undefined' && schoolFeesCol) del.fees = await schoolFeesCol.deleteMany({ schoolId }); } catch (e) {}
+      try { if (typeof schoolResultsCol !== 'undefined' && schoolResultsCol) del.results = await schoolResultsCol.deleteMany({ schoolId }); } catch (e) {}
+      try { if (typeof schoolHomeworkCol !== 'undefined' && schoolHomeworkCol) del.homework = await schoolHomeworkCol.deleteMany({ schoolId }); } catch (e) {}
+      try { if (typeof schoolNoticesCol !== 'undefined' && schoolNoticesCol) del.notices = await schoolNoticesCol.deleteMany({ schoolId }); } catch (e) {}
+      try { if (typeof schoolTimetableCol !== 'undefined' && schoolTimetableCol) del.timetable = await schoolTimetableCol.deleteMany({ schoolId }); } catch (e) {}
+      try { if (typeof schoolEventsCol !== 'undefined' && schoolEventsCol) del.events = await schoolEventsCol.deleteMany({ schoolId }); } catch (e) {}
+      try { if (typeof schoolAnnouncementsCol !== 'undefined' && schoolAnnouncementsCol) del.announcements = await schoolAnnouncementsCol.deleteMany({ schoolId }); } catch (e) {}
+      try { if (typeof schoolChatCol !== 'undefined' && schoolChatCol) del.chat = await schoolChatCol.deleteMany({ schoolId }); } catch (e) {}
       // Unlink owner user
       await usersCol.updateOne({ id: ownerId }, { $unset: { schoolId: '', schoolRole: '' } });
       res.json({ success: true, deleted: school.name, schoolId, ownerId, cascade: {
@@ -211,8 +209,8 @@ module.exports = function(app, db, usersCol, notificationsCol) {
         diary: del.diary.deletedCount,
         photos: del.photos.deletedCount,
         messages: del.messages.deletedCount,
-        fees: del.fees.deletedCount,
-        results: del.results.deletedCount,
+        fees: del.fees ? del.fees.deletedCount : 0,
+        results: del.results ? del.results.deletedCount : 0,
       }});
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -232,19 +230,15 @@ module.exports = function(app, db, usersCol, notificationsCol) {
         const school = await schoolsCol.findOne({ id: user.schoolId });
         if (school) {
           const schoolId = school.id;
-          async function safeDelete(col, q) {
-            try { if (col) return await col.deleteMany(q); } catch (e) {}
-            return { deletedCount: 0 };
-          }
-          await safeDelete(classesCol, { schoolId });
-          await safeDelete(studentsCol, { schoolId });
-          await safeDelete(attendanceCol, { schoolId });
-          await safeDelete(diaryCol, { schoolId });
-          await safeDelete(photosCol, { schoolId });
-          await safeDelete(schoolMessagesCol, { schoolId });
-          await safeDelete(schoolFeesCol, { schoolId });
-          await safeDelete(schoolResultsCol, { schoolId });
-          await safeDelete(schoolChatCol, { schoolId });
+          await classesCol.deleteMany({ schoolId });
+          await studentsCol.deleteMany({ schoolId });
+          if (attendanceCol) await attendanceCol.deleteMany({ schoolId });
+          await diaryCol.deleteMany({ schoolId });
+          await photosCol.deleteMany({ schoolId });
+          await schoolMessagesCol.deleteMany({ schoolId });
+          try { if (typeof schoolFeesCol !== 'undefined' && schoolFeesCol) await schoolFeesCol.deleteMany({ schoolId }); } catch (e) {}
+          try { if (typeof schoolResultsCol !== 'undefined' && schoolResultsCol) await schoolResultsCol.deleteMany({ schoolId }); } catch (e) {}
+          try { if (typeof schoolChatCol !== 'undefined' && schoolChatCol) await schoolChatCol.deleteMany({ schoolId }); } catch (e) {}
           await schoolsCol.deleteOne({ id: schoolId });
           schoolDeleted = { id: schoolId, name: school.name };
         }
