@@ -150,6 +150,13 @@
   .badge-mobile { background: rgba(0,212,255,0.2); color: #00d4ff; }
   .badge-desktop { background: rgba(255,107,53,0.2); color: #ff6b35; }
   .badge-tablet { background: rgba(46,213,115,0.2); color: #2ed573; }
+  /* Form fields (for TV Channel editor) */
+  .form-group { margin-bottom: 12px; }
+  .form-label { display: block; color: #ccc; font-size: 12px; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-input { width: 100%; padding: 10px 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 13px; box-sizing: border-box; }
+  .form-input:focus { outline: none; border-color: #dc2626; }
+  .form-btn { background: #2ed573; color: #000; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; margin-top: 8px; }
+  .form-btn:hover { opacity: 0.9; }
   /* Bar chart for pages */
   .bar-row {
     display: grid;
@@ -417,6 +424,18 @@
       </div>
       <div id="adminSchoolList"><div class="empty">⏳ Loading schools...</div></div>
     </div>
+
+    <!-- 📺 TV CHANNELS (Admin-controlled) -->
+    <div class="section">
+      <div class="section-title">
+        <span>📺 TV Channels (Admin-controlled)</span>
+        <span>
+          <button class="refresh-btn" onclick="openCreateTVChannel()" style="background:rgba(220,38,38,0.15);color:#dc2626;border-color:#dc2626;">+ New Channel</button>
+          <a href="/news-channel.html" class="refresh-btn" style="background:rgba(220,38,38,0.15);color:#dc2626;border-color:#dc2626;text-decoration:none;">📺 Open TV Mode</a>
+        </span>
+      </div>
+      <div id="adminTVChannelList"><div class="empty">⏳ Loading TV channels...</div></div>
+    </div>
   </div>
 
   <div class="footer">
@@ -490,6 +509,7 @@ async function loadAll() {
     // Also load news
     loadAdminNews();
     loadAdminSchools();
+    loadAdminTVChannels();
     document.getElementById('lastUpdate').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
   } catch (e) {
     console.error('Load error:', e);
@@ -532,6 +552,153 @@ function renderAdminSchools(schools) {
     </div>`
   ).join('');
   wrap.innerHTML = html;
+}
+
+// ==================== TV CHANNELS (Admin CRUD) ====================
+async function loadAdminTVChannels() {
+  try {
+    const r = await adminFetch('/api/tv-channels/admin/list');
+    if (r.success) renderAdminTVChannels(r.channels);
+  } catch (e) {
+    document.getElementById('adminTVChannelList').innerHTML = '<div class="empty">❌ Failed to load TV channels</div>';
+  }
+}
+
+function renderAdminTVChannels(channels) {
+  const wrap = document.getElementById('adminTVChannelList');
+  if (!channels || channels.length === 0) {
+    wrap.innerHTML = `<div class="empty">📭 No TV channels yet. <button class="refresh-btn" onclick="openCreateTVChannel()" style="background:rgba(220,38,38,0.15);color:#dc2626;border-color:#dc2626;margin-left:6px;">+ Create First Channel</button></div>`;
+    return;
+  }
+  let html = `<div style="font-size:11px;color:#888;margin-bottom:8px;">📺 ${channels.length} TV channels · ${channels.filter(c => c.active).length} active</div>`;
+  html += channels.map(c =>
+    `<div style="background:rgba(255,255,255,0.04);border:1px solid ${c.active ? 'rgba(220,38,38,0.3)' : 'rgba(255,255,255,0.08)'};border-radius:10px;padding:10px 12px;margin-bottom:6px;font-size:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:13px;color:#dc2626;">${c.icon || '📺'} ${esc(c.name)} ${c.active ? '' : '<span style="font-size:9px;background:rgba(100,100,100,0.3);color:#888;padding:1px 6px;border-radius:4px;">INACTIVE</span>'}</div>
+          <div style="font-size:11px;color:#888;margin-top:2px;">
+            ${esc(c.description || 'No description')} • 📹 ${c.itemIds ? c.itemIds.length : 0} items${c.itemIds && c.itemIds.length > 0 ? ` (${c.existingItemCount || 0} with video)` : ''} • 👁 ${c.viewCount || 0} views
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="refresh-btn" onclick="toggleTVChannel('${c.id}')" title="Active/Inactive" style="padding:4px 8px;font-size:11px;${c.active ? 'background:rgba(46,213,115,0.2);color:#2ed573;border-color:#2ed573;' : 'background:rgba(100,100,100,0.2);color:#888;border-color:#666;'}">${c.active ? '✓ On' : '○ Off'}</button>
+          <button class="refresh-btn" onclick="openEditTVChannel('${c.id}')" title="Edit" style="padding:4px 8px;font-size:11px;background:rgba(0,212,255,0.15);color:#00d4ff;border-color:#00d4ff;">✏️</button>
+          <button class="refresh-btn" onclick="deleteTVChannel('${c.id}', '${esc(c.name)}')" title="Delete" style="padding:4px 8px;font-size:11px;background:rgba(220,38,38,0.15);color:#dc2626;border-color:#dc2626;">🗑️</button>
+        </div>
+      </div>
+    </div>`
+  ).join('');
+  wrap.innerHTML = html;
+}
+
+async function toggleTVChannel(id) {
+  try {
+    const r = await adminFetch(`/api/tv-channels/admin/${id}/toggle`, { method: 'POST' });
+    if (r.success) { toast(r.active ? '✅ Channel ON' : '⏸️ Channel OFF'); loadAdminTVChannels(); }
+  } catch (e) { toast('❌ Network error'); }
+}
+
+async function deleteTVChannel(id, name) {
+  if (!confirm(`TV Channel "${name}" को DELETE करना है?\n\nयह वापस नहीं होगा।`)) return;
+  try {
+    const r = await adminFetch(`/api/tv-channels/admin/${id}`, { method: 'DELETE' });
+    if (r.success) { toast('✅ Channel deleted'); loadAdminTVChannels(); }
+    else toast('❌ ' + (r.error || 'Failed'));
+  } catch (e) { toast('❌ Network error'); }
+}
+
+function openCreateTVChannel() {
+  openTVChannelEditor(null, { name: '', description: '', icon: '📺', color: '#dc2626', itemIds: [], active: true, autoplay: true, loop: true });
+}
+
+async function openEditTVChannel(id) {
+  try {
+    const r = await adminFetch(`/api/tv-channels/admin/list`);
+    if (!r.success) return;
+    const ch = r.channels.find(c => c.id === id);
+    if (ch) openTVChannelEditor(id, ch);
+  } catch (e) { toast('❌ Network error'); }
+}
+
+function openTVChannelEditor(id, ch) {
+  // Fetch news to select from
+  adminFetch('/api/tv-channels/admin/search-news?limit=100').then(r => {
+    const allNews = r.success ? r.items : [];
+    const selectedIds = ch.itemIds || [];
+    showModal(id ? `✏️ Edit TV Channel: ${ch.name}` : '➕ Create TV Channel', `
+      <div class="form-group"><label class="form-label">Channel Name *</label>
+        <input type="text" class="form-input" id="tvcName" value="${esc(ch.name)}" placeholder="e.g. DainikState Top 10"></div>
+      <div class="form-group"><label class="form-label">Description</label>
+        <input type="text" class="form-input" id="tvcDesc" value="${esc(ch.description || '')}" placeholder="Short description"></div>
+      <div class="form-group"><label class="form-label">Icon (emoji)</label>
+        <input type="text" class="form-input" id="tvcIcon" value="${esc(ch.icon || '📺')}" placeholder="📺"></div>
+      <div class="form-group"><label class="form-label">Color (hex)</label>
+        <input type="text" class="form-input" id="tvcColor" value="${esc(ch.color || '#dc2626')}" placeholder="#dc2626"></div>
+      <div class="form-group">
+        <label class="form-label">
+          <input type="checkbox" id="tvcActive" ${ch.active !== false ? 'checked' : ''}> Active (visible to users)
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">
+          <input type="checkbox" id="tvcAutoplay" ${ch.autoplay !== false ? 'checked' : ''}> Auto-play
+        </label>
+        <label class="form-label" style="margin-top:4px;">
+          <input type="checkbox" id="tvcLoop" ${ch.loop !== false ? 'checked' : ''}> Loop playlist
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">🔍 Search news to add (with video):</label>
+        <input type="text" class="form-input" id="tvcSearch" placeholder="Search by title/description..." oninput="filterTVCNews()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">📹 News Items (${selectedIds.length} selected):</label>
+        <div id="tvcNewsList" style="max-height:300px;overflow-y:auto;background:rgba(0,0,0,0.3);border-radius:8px;padding:8px;">
+          ${allNews.map(n => `
+            <label style="display:flex;gap:8px;padding:6px;border-radius:6px;cursor:pointer;${selectedIds.includes(n.url) ? 'background:rgba(220,38,38,0.15);' : ''}" class="tvc-news-item" data-url="${esc(n.url)}" data-title="${esc(n.title)}">
+              <input type="checkbox" class="tvc-news-check" value="${esc(n.url)}" ${selectedIds.includes(n.url) ? 'checked' : ''}>
+              <div style="flex:1;font-size:11px;">
+                <div style="color:#fff;font-weight:600;">${esc(n.title)}</div>
+                <div style="color:#888;font-size:10px;">${esc(n.category || '')} ${n.videoUrl ? '🎥' : n.youtubeUrl ? '▶️' : n.hlsUrl ? '📡' : ''} • ${esc((n.source||'').slice(0, 30))}</div>
+              </div>
+            </label>
+          `).join('')}
+        </div>
+        <div style="font-size:10px;color:#888;margin-top:4px;">${allNews.length} news items with video</div>
+      </div>
+      <button class="form-btn" onclick="saveTVChannel('${id || ''}')" style="background:#dc2626;">💾 Save Channel</button>
+    `);
+  });
+}
+
+function filterTVCNews() {
+  const q = (document.getElementById('tvcSearch')?.value || '').toLowerCase();
+  document.querySelectorAll('.tvc-news-item').forEach(el => {
+    const t = (el.dataset.title || '').toLowerCase();
+    el.style.display = (!q || t.includes(q)) ? 'flex' : 'none';
+  });
+}
+
+async function saveTVChannel(id) {
+  const itemIds = Array.from(document.querySelectorAll('.tvc-news-check:checked')).map(c => c.value);
+  const data = {
+    name: document.getElementById('tvcName').value.trim(),
+    description: document.getElementById('tvcDesc').value.trim(),
+    icon: document.getElementById('tvcIcon').value.trim() || '📺',
+    color: document.getElementById('tvcColor').value.trim() || '#dc2626',
+    active: document.getElementById('tvcActive').checked,
+    autoplay: document.getElementById('tvcAutoplay').checked,
+    loop: document.getElementById('tvcLoop').checked,
+    itemIds,
+  };
+  if (!data.name) { toast('❌ Name required'); return; }
+  try {
+    const url = id ? `/api/tv-channels/admin/${id}` : '/api/tv-channels/admin/create';
+    const method = id ? 'PUT' : 'POST';
+    const r = await adminFetch(url, { method, body: data });
+    if (r.success) { toast(id ? '✅ Channel updated' : '✅ Channel created'); closeModal(); loadAdminTVChannels(); }
+    else toast('❌ ' + (r.error || 'Failed'));
+  } catch (e) { toast('❌ Network error'); }
 }
 async function loadAdminNews() {
   try {
@@ -903,6 +1070,44 @@ window.addEventListener('resize', () => {
     });
   }
 });
+
+// ==================== MODAL + TOAST HELPERS (for TV Channels editor) ====================
+function showModal(title, htmlContent) {
+  let modal = document.getElementById('dsModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'dsModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `<div style="background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h2 style="color:#fff;font-size:18px;margin:0;">${title}</h2>
+      <button onclick="closeModal()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;">×</button>
+    </div>
+    <div id="dsModalBody">${htmlContent}</div>
+  </div>`;
+  modal.style.display = 'flex';
+}
+
+function closeModal() {
+  const m = document.getElementById('dsModal');
+  if (m) m.style.display = 'none';
+}
+
+function toast(msg, dur = 2500) {
+  let t = document.getElementById('dsToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'dsToast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:#fff;padding:12px 24px;border-radius:24px;font-size:14px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.4);';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.style.display = 'none', dur);
+}
 </script>
 </body>
 </html>
