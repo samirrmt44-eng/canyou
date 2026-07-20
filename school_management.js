@@ -158,6 +158,119 @@ module.exports = function(app, db, usersCol, notificationsCol) {
   });
 
   // ============================================================
+  // ADMIN: Delete school (and all its data)
+  // DELETE /api/school/admin/:schoolId
+  // ============================================================
+  function _schoolAdminAuth(req, res, next) {
+    const token = req.headers['x-admin-token'] || req.body.adminToken || req.query.adminToken;
+    if (!global.__dsAdminTokens) global.__dsAdminTokens = new Set();
+    if (!token || !global.__dsAdminTokens.has(token)) {
+      return res.status(401).json({ error: 'Admin token required' });
+    }
+    next();
+  }
+
+  app.delete('/api/school/admin/:schoolId', _schoolAdminAuth, async (req, res) => {
+    try {
+      if (!schoolsCol) return res.status(503).json({ error: 'DB not ready' });
+      const school = await schoolsCol.findOne({ id: req.params.schoolId });
+      if (!school) return res.status(404).json({ error: 'School not found' });
+      // Cascade delete: classes, students, attendance, diary, photos, messages, etc.
+      const schoolId = school.id;
+      const ownerId = school.ownerId;
+      const del = {
+        classes: await classesCol.deleteMany({ schoolId }),
+        students: await studentsCol.deleteMany({ schoolId }),
+        attendance: await attendanceCol.deleteMany({ schoolId }),
+        diary: await diaryCol.deleteMany({ schoolId }),
+        photos: await photosCol.deleteMany({ schoolId }),
+        messages: await schoolMessagesCol.deleteMany({ schoolId }),
+        fees: await schoolFeesCol ? await schoolFeesCol.deleteMany({ schoolId }) : { deletedCount: 0 },
+        results: await schoolResultsCol ? await schoolResultsCol.deleteMany({ schoolId }) : { deletedCount: 0 },
+        homework: await schoolHomeworkCol ? await schoolHomeworkCol.deleteMany({ schoolId }) : { deletedCount: 0 },
+        notices: await schoolNoticesCol ? await schoolNoticesCol.deleteMany({ schoolId }) : { deletedCount: 0 },
+        timetable: await schoolTimetableCol ? await schoolTimetableCol.deleteMany({ schoolId }) : { deletedCount: 0 },
+        events: await schoolEventsCol ? await schoolEventsCol.deleteMany({ schoolId }) : { deletedCount: 0 },
+        announcements: await schoolAnnouncementsCol ? await schoolAnnouncementsCol.deleteMany({ schoolId }) : { deletedCount: 0 },
+        chat: await schoolChatCol ? await schoolChatCol.deleteMany({ schoolId }) : { deletedCount: 0 },
+        school: await schoolsCol.deleteOne({ id: schoolId }),
+      };
+      // Unlink owner user
+      await usersCol.updateOne({ id: ownerId }, { $unset: { schoolId: '', schoolRole: '' } });
+      res.json({ success: true, deleted: school.name, schoolId, ownerId, cascade: {
+        classes: del.classes.deletedCount,
+        students: del.students.deletedCount,
+        attendance: del.attendance.deletedCount,
+        diary: del.diary.deletedCount,
+        photos: del.photos.deletedCount,
+        messages: del.messages.deletedCount,
+        fees: del.fees.deletedCount || 0,
+        results: del.results.deletedCount || 0,
+      }});
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // ADMIN: Delete user (and their school if owner)
+  // DELETE /api/school/admin/user/:userId
+  // ============================================================
+  app.delete('/api/school/admin/user/:userId', _schoolAdminAuth, async (req, res) => {
+    try {
+      if (!usersCol) return res.status(503).json({ error: 'DB not ready' });
+      const user = await usersCol.findOne({ id: req.params.userId });
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      // If user is a school owner, delete their school first
+      let schoolDeleted = null;
+      if (user.schoolId) {
+        const school = await schoolsCol.findOne({ id: user.schoolId });
+        if (school) {
+          const schoolId = school.id;
+          await classesCol.deleteMany({ schoolId });
+          await studentsCol.deleteMany({ schoolId });
+          await attendanceCol.deleteMany({ schoolId });
+          await diaryCol.deleteMany({ schoolId });
+          await photosCol.deleteMany({ schoolId });
+          await schoolMessagesCol.deleteMany({ schoolId });
+          if (schoolFeesCol) await schoolFeesCol.deleteMany({ schoolId });
+          if (schoolResultsCol) await schoolResultsCol.deleteMany({ schoolId });
+          if (schoolChatCol) await schoolChatCol.deleteMany({ schoolId });
+          await schoolsCol.deleteOne({ id: schoolId });
+          schoolDeleted = { id: schoolId, name: school.name };
+        }
+      }
+      // Unlink parents whose students are deleted
+      if (studentsCol) {
+        const studentIds = await studentsCol.find({ schoolId: user.schoolId || '' }).project({ id: 1 }).toArray().catch(()=>[]);
+        // Delete the user
+        await usersCol.deleteOne({ id: req.params.userId });
+      } else {
+        await usersCol.deleteOne({ id: req.params.userId });
+      }
+      res.json({ success: true, deletedUser: { id: user.id, name: user.name, phone: user.phone }, schoolDeleted });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
+  // ADMIN: List all schools (with owner info)
+  // GET /api/school/admin/all
+  // ============================================================
+  app.get('/api/school/admin/all', _schoolAdminAuth, async (req, res) => {
+    try {
+      if (!schoolsCol) return res.status(503).json({ error: 'DB not ready' });
+      const schools = await schoolsCol.find({}).sort({ createdAt: -1 }).toArray();
+      // Hydrate owner info
+      const ownerIds = [...new Set(schools.map(s => s.ownerId))];
+      const owners = await usersCol.find({ id: { $in: ownerIds } }).toArray();
+      const ownerMap = {};
+      owners.forEach(u => { ownerMap[u.id] = { name: u.name, phone: u.phone, avatar: u.avatar }; });
+      res.json({ success: true, count: schools.length, schools: schools.map(s => {
+        const { _id, ...rest } = s;
+        return { ...rest, owner: ownerMap[s.ownerId] || null };
+      })});
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ============================================================
   // CLASSES (Nursery / LKG / UKG with sections)
   // ============================================================
   app.post('/api/school/:schoolId/classes', async (req, res) => {
