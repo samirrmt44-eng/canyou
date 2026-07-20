@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#25D366" />
-<title>📤 Send Message - Child's Land School</title>
+<title>📤 Send Message - School Management School</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
@@ -142,6 +142,15 @@
 </style>
 </head>
 <body>
+
+<!-- 🆓 100% FREE FOR ALL BANNER -->
+<div id="freeBanner" style="background:linear-gradient(135deg, #10b981, #3b82f6);color:#fff;text-align:center;padding:8px 12px;font-size:13px;font-weight:900;position:sticky;top:0;z-index:9999;box-shadow:0 2px 10px rgba(16,185,129,0.4);display:flex;align-items:center;justify-content:center;gap:10px;">
+  <span style="font-size:18px;">🆓</span>
+  <span>100% FREE FOR ALL • NO CHARGES • NO LIMITS • सभी के लिए मुफ्त</span>
+  <span style="font-size:18px;">🇮🇳</span>
+  <button onclick="document.getElementById('freeBanner').style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:12px;margin-left:10px;">✕</button>
+</div>
+
 <div class="app">
 
 <!-- HEADER -->
@@ -150,7 +159,7 @@
     <button class="header-back" onclick="goBack()">←</button>
     <div class="header-title">
       <h1>📤 Branded Message भेजें</h1>
-      <div class="sub">CANYOU / Child's Land School के नाम से</div>
+      <div class="sub">CANYOU / School Management School के नाम से</div>
     </div>
     <div class="header-spacer"></div>
   </div>
@@ -162,7 +171,7 @@
   <div class="brand-card">
     <div class="brand-logo">🎓</div>
     <div class="brand-info">
-      <div class="brand-name">Child's Land School</div>
+      <div class="brand-name">School Management School</div>
       <div class="brand-tag">Powered by CANYOU</div>
     </div>
     <div class="brand-verified">✓ OFFICIAL</div>
@@ -193,7 +202,7 @@
   <div class="method-content active" id="method-whatsapp">
     <div class="section-card">
       <div class="section-title">💬 WhatsApp Message</div>
-      <div class="section-sub">Parents को WhatsApp पर branded message भेजें (sender: CANYOU/Child's Land)</div>
+      <div class="section-sub">Parents को WhatsApp पर branded message भेजें (sender: DainikState School)</div>
 
       <div class="form-group">
         <label class="form-label">Message Type</label>
@@ -251,7 +260,7 @@
         <div class="preview-brand">
           <div class="preview-brand-logo">🎓</div>
           <div class="preview-brand-text">
-            Child's Land School
+            School Management School
             <span class="small">via CANYOU • Official</span>
           </div>
           <div class="preview-brand-badge">✓ VERIFIED</div>
@@ -324,7 +333,7 @@
           <div class="preview-brand">
             <div class="preview-brand-logo">🎓</div>
             <div class="preview-brand-text">
-              Child's Land School
+              School Management School
               <span class="small">via CANYOU • Official</span>
             </div>
             <div class="preview-brand-badge">✓ VERIFIED</div>
@@ -350,7 +359,7 @@
   <div class="section-card" style="background:linear-gradient(135deg,#fff5e1,#ffe6f0);border:2px dashed #ff9a9e;">
     <div class="section-title">🎯 Why This Works</div>
     <ul style="font-size:12px;line-height:1.7;color:#555;padding-left:18px;">
-      <li><strong>✅ Branded Sender:</strong> "Child's Land School via CANYOU" dikhta hai</li>
+      <li><strong>✅ Branded Sender:</strong> "School Management School via CANYOU" dikhta hai</li>
       <li><strong>✅ Official Badge:</strong> ✓ VERIFIED badge trust badhata hai</li>
       <li><strong>✅ FREE Forever:</strong> No SMS gateway cost, no WhatsApp Business fee</li>
       <li><strong>✅ Hindi + English:</strong> Both supported</li>
@@ -746,7 +755,7 @@ function sendViaSmsApp() {
   if (!msg) { toast('⚠️ Message लिखें'); return; }
   if (selectedRecipients.length === 0) { toast('⚠️ Recipients select करें'); return; }
   const numbers = selectedRecipients.map(r => r.phone.replace(/[^0-9]/g, '')).join(',');
-  const schoolName = currentSchool.name || "Child's Land School";
+  const schoolName = currentSchool.name || "School Management School";
   const fullMsg = `[${schoolName} via CANYOU] ${msg}`;
   // Open SMS app
   window.location.href = `sms:${numbers}?body=${encodeURIComponent(fullMsg)}`;
