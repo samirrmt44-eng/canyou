@@ -90,6 +90,15 @@ try {
   console.error('⚠️ School Chat module file not found (will skip):', e.message);
 }
 
+// Initialize TV Channels Module
+let tvChannelsModule = null;
+try {
+  tvChannelsModule = require('./tv_channels.js');
+  console.log('📺 TV Channels module file loaded');
+} catch (e) {
+  console.error('⚠️ TV Channels module file not found (will skip):', e.message);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -2427,6 +2436,21 @@ connectDB().then(async () => {
       console.log('💬 School Chat initialized!');
     } catch (e) {
       console.error('⚠️ School chat init error:', e.message);
+    }
+  }
+  // Initialize TV Channels (needs DB) - Admin-controlled
+  if (tvChannelsModule) {
+    try {
+      const tvInit = tvChannelsModule(app, db, usersCol, notificationsCol);
+      if (tvInit && typeof tvInit.connectDB_tv === 'function') {
+        await tvInit.connectDB_tv();
+      } else {
+        // Module auto-initializes on first request
+        await db.collection('tvChannels').createIndex({ id: 1 }, { unique: true }).catch(()=>{});
+        console.log('📺 TV Channels module registered (lazy init)');
+      }
+    } catch (e) {
+      console.error('⚠️ TV channels init error:', e.message);
     }
   }
   setInterval(async () => {
