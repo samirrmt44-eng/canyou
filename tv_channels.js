@@ -22,7 +22,14 @@ module.exports = function(app, db, usersCol) {
   // ADMIN AUTH (uses shared global __dsAdminTokens)
   // ============================================================
   function requireAdmin(req, res, next) {
-    const token = req.headers['x-admin-token'] || req.body.adminToken || req.query.adminToken;
+    // Try multiple token locations (in order of preference)
+    let token = req.headers['x-admin-token']
+             || req.body?.adminToken
+             || req.query?.adminToken;
+    // Support Authorization: Bearer <token> (used by adminFetch)
+    if (!token && req.headers['authorization']) {
+      token = req.headers['authorization'].replace(/^Bearer\s+/i, '').trim();
+    }
     if (!global.__dsAdminTokens) global.__dsAdminTokens = new Set();
     if (!token || !global.__dsAdminTokens.has(token)) {
       return res.status(401).json({ error: 'Admin token required. Login first via /api/admin/login with PIN 1234' });
